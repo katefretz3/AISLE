@@ -281,3 +281,15 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
  .aisle-map-marker::after{content:'';position:absolute;top:50%;left:50%;
   transform:translate(-50%,-50%);width:46px;height:46px;border-radius:50%}
 }
+
+/* Privacy links at the two points people actually ask the question: while
+   setting up, and in the "how this works" dialog. */
+.setup-privacy-link,.help-legal-links button{border:0;background:none;padding:0;font:inherit;
+ color:var(--primary);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.setup-privacy-link{font-size:.78rem;margin-left:14px}
+.setup-privacy-link:hover,.help-legal-links button:hover{color:var(--foreground)}
+.help-legal-links{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:5px;
+ margin:14px 0 0;font-size:.79rem;color:var(--muted-foreground)}
+@media (max-width:960px){
+ .setup-privacy-link,.help-legal-links button{min-height:44px;display:inline-flex;align-items:center}
+}

@@ -236,6 +236,11 @@ date) are `PLACEHOLDER` values in `src/lib/legal.ts`, and while any remain the
 legal screens show a blocking notice naming the unfilled fields. Fill them in
 and get the wording reviewed before release.
 
+The Privacy Policy is reachable from five places, because the question comes up
+in more than one moment: during onboarding next to "No account needed", from the
+"How Aisle works" dialog, from Account settings, from the sidebar, and from the
+workspace footer.
+
 The Data sources page is not optional decoration: OpenStreetMap's ODbL requires
 visible attribution, and a test asserts that the credit and the licence are
 both present.
