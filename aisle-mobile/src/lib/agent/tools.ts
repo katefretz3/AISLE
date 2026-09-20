@@ -252,28 +252,44 @@ export type BasketLine={itemId:string;name:string;quantity:number;offer:SourcedO
 export type Basket={sourceId:string;name:string;origin:string;subtotal:number;priced:number;total:number;complete:boolean;unconfirmed:number;overBudget:number;lines:BasketLine[]};
 
 /** Integer-cent arithmetic over confirmed selections and agent proposals. */
-export function computeBaskets(ctx:ToolContext):Basket[]{
- const ready=ctx.sources.filter(s=>s.status==='ready');
- return ready.map(source=>{
+export type BasketInput={
+ state:UserState;perShopBudget:number;
+ sources:{chainId:string|null;origin:string;name:string;status:'ready'|'unavailable'}[];
+ offers:SourcedOffer[];proposals:Map<string,Proposal>;unmatched:Map<string,string>;
+};
+
+/**
+ * Pure, so the interface can re-total instantly when someone confirms or
+ * rejects a match without re-running collection over the network.
+ */
+export function basketsFrom(input:BasketInput):Basket[]{
+ const {state,perShopBudget,offers,proposals,unmatched}=input;
+ return input.sources.filter(s=>s.status==='ready').map(source=>{
   const sourceId=source.chainId??source.origin;
-  const lines:BasketLine[]=ctx.state.items.map(item=>{
-   const confirmedOfferId=ctx.state.offerSelections?.[item.id]?.[sourceId];
-   const proposal=ctx.proposals.get(proposalKey(item.id,sourceId));
+  const lines:BasketLine[]=state.items.map(item=>{
+   const confirmedOfferId=state.offerSelections?.[item.id]?.[sourceId];
+   const proposal=proposals.get(proposalKey(item.id,sourceId));
    const offerId=confirmedOfferId??proposal?.offerId;
-   const offer=offerId?ctx.offers.find(o=>o.id===offerId)??null:null;
+   const offer=offerId?offers.find(o=>o.id===offerId)??null:null;
    const packs=offer?(requiredPacks(item,offer)??0):0;
    return {itemId:item.id,name:item.name,quantity:item.qty,offer,packs,
     lineTotal:offer?offer.price*packs:0,confirmed:!!confirmedOfferId,
     confidence:proposal?.confidence??null,rationale:proposal?.rationale??'',
-    reason:offer?'':ctx.unmatched.get(item.id)||'No collected record matched this item'};
+    reason:offer?'':unmatched.get(item.id)||'No collected record matched this item'};
   });
   const priced=lines.filter(l=>l.offer&&l.packs>0);
   const subtotal=priced.reduce((sum,l)=>sum+l.lineTotal,0);
   return {sourceId,name:source.name,origin:source.origin,subtotal,priced:priced.length,total:lines.length,
    complete:priced.length===lines.length&&lines.length>0,
    unconfirmed:priced.filter(l=>!l.confirmed).length,
-   overBudget:Math.max(0,subtotal-ctx.shopper.perShopBudget),lines};
+   overBudget:Math.max(0,subtotal-perShopBudget),lines};
  }).sort((a,b)=>Number(b.complete)-Number(a.complete)||b.priced-a.priced||a.subtotal-b.subtotal);
+}
+
+export function computeBaskets(ctx:ToolContext):Basket[]{
+ return basketsFrom({state:ctx.state,perShopBudget:ctx.shopper.perShopBudget,
+  sources:ctx.sources.map(s=>({chainId:s.chainId,origin:s.origin,name:s.name,status:s.status})),
+  offers:ctx.offers,proposals:ctx.proposals,unmatched:ctx.unmatched});
 }
 
 export const toolByName=(name:string)=>TOOLS.find(t=>t.name===name)??null;

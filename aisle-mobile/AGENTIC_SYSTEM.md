@@ -62,6 +62,20 @@ among records the collect phase already fetched.
 
 Each phase appends to a trace with timings, so the whole run is inspectable.
 
+## On screen
+
+`src/components/agent-workspace.tsx` is the agent's interface. It runs the loop
+and shows its working: the phases as they happen, which retailers were readable,
+each list item with its proposed match or an explicit gap, per-retailer baskets,
+nearby stores tagged with whether Aisle can price them, and an evidence table of
+every response behind the numbers.
+
+Two details matter for the honesty rule. Matches are *proposals* until the
+household confirms them, and an unconfirmed line is labelled as such and counted
+separately in the basket. And confirming a match re-totals from the run snapshot
+with `basketsFrom()`, a pure function — no re-collection, so a displayed figure
+can never drift from the evidence it came from.
+
 ## Tools
 
 The model's entire surface. Each is plain TypeScript with zod-validated

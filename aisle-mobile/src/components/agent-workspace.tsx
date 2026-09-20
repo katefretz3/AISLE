@@ -1,48 +1,242 @@
 "use client";
-import {useEffect,useMemo,useRef,useState} from 'react';
-import {RefreshCw,ArrowUpRight,Check,Plus,Sparkles,Info,X} from 'lucide-react';
+// The agent, on screen.
+//
+// Shows what the agent actually did: which retailers it could read, which list
+// items it matched to a real catalogue record, what it could not price, and the
+// HTTP response behind every figure. Nothing here is rendered unless it came
+// back from a run — an unpriced item shows as an unpriced item.
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Accordion,AccordionContent,AccordionItem,AccordionTrigger} from '@/components/ui/accordion';
-import {buildPlan} from '@/lib/agent/engine';
-import {loadMarket,loadPlaces} from '@/lib/agent-client';
-import {nearbyPlaces,placeArea,type PlaceResult} from '@/lib/agent/places';
+import {ArrowUpRight,Check,ChevronRight,CircleAlert,FileSearch,Info,LoaderCircle,MapPin,RefreshCw,ShieldCheck,Sparkles,Store,X} from 'lucide-react';
+import {runAgent,basketsFrom,buildShopperModel,type AgentRun,type Basket} from '@/lib/agent';
 import {money,productById,productImagePath,type UserState} from '@/lib/catalog';
-import type {MarketSnapshot,Offer} from '@/lib/agent/types';
 import './agent-workspace.css';
-type Props={state:UserState;ready:boolean;commit:(update:(state:UserState)=>UserState)=>void;onAdd:(id:string)=>void;onList:()=>void;onPreferences:()=>void;onSetup:()=>void;onDemo:()=>void};
-export default function AgentWorkspace({state,ready,commit,onAdd,onList,onPreferences,onSetup,onDemo}:Props){
- const [market,setMarket]=useState<MarketSnapshot>({sources:[],collectedAt:''});const [busy,setBusy]=useState(false),[error,setError]=useState('');const [tab,setTab]=useState<'list'|'catalogue'>('list');const [search,setSearch]=useState('');const alive=useRef(true),inFlight=useRef(false);
- async function refresh(force:boolean){if(inFlight.current)return;inFlight.current=true;setBusy(true);setError('');try{let next=await loadMarket(force);if(!force&&next.sources.some(s=>Date.now()-Date.parse(s.checkedAt)>3600000))next=await loadMarket(true);if(alive.current)setMarket(next);}catch(e){if(alive.current)setError(e instanceof Error?e.message:'Prices could not be loaded.');}finally{inFlight.current=false;if(alive.current)setBusy(false);}}
- useEffect(()=>{alive.current=true;if(ready)void refresh(false);return()=>{alive.current=false;};},[ready]);
- const [tick,setTick]=useState(0);useEffect(()=>{const t=setInterval(()=>setTick(t=>t+1),60000);return()=>clearInterval(t);},[]);
- const plan=useMemo(()=>buildPlan(state,market),[state,market,tick]);const currentPlan=plan;
- const [places,setPlaces]=useState<PlaceResult>({places:[],checkedAt:'',status:'unavailable',message:'Finding stores near your selected location…'});
- const area=placeArea(state.prefs);
- useEffect(()=>{let active=true;if(ready){setPlaces({places:[],checkedAt:'',status:'unavailable',message:'Finding stores near your selected location…'});void loadPlaces(area).then(value=>{if(active)setPlaces(value);}).catch(e=>{if(active)setPlaces({places:[],checkedAt:'',status:'unavailable',message:e instanceof Error?e.message:'Store discovery unavailable'});});}return()=>{active=false;};},[ready,area.lat,area.lng]);
- const nearby=useMemo(()=>nearbyPlaces(places,state.prefs),[places,state.prefs]);
- const offers=market.sources.flatMap(s=>s.status==='ready'?s.offers:[]).filter(o=>o.available&&Date.parse(o.expiresAt)>Date.now()&&`${o.title} ${o.brand} ${o.retailer}`.toLowerCase().includes(search.toLowerCase())).slice(0,40);
- function select(itemId:string,offer:Offer,accept:boolean){commit(s=>{
-  const selections={...s.offerSelections,[itemId]:{...s.offerSelections?.[itemId]}};
-  if(accept)selections[itemId][offer.sourceId]=offer.id;else delete selections[itemId][offer.sourceId];
-  const item=s.items.find(i=>i.id===itemId);const category=item?.productId?productById[item.productId]?.category??'Other':'Other';
-  return {...s,offerSelections:selections,events:s.prefs.learning?[...s.events,{action:accept?'offer_accepted':'offer_rejected',category,productId:item?.productId??undefined,offerId:offer.id,brand:offer.brand,date:new Date().toISOString(),storeId:offer.sourceId}].slice(-200):s.events};
- });}
+
+type Props={state:UserState;ready:boolean;commit:(update:(state:UserState)=>UserState)=>void;onAdd:(id:string)=>void;
+ onList:()=>void;onPreferences:()=>void;onSetup:()=>void;onDemo:()=>void};
+
+const PHASES=[
+ {id:'discover',label:'Finding stores near you'},
+ {id:'collect',label:'Reading retailer catalogues'},
+ {id:'match',label:'Matching your list'},
+ {id:'verify',label:'Verifying every price'},
+ {id:'compose',label:'Totalling your baskets'},
+] as const;
+
+export default function AgentWorkspace({state,ready,commit,onList,onPreferences,onSetup,onDemo}:Props){
+ const [run,setRun]=useState<AgentRun|null>(null);
+ const [busy,setBusy]=useState(false);
+ const [phase,setPhase]=useState<string>('');
+ const [error,setError]=useState('');
+ const alive=useRef(true),inFlight=useRef(false);
+
+ const start=useCallback(async()=>{
+  if(inFlight.current)return;
+  inFlight.current=true;setBusy(true);setError('');setPhase('discover');
+  try{
+   const result=await runAgent({state});
+   if(alive.current){setRun(result);setPhase('');}
+  }catch(e){
+   if(alive.current)setError(e instanceof Error?e.message:'The price check could not be completed.');
+  }finally{inFlight.current=false;if(alive.current)setBusy(false);}
+ // Deliberately not keyed on `state`: a run is a point-in-time snapshot and
+ // must not restart every time someone edits a quantity.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[]);
+
+ useEffect(()=>{alive.current=true;if(ready&&!run&&!busy)void start();return()=>{alive.current=false;};},[ready,run,busy,start]);
+
+ // Re-total locally when a match is confirmed or withdrawn. No network, no
+ // re-collection, and no chance of the displayed figure drifting from the run.
+ const baskets=useMemo<Basket[]>(()=>{
+  if(!run)return [];
+  return basketsFrom({
+   state,perShopBudget:buildShopperModel(state).perShopBudget,
+   sources:run.sources.map(s=>({chainId:s.chainId,origin:s.origin,name:s.name,status:s.status})),
+   offers:run.offers,
+   proposals:new Map(run.proposals.map(p=>[`${p.itemId}::${p.sourceId}`,p])),
+   unmatched:new Map(run.unmatched.map(u=>[u.itemId,u.reason])),
+  });
+ },[run,state]);
+
+ const best=baskets[0];
+ const budget=useMemo(()=>buildShopperModel(state).perShopBudget,[state]);
+ const readable=run?run.sources.filter(s=>s.status==='ready').length:0;
+
+ function decide(itemId:string,sourceId:string,offerId:string,brand:string,accept:boolean){
+  commit(s=>{
+   const selections={...s.offerSelections,[itemId]:{...s.offerSelections?.[itemId]}};
+   if(accept)selections[itemId][sourceId]=offerId;else delete selections[itemId][sourceId];
+   const item=s.items.find(i=>i.id===itemId);
+   const category=item?.productId?productById[item.productId]?.category??'Other':'Other';
+   return {...s,offerSelections:selections,events:s.prefs.learning
+    ?[...s.events,{action:accept?'offer_accepted':'offer_rejected',category,productId:item?.productId??undefined,
+      offerId,brand,date:new Date().toISOString(),storeId:sourceId}].slice(-200)
+    :s.events};
+  });
+ }
+
  return <div className="agent-workspace">
-  <div className="page-heading"><div><span className="eyebrow">YOUR GROCERY PLAN</span><h1>{state.prefs.name?`Let’s plan your shop, ${state.prefs.name}.`:'A better shop starts here.'}</h1><p>Your actual list, preferences and observed retailer prices.</p></div><button className="button primary" onClick={onList}>Edit my list <Plus size={17}/></button></div>
-  <section className="agent-overview"><div><span className="agent-kicker"><Sparkles size={17}/> Personalized to your household</span><h2>{money(plan.budget)} for this shop</h2><p>{state.prefs.household} {state.prefs.household===1?'person':'people'} · {plan.periodDays}-day shopping cycle · {state.items.length} items</p><button className="text-button" onClick={onSetup}>Fine-tune my Aisle <ArrowUpRight size={16}/></button></div><div className="agent-coverage"><strong>{currentPlan.lines.filter(l=>l.selected.length).length} / {state.items.length}</strong><span>items with a confirmed retailer product</span><p>Confirm brands and sizes below. Partial totals never become a “cheapest store” recommendation.</p></div></section>
-  <section className="agent-notice"><Info size={20}/><div><strong>{market.sources.some(s=>s.status==='ready'&&s.offers.some(o=>Date.parse(o.expiresAt)>Date.now()))?'Online catalogue prices are available. Branch prices are not connected.':'Retailer price coverage is still being established.'}</strong><p>These public catalogues do not confirm prices or stock at a specific branch. Aisle will not send you to a nearby store based on an online price. {plan.uncoveredStores.length>0?`Price feeds are still needed for ${plan.uncoveredStores.map(s=>s.name).join(', ')}.`:''}</p></div></section>
-  <div className="agent-section-heading"><div><h2>Retailer price checks</h2><p>Refreshed at most once per hour. Prices expire after 24 hours.</p></div><button className="button secondary" disabled={busy||!ready} onClick={()=>void refresh(true)}><RefreshCw size={16} className={busy?'spin':''}/>{busy?'Checking retailers…':'Check prices'}</button></div>
-  {error&&<p className="setup-error" role="alert">{error} <button onClick={()=>void refresh(true)}>Try again</button></p>}
-  {busy&&market.sources.length===0&&<p role="status">Reading public catalogues and validating prices…</p>}
-  <div className="agent-source-grid">{market.sources.map(source=>{const fresh=source.offers.filter(o=>Date.parse(o.expiresAt)>Date.now());return <section className="card agent-source" key={source.id}><div><h3>{source.name}</h3><span className="pill">{source.status==='ready'&&fresh.length?'Connected':'Unavailable'}</span></div><p>{fresh.length} observed prices · Online catalogue</p><small>{Date.parse(source.checkedAt)>0?`Checked ${new Date(source.checkedAt).toLocaleString('en-CA')}`:'Not checked yet'}</small>{source.status!=='ready'&&<p>{source.message}</p>}<a href={source.url} target="_blank" rel="noreferrer">Visit retailer <ArrowUpRight size={14}/></a></section>;})}</div>
-  <div className="agent-section-heading"><div><h2>Your list, matched carefully</h2><p>{plan.restrictions?'Your food restrictions are saved. Retailer ingredients are unverified; review labels before selecting any product.':'Select a retailer product only when its brand, format and pack size work for you.'}</p></div><button className="text-button" onClick={onPreferences}>Preferences</button></div>
-  <div className="agent-tabs" role="group" aria-label="Price view"><button aria-pressed={tab==='list'} onClick={()=>setTab('list')}>My list</button><button aria-pressed={tab==='catalogue'} onClick={()=>setTab('catalogue')}>Collected prices</button></div>
-  {tab==='list'?<Accordion type="multiple" className="agent-matches">{currentPlan.lines.map(line=><AccordionItem key={line.item.id} value={line.item.id}><AccordionTrigger><span className="agent-line-title"><img src={productImagePath(line.item.productId)} alt="" loading="lazy" decoding="async"/><span><strong>{line.item.qty} × {line.item.name}</strong><small>{line.item.productId?`${productById[line.item.productId].brand} · ${productById[line.item.productId].size}`:'Your custom item'}</small></span></span><span className="agent-match-status">{line.selected.length?`${line.selected.length} confirmed`:line.candidates.length?'Review options':'No matching prices'}</span></AccordionTrigger><AccordionContent>{line.candidates.length?<div className="agent-offer-list">{line.candidates.map(({offer,reason,packs})=>{const chosen=line.selected.some(c=>c.offer.id===offer.id);return <div key={offer.id} className="agent-offer"><div><strong>{offer.title}</strong><p>{offer.retailer} · {reason}</p><a href={offer.url} target="_blank" rel="noreferrer">Check product and ingredients <ArrowUpRight size={13}/></a></div><div><strong>{money(offer.price)}</strong><small>per listed pack</small><small>{packs===null?'Quantity cannot be verified':`${packs} retailer pack${packs===1?'':'s'} needed · ${money(offer.price*packs)}`}</small>{offer.pack&&<small>{money(Math.round(offer.price/offer.pack.amount*(offer.pack.unit==='each'?1:100)))} / {offer.pack.unit==='each'?'each':`100 ${offer.pack.unit}`}</small>}<button disabled={packs===null} className={chosen?'button primary':'button secondary'} onClick={()=>select(line.item.id,offer,!chosen)}>{chosen?<><Check size={14}/> Selected</>:packs===null?'Pack details needed':'Use this product'}</button></div></div>;})}</div>:<p className="agent-empty">No suitable current price in the connected catalogue sample. Your item stays on the list; missing prices are never treated as zero.</p>}</AccordionContent></AccordionItem>)}</Accordion>:<section className="card"><label className="field-label">Search collected retailer prices<input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Try rice, apples or coffee"/></label><p className="agent-small">A limited catalogue sample, not every product sold by these stores. Product names do not establish allergy suitability.</p><div className="agent-offer-list">{offers.map(o=><div className="agent-offer" key={o.id}><div><strong>{o.title}</strong><p>{o.retailer} · {o.brand}</p><a href={o.url} target="_blank" rel="noreferrer">View source <ArrowUpRight size={13}/></a></div><div><strong>{money(o.price)}</strong>{o.previousPrice!==undefined&&o.previousPrice!==o.price&&<small>{money(o.price-o.previousPrice)} since previous check</small>}</div></div>)}</div>{!offers.length&&<p>No current prices match this search.</p>}</section>}
-  <div className="agent-section-heading"><div><h2>Confirmed online baskets</h2><p>Product subtotals in CAD. Delivery, tax, deposits, minimum orders and membership fees are excluded.</p></div></div>
-  <div className="agent-source-grid">{currentPlan.baskets.map(b=><section className="card agent-basket" key={b.sourceId}><h3>{b.name}</h3><strong>{b.lines.some(l=>l.offer)?money(b.subtotal):'—'}</strong><p>{b.complete?'All list items confirmed':`${b.lines.length-b.missing} of ${b.lines.length} items · partial subtotal`}</p>{b.overBudget>0&&<p>{money(b.overBudget)} above your per-shop budget</p>}{b.complete&&<p>{money(Math.max(0,plan.budget-b.subtotal))} left in your product budget</p>}</section>)}</div>
-  {currentPlan.variations.length>0&&<section className="card"><h3>Like-for-like price differences</h3>{currentPlan.variations.map(v=><p key={v.name}>{v.name}: {money(v.difference)} less at {v.low.retailer} than {v.high.retailer} for your quantity.</p>)}</section>}
-  <section className="card agent-personal"><h2>Worth checking before your next shop</h2><p>Suggestions use your staples and, when enabled, confirmed purchase timing. Nothing is added automatically.</p>{plan.suggestions.length?<div className="agent-suggestions">{plan.suggestions.map(s=><div key={s.product.id}><img src={productImagePath(s.product.id)} alt="" loading="lazy" decoding="async"/><div><strong>{s.product.name}</strong><p>{s.reasons.join(' · ')}</p></div><button className="button secondary" aria-label={`Add suggested ${s.product.name}`} onClick={()=>onAdd(s.product.id)}><Plus size={16}/>Add</button><button className="icon-button" aria-label={`Dismiss suggested ${s.product.name}`} onClick={()=>commit(v=>({...v,prefs:{...v.prefs,excludedProducts:[...new Set([...v.prefs.excludedProducts,s.product.id])]},events:v.prefs.learning?[...v.events,{action:'dismissed',category:s.product.category,productId:s.product.id,date:new Date().toISOString()}].slice(-200):v.events}))}><X size={15}/></button></div>)}</div>:<p className="agent-empty">{state.prefs.allergens.length?'New food suggestions are paused because verified ingredient records are missing. Your exclusions remain protected.':'Your selected staples are already on your list. Confirm purchases after shopping to improve replenishment suggestions.'}</p>}</section>
-  <Accordion type="single" collapsible className="card agent-explanation"><AccordionItem value="why"><AccordionTrigger>How your preferences shaped this plan</AccordionTrigger><AccordionContent><ul>{plan.profile.map(p=><li key={p}>{p}</li>)}</ul><ol>{plan.trace.map(t=><li key={t.step}><strong>{t.step}:</strong> {t.detail}</li>)}</ol><p>The agent follows a bounded collect → validate → match → learn → compare workflow. It uses an explainable statistical recommender; it does not train a language model or invent prices.</p></AccordionContent></AccordionItem></Accordion>
-  <section className="card agent-nearby"><h2>Grocery stores in your search area</h2><p>Within {state.prefs.radius} km of your selected pin. {state.prefs.priority==='convenience'?'Closest first.':'Your preferred chains appear first.'} {state.prefs.transport==='walk'?'Walking routes may be longer than these straight-line distances.':state.prefs.transport==='transit'?'Transit routes, fares and schedules are not connected.':'Driving routes and travel costs are not connected.'}</p>{places.status==='unavailable'?<p role="status">{places.message}</p>:nearby.length?nearby.slice(0,20).map(p=><div className="agent-place" key={p.id}><div><strong>{p.name}{p.preferred?' · A preferred chain':''}</strong><p>{p.address||'Address not recorded in the map directory'}</p><small>Branch prices not connected</small></div><a href={p.url} target="_blank" rel="noreferrer">{p.km.toFixed(1)} km <ArrowUpRight size={15}/></a></div>):<p>No mapped grocery stores were found inside this radius. Try a wider area.</p>}<p className="agent-small">Location data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>, via <a href="https://overpass.private.coffee/" target="_blank" rel="noreferrer">Private.coffee</a>. A coarse search area is sent to the directory; your name, list and food preferences are not. Map coverage may be incomplete.</p></section>
-  <button className="text-button agent-demo" onClick={onDemo}>Explore the separate sample-price demo</button>
+  <header className="agent-hero">
+   <div>
+    <span className="agent-eyebrow"><Sparkles size={15}/> Your grocery agent</span>
+    <h1>{state.prefs.name?`Let’s price your list, ${state.prefs.name}.`:'Let’s price your list.'}</h1>
+    <p>Aisle looks for stores near you, reads the catalogues it is allowed to read, and matches your
+     list against what they actually publish. Every figure traces back to a response it received.</p>
+    <div className="agent-hero-actions">
+     <button className="button primary" disabled={busy||!ready} onClick={()=>void start()}>
+      {busy?<><LoaderCircle size={17} className="spin"/> Checking…</>:<><RefreshCw size={16}/> Run a price check</>}
+     </button>
+     <button className="button ghost" onClick={onList}>Edit my list <ChevronRight size={16}/></button>
+    </div>
+   </div>
+   <dl className="agent-stats">
+    <div><dt>Budget this shop</dt><dd>{money(budget)}</dd></div>
+    <div><dt>On your list</dt><dd>{state.items.length}</dd></div>
+    <div><dt>Retailers read</dt><dd>{readable}</dd></div>
+    <div><dt>Prices verified</dt><dd>{run?run.offers.length:0}</dd></div>
+   </dl>
+  </header>
+
+  {busy&&<ol className="agent-phases" aria-live="polite">
+   {PHASES.map(p=><li key={p.id} className={phase===p.id?'is-active':''}><span/>{p.label}</li>)}
+  </ol>}
+
+  {error&&<p className="agent-alert error" role="alert"><CircleAlert size={17}/> {error}
+   <button onClick={()=>void start()}>Try again</button></p>}
+
+  {run&&<>
+   <section className="agent-summary">
+    <span className={`agent-mode ${run.mode}`}>{run.mode==='assisted'?'AI-assisted matching':'Rule-based matching'}</span>
+    <p>{run.narrative}</p>
+    {run.warnings.map(w=><p className="agent-warning" key={w}><Info size={15}/> {w}</p>)}
+   </section>
+
+   <section className="agent-block">
+    <div className="agent-block-head">
+     <div><h2>Your list, matched</h2>
+      <p>Aisle proposes; you confirm. A match only counts towards a total once you accept it.</p></div>
+     <button className="text-button" onClick={onPreferences}>Preferences <ArrowUpRight size={15}/></button>
+    </div>
+    {readable===0
+     ? <div className="agent-blocked">
+        <CircleAlert size={20}/>
+        <div>
+         <strong>No prices were collected, so nothing on your list is priced.</strong>
+         <p>All {state.items.length} items are showing as unpriced because no retailer catalogue could be read
+          on this run — not because the items are unavailable. Aisle leaves them blank rather than filling in
+          a plausible number.</p>
+         <ul>{state.items.slice(0,12).map(i=><li key={i.id}>{i.qty} × {i.name}</li>)}
+          {state.items.length>12&&<li>and {state.items.length-12} more</li>}</ul>
+        </div>
+       </div>
+     : <div className="agent-lines">
+
+      {state.items.map(item=>{
+      const candidates=baskets.map(b=>({basket:b,line:b.lines.find(l=>l.itemId===item.id)}))
+       .filter((c):c is {basket:Basket;line:NonNullable<typeof c.line>}=>!!c.line?.offer);
+      const gap=run.unmatched.find(u=>u.itemId===item.id);
+      const product=item.productId?productById[item.productId]:undefined;
+      return <article className={`agent-line${candidates.length?'':' is-gap'}`} key={item.id}>
+       <img src={productImagePath(item.productId)} alt="" loading="lazy" decoding="async"/>
+       <div className="agent-line-copy">
+        <strong>{item.qty} × {item.name}</strong>
+        <small>{product?`${product.brand} · ${product.size}`:'Your own item'}{item.locked?' · locked to this exact product':''}</small>
+       </div>
+       <div className="agent-line-offers">
+        {candidates.length?candidates.map(({basket,line})=>
+         <div className={`agent-offer${line.confirmed?' is-confirmed':''}`} key={basket.sourceId}>
+          <div className="agent-offer-copy">
+           <strong>{money(line.lineTotal)}</strong>
+           <span>{basket.name} · {line.packs}× {line.offer!.pack?`${line.offer!.pack.amount} ${line.offer!.pack.unit}`:'pack size not stated'}</span>
+           <a href={line.offer!.url} target="_blank" rel="noreferrer noopener">{line.offer!.title} <ArrowUpRight size={12}/></a>
+           {line.rationale&&<em>{line.rationale}</em>}
+          </div>
+          {line.confirmed
+           ?<button className="agent-chip is-on" onClick={()=>decide(item.id,basket.sourceId,line.offer!.id,line.offer!.brand,false)}>
+             <Check size={14}/> Confirmed</button>
+           :<span className="agent-offer-decide">
+             <button className="agent-chip" onClick={()=>decide(item.id,basket.sourceId,line.offer!.id,line.offer!.brand,true)}>
+              <Check size={14}/> This is right</button>
+             <button className="agent-chip subtle" onClick={()=>decide(item.id,basket.sourceId,line.offer!.id,line.offer!.brand,false)}>
+              <X size={13}/> Not this</button>
+            </span>}
+         </div>)
+        :<p className="agent-gap"><CircleAlert size={15}/> {(gap?.reason??'No collected record matched this item').replace(/\.?$/,'.')} Aisle leaves it unpriced rather than guessing.</p>}
+       </div>
+      </article>;})}
+       </div>}
+   </section>
+
+   <section className="agent-block">
+    <div className="agent-block-head"><div><h2>Baskets</h2>
+     <p>Product subtotals in CAD. Delivery, tax, deposits and membership fees are not included.
+      An incomplete basket is never ranked as cheapest.</p></div></div>
+    {baskets.length?<div className="agent-cards">
+     {baskets.map(b=><article className={`agent-card${b===best&&b.complete?' is-best':''}`} key={b.sourceId}>
+      <h3>{b.name}</h3>
+      <strong className="agent-card-total">{b.priced?money(b.subtotal):'—'}</strong>
+      <p>{b.complete?'Every item priced':`${b.priced} of ${b.total} items priced`}</p>
+      {b.unconfirmed>0&&<p className="agent-card-note">{b.unconfirmed} awaiting your confirmation</p>}
+      {b.complete&&b.overBudget>0&&<p className="agent-card-over">{money(b.overBudget)} over your budget</p>}
+      {b.complete&&b.overBudget===0&&<p className="agent-card-under">{money(budget-b.subtotal)} left in budget</p>}
+     </article>)}
+    </div>:<p className="agent-empty">No retailer catalogue could be read, so there is nothing to total.</p>}
+   </section>
+
+   <section className="agent-block">
+    <div className="agent-block-head"><div><h2><Store size={18}/> Stores near you</h2>
+     <p>Within {state.prefs.radius} km of your saved location. Distances are straight-line, not driving routes.</p></div>
+     <button className="text-button" onClick={onSetup}>Change my area <ArrowUpRight size={15}/></button></div>
+    {run.stores.length?<ul className="agent-stores">
+     {run.stores.slice(0,8).map(s=><li key={s.id}>
+      <MapPin size={15}/>
+      <span><strong>{s.name}</strong><small>{s.address||'Address not mapped'}</small></span>
+      <span className="agent-km">{s.km.toFixed(1)} km</span>
+      <span className={`agent-feed ${s.feed}`}>{s.feed==='connected'?'Prices read':s.feed==='no-public-feed'?'No price feed':'Not checked'}</span>
+     </li>)}
+    </ul>:<p className="agent-empty">The store directory returned nothing for your area.</p>}
+
+    {run.coverageGaps.length>0&&<div className="agent-note">
+     <ShieldCheck size={18}/>
+     <div><strong>Chains Aisle deliberately does not price</strong>
+      <p>{run.coverageGaps.map(g=>g.name).join(', ')} {run.coverageGaps.length===1?'publishes':'publish'} no public price
+       feed. Aisle lists them without prices rather than estimating. Real coverage needs a licensed retailer feed.</p></div>
+    </div>}
+   </section>
+
+   <Accordion type="multiple" className="agent-block agent-evidence">
+    <AccordionItem value="evidence">
+     <AccordionTrigger><span className="agent-acc-label"><FileSearch size={17}/> Evidence behind these prices ({run.evidence.length} responses)</span></AccordionTrigger>
+     <AccordionContent>
+      <table className="agent-table"><thead><tr><th>Source</th><th>Status</th><th>Read at</th><th>Size</th><th>SHA-256</th></tr></thead>
+       <tbody>{run.evidence.map(e=><tr key={e.id}>
+        <td><a href={e.url} target="_blank" rel="noreferrer noopener">{e.origin.replace('https://','')}</a></td>
+        <td>{e.status}</td><td>{new Date(e.fetchedAt).toLocaleString('en-CA')}</td>
+        <td>{Math.round(e.bytes/1024)} KB</td><td className="agent-hash">{e.bodyHash.slice(0,16)}…</td>
+       </tr>)}</tbody></table>
+      {run.rejectedOffers.length>0&&<p className="agent-rejected">{run.rejectedOffers.length} collected
+       record{run.rejectedOffers.length===1?' was':'s were'} discarded before totalling (unavailable, expired,
+       or failing verification).</p>}
+      {run.violations.length>0&&<ul className="agent-violations">{run.violations.map((v,i)=><li key={i}>{v.detail}</li>)}</ul>}
+     </AccordionContent>
+    </AccordionItem>
+    <AccordionItem value="trace">
+     <AccordionTrigger><span className="agent-acc-label"><Info size={17}/> How this run worked</span></AccordionTrigger>
+     <AccordionContent>
+      <ol className="agent-trace">{run.trace.map((t,i)=><li key={i}>
+       <span className="agent-trace-phase">{t.phase}</span>
+       <span><strong>{t.label}</strong> — {t.detail}</span>
+       <span className="agent-trace-ms">{t.ms} ms</span>
+      </li>)}</ol>
+      <p className="agent-foot">Run {run.runId} · {run.durationMs} ms · {run.budgetSpent.toolCalls} tool calls ·
+       {Math.round(run.budgetSpent.evidenceBytes/1024)} KB read. Prices are online catalogue prices, not confirmed
+       branch prices, and Aisle will not send you to a store because of one.</p>
+     </AccordionContent>
+    </AccordionItem>
+   </Accordion>
+
+   <button className="text-button agent-demo" onClick={onDemo}>Explore the separate sample-price demo</button>
+  </>}
  </div>;
 }

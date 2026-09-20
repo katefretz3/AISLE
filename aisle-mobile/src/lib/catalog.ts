@@ -1,4 +1,5 @@
 import {cityLocation,ontarioCities,type SearchLocation} from './locations';
+import {ALL_ITEMS,DEPARTMENT_NAMES,itemById,searchItems} from './taxonomy';
 export type Product = { id: string; name: string; brand: string; size: string; category: string; icon: string; base: number; swap?: string };
 export type Store = { id: string; name: string; short: string; color: string; text: string; factor: number; km: number; url: string; priced: boolean };
 export type ListItem = { id: string; productId: string | null; name: string; qty: number; checked: boolean; locked: boolean };
@@ -21,52 +22,33 @@ export const stores: Store[] = [
  {id:"costco",name:"Costco",short:"C",color:"#e8eef4",text:"#bc303a",factor:.9,km:7,url:"https://www.costco.ca",priced:false},
  {id:"denningers",name:"Denninger’s",short:"D",color:"#f1ebe1",text:"#675340",factor:1.15,km:3,url:"https://denningers.com",priced:false},
 ];
-const definitions:[string,string,string,string,string,string,number,string?][]=[
- ["strawberries","Fresh strawberries","Fresh produce","454 g","Produce","cherry",499],
- ["avocados","Avocados","Fresh produce","Bag of 5","Produce","salad",499],
- ["bananas","Bananas","Fresh produce","1 kg","Produce","banana",169],
- ["milk","2% milk","Neilson","4 L","Dairy & eggs","milk",679,"milk-store"],
- ["eggs","Large eggs","Burnbrae Farms","12 eggs","Dairy & eggs","egg",429,"eggs-store"],
- ["bread","Whole wheat bread","Dempster’s","675 g","Bakery","wheat",399,"bread-store"],
- ["chicken","Chicken breasts","Fresh, boneless","1 kg","Meat & protein","beef",1499],
- ["pasta","Spaghetti","Barilla","410 g","Pantry","wheat",299,"pasta-store"],
- ["yogurt","Vanilla Greek yogurt","Oikos","750 g","Dairy & eggs","milk",649,"yogurt-store"],
- ["broccoli","Broccoli crowns","Fresh produce","500 g","Produce","sprout",299],
- ["coffee","Medium roast coffee","Tim Hortons","300 g","Pantry","coffee",999,"coffee-store"],
- ["tomatoes","Roma tomatoes","Fresh produce","500 g","Produce","cherry",249],
- ["apples","Gala apples","Fresh produce","3 lb bag","Produce","apple",449],
- ["spinach","Baby spinach","Fresh produce","142 g","Produce","leaf",349],
- ["potatoes","Yellow potatoes","Fresh produce","5 lb bag","Produce","carrot",449],
- ["carrots","Carrots","Fresh produce","2 lb bag","Produce","carrot",249],
- ["onions","Yellow onions","Fresh produce","3 lb bag","Produce","salad",349],
- ["rice","Jasmine rice","Rooster","2 kg","Pantry","wheat",899,"rice-store"],
- ["cheese","Old cheddar","Black Diamond","400 g","Dairy & eggs","milk",649],
- ["butter","Salted butter","Lactantia","454 g","Dairy & eggs","milk",649],
- ["tofu","Extra firm tofu","Sunrise","350 g","Meat & protein","package",349],
- ["salmon","Atlantic salmon","Fresh fillet","500 g","Meat & protein","fish",1299],
- ["beef","Lean ground beef","Fresh","500 g","Meat & protein","beef",699],
- ["oats","Quick oats","Quaker","1 kg","Pantry","wheat",499],
- ["beans","Black beans","Unico","540 mL","Pantry","package",189],
- ["peanut-butter","Peanut butter","Kraft","1 kg","Pantry","package",649],
- ["sauce","Tomato pasta sauce","Classico","650 mL","Pantry","package",349],
- ["olive-oil","Extra virgin olive oil","Bertolli","1 L","Pantry","package",1399],
- ["frozen-berries","Frozen mixed berries","Compliments","600 g","Frozen","cherry",599],
- ["peas","Frozen green peas","Green Giant","750 g","Frozen","sprout",349],
- ["oat-milk","Original oat beverage","Earth’s Own","1.75 L","Dairy & eggs","milk",449],
- ["cereal","Original Cheerios","General Mills","350 g","Pantry","wheat",549],
- ["lemons","Lemons","Fresh produce","Bag of 4","Produce","citrus",299],
- ["milk-store","2% milk","Store brand","4 L","Dairy & eggs","milk",599],
- ["eggs-store","Large eggs","Store brand","12 eggs","Dairy & eggs","egg",369],
- ["bread-store","Whole wheat bread","Store brand","675 g","Bakery","wheat",249],
- ["pasta-store","Spaghetti","Store brand","410 g","Pantry","wheat",169],
- ["yogurt-store","Vanilla Greek yogurt","Store brand","750 g","Dairy & eggs","milk",479],
- ["coffee-store","Medium roast coffee","Store brand","300 g","Pantry","coffee",749],
- ["rice-store","Jasmine rice","Store brand","2 kg","Pantry","wheat",649],
-];
-export const products:Product[]=definitions.map(([id,name,brand,size,category,icon,base,swap])=>({id,name,brand,size,category,icon,base,swap}));
+// Products come from the taxonomy (Department → Aisle → Item), so the catalogue,
+// the category browser and the generated artwork can never drift apart.
+// `category` stays the department name, which keeps existing saved category
+// locks and the engine's category logic working unchanged.
+const SWAP_TO_STORE_BRAND:Record<string,string>={
+ milk:'milk-store',eggs:'eggs-store',bread:'bread-store',pasta:'pasta-store',
+ yogurt:'yogurt-store',coffee:'coffee-store',rice:'rice-store',
+};
+// Retained so the Product shape stays stable for anything still reading it.
+const ICON_FOR_TEMPLATE:Record<string,string>={
+ round:'apple',berry:'cherry',strawberry:'cherry',banana:'banana',citrus:'citrus',melon:'cherry',
+ pear:'apple',pineapple:'apple',grapes:'cherry',leafy:'leaf',floret:'sprout',root:'carrot',
+ bulb:'salad',pepper:'salad',longveg:'carrot',mushroom:'sprout',corn:'wheat',avocado:'salad',herb:'leaf',
+ carton:'milk',jug:'milk',bottle:'package',can:'package',jar:'package',tub:'milk',pouch:'package',
+ bag:'package',box:'wheat',tray:'beef',tube:'package',roll:'package',spray:'package',bar:'package',
+ sachet:'package',coffeebag:'coffee',teabox:'leaf',diaper:'package',soapbar:'package',toothbrush:'package',
+ cheese:'milk',egg:'egg',loaf:'wheat',bun:'wheat',bagel:'wheat',tortilla:'wheat',croissant:'wheat',
+ baguette:'wheat',pastry:'wheat',pizza:'wheat',steak:'beef',poultry:'beef',fillet:'fish',shrimp:'fish',
+ bacon:'beef',sausage:'beef',deli:'beef',
+};
+export const products:Product[]=ALL_ITEMS.map(item=>({
+ id:item.id,name:item.name,brand:item.brand,size:item.size,category:item.department,
+ icon:ICON_FOR_TEMPLATE[item.art.template]??'package',base:item.base,swap:SWAP_TO_STORE_BRAND[item.id],
+}));
 export const productById:Record<string,Product> = Object.fromEntries(products.map(p=>[p.id,p]));
 export const productImagePath = (id?:string|null) => `/images/products/${id&&productById[id]?id:'custom-item'}.png`;
-export const categories = ["All items","Produce","Dairy & eggs","Meat & protein","Bakery","Pantry","Frozen"];
+export const categories = ["All items",...DEPARTMENT_NAMES];
 export const money = (cents:number) => new Intl.NumberFormat("en-CA",{style:"currency",currency:"CAD"}).format(cents/100);
 export const profileDefaults={city:"Burlington",neighbourhood:"Burlington",priority:"balanced" as const,frequency:"weekly" as const,dietary:[] as string[],allergens:[] as string[],preferredBrands:[] as string[],favouriteProducts:[] as string[],excludedProducts:[] as string[],preferredStores:[] as string[],minimumSwapSaving:50};
 export function normalizeState(s:UserState):UserState{const city=ontarioCities.find(c=>c.name===(s.prefs.city??s.prefs.area))?.name??"Burlington";const point=s.prefs.searchLocation;const valid=point&&point.city===city&&Number.isFinite(point.lat)&&Math.abs(point.lat)<=85&&Number.isFinite(point.lng)&&Math.abs(point.lng)<=180;const prefs={...profileDefaults,...s.prefs,city,searchLocation:valid?point:cityLocation(city)};return {...s,prefs,events:s.events??[]};}
@@ -102,11 +84,16 @@ export function swapCandidates(state:UserState) {
  }).sort((a,b)=>b.saving*(.6+.4*swapConfidence(state,b.from.category).probability)-a.saving*(.6+.4*swapConfidence(state,a.from.category).probability));
 }
 export function parseList(text:string):{productId:string|null;name:string;qty:number}[] {
- const aliases:Record<string,string>={chicken:"chicken",milk:"milk",eggs:"eggs",bread:"bread",yogurt:"yogurt",pasta:"pasta",coffee:"coffee",rice:"rice",cheese:"cheese","ground beef":"beef",cereal:"cereal","oat milk":"oat-milk",berries:"strawberries"};
  return text.split(/[,\n;]+/).map(t=>t.trim()).filter(Boolean).slice(0,80).map(raw=>{
-  const m=raw.match(/^(\d{1,2})\s*(?:x\s+|×\s*|\s)(.+)$/i);const qty=m?Math.max(1,Math.min(99,Number(m[1]))):1;
-  const name=(m?m[2]:raw).trim().slice(0,150);const n=name.toLowerCase();
-  const id=aliases[n]??products.find(p=>!p.id.endsWith("-store")&&(p.name.toLowerCase()===n||p.id===n||p.id===n.replace(/s$/,"")))?.id??null;
+  const m=raw.match(/^(\d{1,2})\s*(?:x\s+|×\s*|\s)(.+)$/i);
+  const qty=m?Math.max(1,Math.min(99,Number(m[1]))):1;
+  const name=(m?m[2]:raw).trim().slice(0,150);
+  // Search the full catalogue, including each item's synonyms, so "pop",
+  // "capsicum" or "mince" land on the right product. An unrecognized line stays
+  // unmatched rather than being forced onto the nearest thing.
+  const hit=searchItems(name,1)[0];
+  const exact=itemById[name.toLowerCase().replace(/\s+/g,'-')];
+  const id=exact?.id??(hit&&!hit.id.endsWith('-store')?hit.id:null);
   return {productId:id,name:id?productById[id].name:name,qty};
  });
 }
@@ -114,7 +101,9 @@ export function parseList(text:string):{productId:string|null;name:string;qty:nu
 // A small, explainable recommender. Explicit requirements always take priority.
 export const dietaryOptions=["Vegetarian","Vegan","Pescatarian","Halal","Kosher","Gluten-free","Dairy-free"];
 export const allergenOptions=["Peanuts","Tree nuts","Milk","Eggs","Wheat","Soy","Sesame","Fish","Shellfish","Other / needs review"];
-export const brandOptions=Array.from(new Set(products.filter(p=>p.brand!=="Store brand"&&p.category!=="Produce"&&!p.brand.startsWith("Fresh")).map(p=>p.brand)));
+export const brandOptions=Array.from(new Set(ALL_ITEMS
+ .filter(i=>i.edible&&i.brand!=='Store brand'&&!/^(fresh|in-store)/i.test(i.brand))
+ .map(i=>i.brand))).sort((a,b)=>a.localeCompare(b));
 export const priorityLabels={saving:"Lowest grocery bill",balanced:"Price + travel cost",convenience:"Closest complete basket"};
 export function recommendedBasket(state:UserState){
  const complete=compareBasket(state.items,state.prefs).filter(s=>s.complete);
@@ -130,7 +119,11 @@ export function recordChoice(s:UserState,action:string,productId:string,storeId?
 }
 export function allowedSuggestion(p:Product,prefs:Preferences){
  if(prefs.excludedProducts.includes(p.id))return false;
- // The demo catalogue has no verified ingredient/allergen records. Do not guess.
+ const item=itemById[p.id];
+ // Paper towels are not food: dietary rules apply only to edible departments.
+ if(item&&!item.edible)return true;
+ // No verified ingredient or allergen records exist for these catalogues, so
+ // with an allergen listed Aisle stops suggesting food rather than guessing.
  if(prefs.allergens.length)return false;
  if(prefs.dietary.length&&p.category!=="Produce")return false;
  return true;

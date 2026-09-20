@@ -41,3 +41,85 @@
 .product-art.unknown{background:#f4f6ee}
 .suggestion-card .product-art{width:48px;height:48px}
 @media(max-width:720px){.swap-row .product-art img,.full-list .product-art img{width:124%;height:124%}}
+
+/* ===========================================================================
+   Design refresh.
+   Layered on top of the original sheet so the existing layout keeps working:
+   this block restates the tokens, the elevation scale and the shared
+   components, and everything built on var(--...) picks the new values up.
+   =========================================================================== */
+:root{
+ /* Deeper, slightly cooler greens with more contrast between surfaces. */
+ --background:#f6f8f4;--foreground:#16302a;--card:#fff;--card-foreground:#16302a;
+ --primary:#125643;--primary-foreground:#fff;
+ --secondary:#eaf0e6;--secondary-foreground:#1d3b33;
+ --muted:#f0f3ed;--muted-foreground:#66736c;
+ --accent:#e3efe0;--accent-foreground:#125643;
+ --destructive:#a3402f;--border:#e2e8dd;--input:#d7e0d3;--ring:#5f9c6f;
+
+ /* Radius scale. */
+ --radius:.75rem;--radius-sm:.5rem;--radius-md:.65rem;--radius-lg:1rem;--radius-xl:1.35rem;
+
+ /* Elevation: soft, green-tinted, and stacked rather than one flat drop. */
+ --shadow-sm:0 1px 2px rgba(18,48,40,.05),0 1px 3px rgba(18,48,40,.04);
+ --shadow-md:0 4px 10px -4px rgba(18,48,40,.1),0 2px 5px -2px rgba(18,48,40,.06);
+ --shadow-lg:0 18px 40px -22px rgba(14,44,36,.38),0 4px 12px -6px rgba(14,44,36,.12);
+}
+
+body{font-size:15px;line-height:1.55;letter-spacing:-.005em;
+ font-feature-settings:"cv05" 1,"ss01" 1;text-rendering:optimizeLegibility}
+h1,h2{letter-spacing:-.025em;line-height:1.16}
+h3{letter-spacing:-.018em}
+
+/* Money and counts stop shifting width as they change. */
+.agent-card-total,.recommended-price,.budget-numbers strong,.item-price,.store-total strong,
+.mini-total strong,.agent-offer-copy strong{font-variant-numeric:tabular-nums}
+
+/* A single, calmer focus ring everywhere. */
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{
+ outline:2px solid var(--ring);outline-offset:2px;border-radius:var(--radius-sm)}
+
+.card{border-radius:var(--radius-lg);border:1px solid var(--border);background:var(--card);
+ box-shadow:var(--shadow-sm);transition:box-shadow .18s ease,border-color .18s ease}
+
+/* Buttons: bigger hit area, quieter borders, a little lift on hover. */
+.button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;
+ padding:11px 18px;border:1px solid transparent;border-radius:var(--radius-md);
+ font-size:.88rem;font-weight:600;letter-spacing:-.005em;cursor:pointer;
+ transition:background .16s ease,border-color .16s ease,transform .16s ease,box-shadow .16s ease}
+.button:active:not(:disabled){transform:translateY(1px)}
+.button.primary{background:var(--primary);color:var(--primary-foreground);box-shadow:var(--shadow-sm)}
+.button.primary:hover:not(:disabled){background:#0e4738;box-shadow:var(--shadow-md)}
+.button.secondary{background:var(--card);color:var(--foreground);border-color:var(--border)}
+.button.secondary:hover:not(:disabled){border-color:var(--ring);background:var(--secondary)}
+.button.full{width:100%}
+.text-button{display:inline-flex;align-items:center;gap:6px;border:0;background:none;padding:4px 0;
+ font-size:.84rem;font-weight:600;color:var(--primary);cursor:pointer}
+.text-button:hover{text-decoration:underline;text-underline-offset:3px}
+.icon-button{display:grid;place-items:center;width:34px;height:34px;border:1px solid transparent;
+ border-radius:10px;background:transparent;color:var(--muted-foreground);cursor:pointer;transition:background .15s,color .15s}
+.icon-button:hover{background:var(--secondary);color:var(--foreground)}
+
+/* Topbar reads as glass over the scrolling content. */
+.topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--background) 82%,transparent);
+ backdrop-filter:saturate(1.6) blur(14px);-webkit-backdrop-filter:saturate(1.6) blur(14px)}
+
+.filter-pill{padding:8px 15px;border-radius:999px;border:1px solid var(--border);background:var(--card);
+ font-size:.8rem;font-weight:600;color:var(--muted-foreground);cursor:pointer;transition:all .15s}
+.filter-pill:hover{border-color:var(--ring);color:var(--foreground)}
+.filter-pill.selected{background:var(--primary);border-color:var(--primary);color:var(--primary-foreground)}
+
+.product-art{background:var(--muted);border-color:var(--border);border-radius:13px}
+.product-art.unknown{background:var(--secondary)}
+
+/* Dialogs sit higher and softer. */
+[data-slot=dialog-content],[data-slot=alert-dialog-content]{
+ border-radius:var(--radius-xl)!important;border-color:var(--border)!important;
+ box-shadow:0 32px 90px -30px rgba(12,40,32,.45)!important}
+
+/* The catalogue dialog is now a browser, so give it room to breathe. */
+.catalog-modal{max-width:min(920px,calc(100vw - 32px))!important;width:100%}
+.catalog-modal .category-browser{max-height:min(62dvh,560px)}
+@media(max-width:720px){.catalog-modal .category-browser{max-height:calc(100dvh - 290px)}}
+
+.workspace{padding-bottom:96px}

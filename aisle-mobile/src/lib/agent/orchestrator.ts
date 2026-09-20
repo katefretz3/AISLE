@@ -12,7 +12,7 @@
 import {buildShopperModel} from './memory';
 import {EvidenceLedger,verifiedOffers,type Evidence,type SourcedOffer} from './provenance';
 import {OriginGuard,createReader,type Reader} from './net';
-import {computeBaskets,toolByName,type Basket,type Budget,type Proposal,type ToolContext} from './tools';
+import {basketsFrom,computeBaskets,toolByName,type Basket,type Budget,type Proposal,type ToolContext} from './tools';
 import {matchOffer,requiredPacks} from './engine';
 import {AGENT_SYSTEM_PROMPT,allowedDistances,allowedFigures,reviewNarrative,type Violation} from './policy';
 import {brokerConfig,runToolLoop,type LoopEvent} from './model';
@@ -31,7 +31,9 @@ export type AgentRun={
  durationMs:number;
  stores:DiscoveredStore[];
  coverageGaps:ReturnType<typeof coverageGaps>;
- sources:{name:string;origin:string;status:CollectOutcome['status'];message:string;records:number;checkedAt:string}[];
+ sources:{chainId:string|null;name:string;origin:string;status:CollectOutcome['status'];message:string;records:number;checkedAt:string}[];
+ /** The verified pool, so the interface can re-total without re-collecting. */
+ offers:SourcedOffer[];
  baskets:Basket[];
  unmatched:{itemId:string;name:string;reason:string}[];
  proposals:Proposal[];
@@ -142,7 +144,8 @@ export async function runAgent(options:RunOptions):Promise<AgentRun>{
  return {
   runId:newRunId(),mode,startedAt,finishedAt:new Date(finished).toISOString(),durationMs:finished-started,
   stores:ctx.stores,coverageGaps:coverageGaps(ctx.stores),
-  sources:ctx.sources.map(s=>({name:s.name,origin:s.origin,status:s.status,message:s.message,records:s.offers.length,checkedAt:s.checkedAt})),
+  sources:ctx.sources.map(s=>({chainId:s.chainId,name:s.name,origin:s.origin,status:s.status,message:s.message,records:s.offers.length,checkedAt:s.checkedAt})),
+  offers:ctx.offers,
   baskets,
   unmatched:ctx.state.items.filter(item=>!baskets.some(b=>b.lines.some(l=>l.itemId===item.id&&l.offer)))
    .map(item=>({itemId:item.id,name:item.name,reason:ctx.unmatched.get(item.id)||'No collected record matched this item'})),
