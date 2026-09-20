@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import {DOCUMENTS,OPERATOR,PLACEHOLDER_FIELDS,PRIVACY,SOURCES,TERMS,documentById,hasPlaceholders} from '@/lib/legal';
 import {initialState} from '@/lib/catalog';
 import {perShopBudget,cadenceDays} from '@/lib/agent';
+import ErrorBoundary from '@/components/error-boundary';
 
 const textOf=(doc:typeof TERMS)=>
  doc.sections.flatMap(s=>[s.heading,...s.body,...(s.list??[]),s.callout??'']).join('\n').toLowerCase();
@@ -120,4 +121,18 @@ test('erasing everything leaves a usable, onboarded state', ()=>{
  assert.equal(fresh.trips.length,0);
  assert.equal(fresh.events.length,0);
  assert.ok(fresh.prefs.city,'a city must remain set so the agent can still run');
+});
+
+// ---- crash recovery --------------------------------------------------------
+
+test('the error boundary captures a render error instead of blanking the app', ()=>{
+ // React calls this static when a child throws during render; returning the
+ // error is what swaps the tree for the recovery screen rather than unmounting
+ // everything and leaving a white page.
+ const boom=new Error('render exploded');
+ const next=ErrorBoundary.getDerivedStateFromError(boom);
+ assert.equal(next.error,boom);
+
+ const instance=new ErrorBoundary({children:null});
+ assert.equal(instance.state.error,null,'starts clean so it renders children normally');
 });
