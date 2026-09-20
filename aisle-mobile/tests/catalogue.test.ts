@@ -7,8 +7,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync} from 'node:fs';
 import {join} from 'node:path';
-import {ALL_ITEMS,AISLES,DEPARTMENTS,itemById,searchItems} from '@/lib/taxonomy';
-import {allowedSuggestion,parseList,products,productById,categories,initialState} from '@/lib/catalog';
+import {ALL_ITEMS,AISLES,DEPARTMENTS,itemById,itemsInAisle,searchItems} from '@/lib/taxonomy';
+import {allowedSuggestion,parseList,products,productById,productImagePath,hasPhoto,categories,initialState} from '@/lib/catalog';
+import photoManifest from '@/lib/photo-manifest.json';
+import {loadTaxonomy,treeTest,cardSort} from '../tools/ia-study.mjs';
 import {TEMPLATES} from '../tools/product-art.mjs';
 
 const ART_DIR=join(process.cwd(),'public','images','products');
@@ -97,4 +99,72 @@ test('dietary rules constrain food only, and allergens are never inferred', ()=>
  assert.equal(allowedSuggestion(productById['peanut-butter'],allergic),false);
  assert.equal(allowedSuggestion(productById['apples'],allergic),false,'food suggestions pause entirely');
  assert.equal(allowedSuggestion(productById['dish-soap'],allergic),true,'non-food is unaffected');
+});
+
+// ---- information architecture ----------------------------------------------
+// Guards the structure the card sort and tree test (tools/ia-study.mjs) shaped.
+// The thresholds sit below the current scores so ordinary catalogue growth does
+// not trip them, but a change that genuinely scrambles the tree will.
+
+test('every cross-listing points at an aisle that exists', ()=>{
+ const aisleIds=new Set(AISLES.map(a=>a.id));
+ for(const item of ALL_ITEMS)
+  for(const id of item.alsoIn??[]){
+   assert.ok(aisleIds.has(id),`${item.id} is cross-listed into unknown aisle "${id}"`);
+   assert.notEqual(id,item.aisleId,`${item.id} is cross-listed into its own aisle`);
+  }
+});
+
+test('a cross-listed item shows up in both of its aisles', ()=>{
+ const crossed=ALL_ITEMS.find(i=>(i.alsoIn?.length??0)>0);
+ assert.ok(crossed,'expected at least one cross-listed item');
+ assert.ok(itemsInAisle(crossed!.aisleId).some(i=>i.id===crossed!.id),'missing from its home aisle');
+ for(const id of crossed!.alsoIn!)
+  assert.ok(itemsInAisle(id).some(i=>i.id===crossed!.id),`missing from cross-listed aisle ${id}`);
+});
+
+test('the tree stays navigable for the simulated participants', ()=>{
+ const departments=loadTaxonomy();
+ const trials=treeTest(departments);
+ const found=trials.filter(t=>t.found).length/trials.length;
+ const dept=trials.filter(t=>t.deptCorrect).length/trials.length;
+ // Simulated, so these are relative guards, not claims about real people.
+ assert.ok(found>=0.55,`aisle findability fell to ${(found*100).toFixed(1)}%`);
+ assert.ok(dept>=0.75,`department findability fell to ${(dept*100).toFixed(1)}%`);
+});
+
+test('no aisle is a dumping ground the participants cannot agree on', ()=>{
+ const rows=cardSort(loadTaxonomy());
+ const worst=rows[0];
+ assert.ok(worst.agreement>=0.2,`"${worst.aisle}" scored only ${(worst.agreement*100).toFixed(0)}% agreement`);
+});
+
+// ---- photographs -----------------------------------------------------------
+
+test('every item has a generic, brand-free photo query', ()=>{
+ for(const item of ALL_ITEMS){
+  assert.ok(item.photo.trim().length>0,`${item.id} has no photo query`);
+  assert.ok(!/[A-Z]/.test(item.photo),`${item.id} photo query should be lowercase`);
+  // The query must not simply echo the brand, or the pipeline would fetch
+  // pictures of packaging instead of pictures of food.
+  const brandWords=item.brand.toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>3);
+  const queryWords=new Set(item.photo.split(/\s+/));
+  const echoed=brandWords.filter(w=>queryWords.has(w));
+  assert.ok(echoed.length<brandWords.length||brandWords.length===0,
+   `${item.id} photo query "${item.photo}" is just the brand`);
+ }
+});
+
+test('the photo manifest only lists items that exist', ()=>{
+ for(const id of photoManifest as string[]){
+  assert.ok(itemById[id],`photo manifest lists unknown item ${id}`);
+  assert.ok(existsSync(join(process.cwd(),'public','images','photos',`${id}.jpg`)),
+   `manifest lists ${id} but the photo is missing`);
+ }
+});
+
+test('items fall back to their illustration when no photo exists', ()=>{
+ const withoutPhoto=ALL_ITEMS.find(i=>!hasPhoto(i.id));
+ assert.ok(withoutPhoto,'expected at least one item without a photo');
+ assert.match(productImagePath(withoutPhoto!.id),/^\/images\/products\/.+\.png$/);
 });

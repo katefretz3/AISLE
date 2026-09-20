@@ -1,5 +1,6 @@
 import {cityLocation,ontarioCities,type SearchLocation} from './locations';
 import {ALL_ITEMS,DEPARTMENT_NAMES,itemById,searchItems} from './taxonomy';
+import photoManifest from './photo-manifest.json';
 export type Product = { id: string; name: string; brand: string; size: string; category: string; icon: string; base: number; swap?: string };
 export type Store = { id: string; name: string; short: string; color: string; text: string; factor: number; km: number; url: string; priced: boolean };
 export type ListItem = { id: string; productId: string | null; name: string; qty: number; checked: boolean; locked: boolean };
@@ -47,7 +48,13 @@ export const products:Product[]=ALL_ITEMS.map(item=>({
  icon:ICON_FOR_TEMPLATE[item.art.template]??'package',base:item.base,swap:SWAP_TO_STORE_BRAND[item.id],
 }));
 export const productById:Record<string,Product> = Object.fromEntries(products.map(p=>[p.id,p]));
-export const productImagePath = (id?:string|null) => `/images/products/${id&&productById[id]?id:'custom-item'}.png`;
+// Photographs win when we have one; the generated illustration is the fallback,
+// so a half-finished `npm run photos` run still leaves every item with a
+// picture and needs no code change to take effect.
+const PHOTOS=new Set(photoManifest as string[]);
+export const hasPhoto=(id?:string|null)=>!!id&&PHOTOS.has(id);
+export const productImagePath = (id?:string|null) =>
+ hasPhoto(id)?`/images/photos/${id}.jpg`:`/images/products/${id&&productById[id]?id:'custom-item'}.png`;
 export const categories = ["All items",...DEPARTMENT_NAMES];
 export const money = (cents:number) => new Intl.NumberFormat("en-CA",{style:"currency",currency:"CAD"}).format(cents/100);
 export const profileDefaults={city:"Burlington",neighbourhood:"Burlington",priority:"balanced" as const,frequency:"weekly" as const,dietary:[] as string[],allergens:[] as string[],preferredBrands:[] as string[],favouriteProducts:[] as string[],excludedProducts:[] as string[],preferredStores:[] as string[],minimumSwapSaving:50};

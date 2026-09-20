@@ -7,8 +7,9 @@ A mobile grocery planning app with Ontario city selection. Built with React 19, 
 - Four-step, phone-first onboarding followed by a brief saving animation: city, household, cadence, budget, shopping priorities, travel, dietary restrictions, protected brands, at least five basket favourites, and optional learning. Revisiting setup preserves the current list unless replacement is explicitly selected.
 - Interactive OpenStreetMap centred on the selected Ontario city, a radius circle, draggable search pin, tap-to-select location, zoom controls, and a keyboard-friendly “Use map centre” action. City, radius, custom search point, and multiple preferred chains persist with the profile.
 - Recognizable PNG logos for 14 chains, with source attribution in `public/images/stores/provenance.json`.
-- A 415-item catalogue organized the way a shop is: 13 departments → 71 aisles → items (Produce → Fruit → Blueberries), with keyword search that understands everyday synonyms (“pop” finds cola, “capsicum” finds bell peppers, “mince” finds ground meat).
-- A generated illustration for every single item. `npm run art` redraws all of them from the taxonomy, so an item can never ship without a picture.
+- A 557-item catalogue organized the way a shop is: 14 departments → 76 aisles → items (Produce → Fruit → Blueberries), with keyword search that understands everyday synonyms (“pop” finds cola, “capsicum” finds bell peppers, “mince” finds ground meat). Items that honestly live in two places, like frozen blueberries, are cross-listed rather than filed once and lost.
+- A picture for every item. `npm run photos` fetches a generic, unbranded photograph per item; `npm run art` draws a flat illustration as the fallback. Nothing ever renders without an image.
+- An information-architecture study (`npm run ia`) that runs a simulated card sort and tree test over the whole catalogue and reports which placements are contested. See `docs/ia-study.md`.
 - Editable grocery lists, paste import, product matching, quantities, brand locks, and sharing.
 - An on-demand price collection pipeline for two public online catalogues, with CAD verification, source links, freshness, availability, and honest failure states.
 - A tool-using agent that discovers nearby Ontario stores, probes which publish a readable catalogue, collects prices, matches the list and totals it — with an evidence ledger behind every figure and no estimation path. See `AGENTIC_SYSTEM.md`.
@@ -27,7 +28,9 @@ Use Node.js 22.13 or newer, then:
 npm ci
 npm run check    # TypeScript across src, tests, tools and the broker
 npm test         # 36 tests covering the agent and the catalogue
-npm run art      # redraw every product image from the taxonomy
+npm run art      # redraw the fallback illustrations from the taxonomy
+npm run ia       # simulated card sort + tree test over the catalogue
+npm run photos   # fetch real generic photos (needs outbound network)
 npm run build
 npx cap sync
 ```
@@ -149,3 +152,54 @@ Official build guidance: https://capacitorjs.com/docs/getting-started
 The new engine passed 16 focused tests, including quantities across different packs, unverified currency, stale prices, brand constraints, opt-in learning and location filtering. The agent layer adds 36 tests (`npm test`), written mostly as attempts to get a fabricated price through the pipeline: offers with absent or forged evidence, stale and non-CAD prices, invented figures in generated prose, offer ids that were never collected, and matches that break a household lock. Each is confirmed to fail closed. Eight of those cover catalogue integrity: unique ids, every item's artwork present on disk, every legacy product id still resolving so saved lists survive, and dietary rules constraining food without suppressing household goods. Those tests use synthetic fixtures against a stub reader; live collection against real retailers and the assisted path against a real broker still need runtime verification on target devices.
 
 The interface was checked in Chromium at desktop and phone widths: onboarding, the department → aisle → item browser, catalogue search, and a full agent run. This sandbox has no outbound network, so that run exercised the honest-failure path — every item reported as unpriced, with no invented figures — rather than live collection. The normalizer processed 590 real price records captured from the two public retailers on 19 September 2026. Hosted preview outbound collection and directory requests were unavailable during testing; end-to-end live collection and native networking still require target-runtime verification.
+
+## Product photographs
+
+`npm run photos` fetches one generic, unbranded photograph per catalogue item
+and writes `public/images/photos/<id>.jpg` (square, 512px), an attribution file,
+and a manifest the app reads. Each item's `photo` field in the taxonomy is a
+brand-free search phrase — "hazelnut spread" rather than "Nutella", "sandwich
+cookies" rather than "Oreo" — and results whose title or creator looks like
+branding or packaging are rejected.
+
+```sh
+npm run photos                                    # Openverse, no key required
+PEXELS_API_KEY=…   npm run photos -- --source=pexels
+UNSPLASH_ACCESS_KEY=… npm run photos -- --source=unsplash
+npm run photos -- --only=blueberries,milk --force # redo specific items
+```
+
+Any item without a photo keeps its generated illustration, so a partial or
+interrupted run is always safe and no screen ever shows a gap.
+
+**This has not been run against the live APIs.** The sandbox this was built in
+blocks outbound requests to image hosts at the egress proxy (HTTP 403 for
+Openverse, Wikimedia and Open Food Facts alike), so the pipeline is verified up
+to the network boundary and no further: argument handling, brand rejection,
+cropping, attribution, manifest writing and the app's photo-first fallback all
+work, but no photograph has actually been downloaded. Run it on a networked
+machine and check a sample of the results before trusting the whole set.
+
+## Information architecture
+
+The catalogue's shape is tested, not assumed. `npm run ia` runs a simulated card
+sort and tree test across every item and writes `docs/ia-study.md`.
+
+Five synthetic participants each weight a different categorisation cue —
+ingredient, storage, meal occasion, processing, store layout — and navigate
+using only the labels in the tree. A lexicon (`tools/ia-lexicon.mjs`) maps words
+to *concepts* and never to departments, which is what keeps the study from
+marking its own homework: the participant is granted knowledge of what the item
+is, and the labels have to do the rest.
+
+These are **not real users** and the percentages are not a measurement of human
+performance. They are useful for comparing one revision of the tree against the
+next, and for finding placements that several different mental models disagree
+about. That signal drove real changes: aisles renamed where a label stole
+traffic from another ("Canned vegetables & tomatoes" was out-competing fresh
+tomatoes), items moved where participants were consistently right (the Asian
+sauces now sit in International & Asian), and genuinely dual-home items
+cross-listed instead of being filed once.
+
+A test guards the result, so a later change that scrambles the tree fails CI
+rather than shipping.

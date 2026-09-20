@@ -123,3 +123,99 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 @media(max-width:720px){.catalog-modal .category-browser{max-height:calc(100dvh - 290px)}}
 
 .workspace{padding-bottom:96px}
+
+/* ===========================================================================
+   Mobile hardening (iOS and Android).
+   This is a phone app first; the desktop layout is the accommodation. Rules
+   here are scoped to coarse pointers and small viewports so the pointer-based
+   layout above is untouched.
+   =========================================================================== */
+
+/* Android inflates text in some webviews; keep our own scale. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+
+@media (pointer:coarse){
+ /* iOS zooms the viewport when a focused input is under 16px. Never let it. */
+ input:not([type=checkbox]):not([type=file]),textarea,select,
+ .browse-search input:not([type=checkbox]):not([type=file]){font-size:16px}
+
+ /* Keep the visual size, widen the hit area. 44px is the iOS minimum and
+    comfortably clears Android's 48dp once the surrounding padding counts. */
+ .icon-button,.browse-item-action,.agent-chip,.filter-pill,.browse-clear,
+ .text-button,.quantity button,.add-product{position:relative}
+ .icon-button::after,.browse-item-action::after,.browse-clear::after,
+ .quantity button::after,.add-product::after{
+  content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:44px;height:44px;border-radius:50%}
+ .agent-chip,.filter-pill{min-height:44px;padding-top:10px;padding-bottom:10px}
+ .text-button{min-height:44px}
+ .button{min-height:48px}
+ /* Topbar and footer chrome from the original layout. */
+ .location-button,.data-badge,.workspace-footer button,.brand{min-height:44px;display:inline-flex;align-items:center}
+
+ /* No hover on a phone: give every control a visible press state instead. */
+ .browse-tile:active,.browse-item:active,.agent-offer:active,.card:active{transform:scale(.99)}
+ .button:active:not(:disabled),.agent-chip:active,.filter-pill:active{filter:brightness(.94)}
+ .browse-tile:hover,.browse-item:hover,.filter-pill:hover{border-color:var(--border)}
+}
+
+/* Scrolling panels should not drag the page behind them, and should keep
+   momentum on iOS. */
+.browse-panel,.catalog-results,.agent-lines,[data-slot=dialog-content]{
+ overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+
+@media (max-width:960px){
+ /* Landscape notches eat the side gutters. */
+ .workspace,.topbar{
+  padding-left:max(20px,env(safe-area-inset-left));
+  padding-right:max(20px,env(safe-area-inset-right))}
+ .topbar{padding-top:env(safe-area-inset-top)}
+
+ /* The agent screen is the main screen on a phone; let it breathe. */
+ .agent-hero{padding:20px;border-radius:var(--radius-lg)}
+ .agent-hero h1{font-size:1.45rem}
+ .agent-hero p{font-size:.9rem}
+ .agent-hero-actions{flex-direction:column;align-items:stretch}
+ .agent-hero-actions .button{width:100%}
+ .agent-stats{grid-template-columns:1fr 1fr}
+ .agent-stats dd{font-size:1.25rem}
+ .agent-cards{grid-template-columns:1fr 1fr}
+ .agent-block-head{flex-direction:column;gap:8px}
+}
+
+@media (max-width:420px){
+ .agent-cards{grid-template-columns:1fr}
+ .agent-stats{grid-template-columns:1fr 1fr}
+ .browse-grid{grid-template-columns:1fr}
+ /* Phone dialogs run full height rather than floating in a tiny box. */
+ .catalog-modal{
+  max-width:100%!important;width:100%!important;height:100dvh!important;
+  max-height:100dvh!important;border-radius:0!important;
+  top:0!important;left:0!important;transform:none!important;translate:none!important;
+  padding-top:max(16px,env(safe-area-inset-top))!important;
+  padding-bottom:max(16px,env(safe-area-inset-bottom))!important}
+ .catalog-modal .category-browser{max-height:none;flex:1;min-height:0}
+}
+
+/* Respect the reader's own text size without the layout collapsing. */
+@media (max-width:420px) and (min-resolution:2dppx){
+ .browse-item-copy strong,.agent-line-copy strong{white-space:normal}
+}
+
+/* Touch sizing keyed on width as well as pointer type. Some Android webviews
+   and emulators do not report `pointer:coarse`, and a 390px-wide screen is a
+   phone whatever the pointer says. */
+@media (max-width:960px){
+ /* The original sheet sets these with !important and higher specificity, so the
+    touch sizes have to match that idiom to land. */
+ .button,.list-add,.text-button,.page-heading>.button,.heading-actions .button{min-height:48px!important;min-width:48px!important}
+ .segment-tabs>button,[data-slot=tabs-trigger]{min-height:44px!important}
+ input:not([type=checkbox]):not([type=file]),textarea,select{font-size:16px;min-height:48px}
+ label>input,label>textarea{min-height:48px}
+ /* Radix dialog/sheet close buttons ship as a small icon; widen the hit area. */
+ [data-slot=dialog-content]>button[type=button]:not([class*=button]),
+ [data-slot=dialog-close],[data-slot=sheet-close]{
+  position:relative;width:44px;height:44px;display:grid;place-items:center}
+ .agent-chip,.filter-pill{min-height:44px}
+ .icon-button{width:44px;height:44px}
+}

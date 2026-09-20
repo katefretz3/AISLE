@@ -6,7 +6,7 @@
 // through all three levels when they already know what they want.
 import {useMemo,useState} from 'react';
 import {ArrowLeft,Check,ChevronRight,Plus,Search,X} from 'lucide-react';
-import {DEPARTMENTS,searchItems,type Aisle,type CatalogueItem,type Department} from '@/lib/taxonomy';
+import {DEPARTMENTS,itemsInAisle,searchItems,type Aisle,type CatalogueItem,type Department} from '@/lib/taxonomy';
 import {productImagePath} from '@/lib/catalog';
 import './category-browser.css';
 
@@ -27,7 +27,7 @@ export default function CategoryBrowser({onPick,picked=new Set(),mode='add',incl
 
  const allow=useMemo(()=>include??(()=>true),[include]);
  const departments=useMemo(()=>DEPARTMENTS
-  .map(d=>({...d,aisles:d.aisles.map(a=>({...a,items:a.items.filter(allow)})).filter(a=>a.items.length)}))
+  .map(d=>({...d,aisles:d.aisles.map(a=>({...a,items:itemsInAisle(a.id).filter(allow)})).filter(a=>a.items.length)}))
   .filter(d=>d.aisles.length),[allow]);
 
  const results=useMemo(()=>query.trim()?searchItems(query,80).filter(allow):[],[query,allow]);
