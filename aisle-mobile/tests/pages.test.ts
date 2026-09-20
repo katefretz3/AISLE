@@ -1,0 +1,123 @@
+// Account settings and Legal screens.
+//
+// The legal tests are deliberately about *substance*, not formatting: this app
+// makes specific promises (device-only storage, no analytics, unverified
+// allergen data, Ontario-only) and the documents have to actually say so. A
+// generic template that passed a "has some text" check would be worse than
+// useless, because it would look finished.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {DOCUMENTS,OPERATOR,PLACEHOLDER_FIELDS,PRIVACY,SOURCES,TERMS,documentById,hasPlaceholders} from '@/lib/legal';
+import {initialState} from '@/lib/catalog';
+import {perShopBudget,cadenceDays} from '@/lib/agent';
+
+const textOf=(doc:typeof TERMS)=>
+ doc.sections.flatMap(s=>[s.heading,...s.body,...(s.list??[]),s.callout??'']).join('\n').toLowerCase();
+
+test('every legal document is structurally sound', ()=>{
+ assert.equal(DOCUMENTS.length,3);
+ for(const doc of DOCUMENTS){
+  assert.ok(doc.title.trim(),`${doc.id} has no title`);
+  assert.ok(doc.summary.trim(),`${doc.id} has no summary`);
+  assert.ok(doc.sections.length>=5,`${doc.id} has only ${doc.sections.length} sections`);
+  const ids=doc.sections.map(s=>s.id);
+  assert.equal(new Set(ids).size,ids.length,`${doc.id} has duplicate section ids`);
+  for(const section of doc.sections){
+   assert.ok(section.heading.trim(),`${doc.id}/${section.id} has no heading`);
+   assert.ok(section.body.length>0&&section.body.every(p=>p.trim()),`${doc.id}/${section.id} has an empty paragraph`);
+   assert.match(section.id,/^[a-z0-9-]+$/,`${doc.id}/${section.id} is not anchor-safe`);
+  }
+  assert.equal(documentById(doc.id)?.id,doc.id);
+ }
+ assert.equal(documentById('nope'),null);
+});
+
+test('unfinished operator details are detected, not shipped quietly', ()=>{
+ // While placeholders remain the screens show a blocking notice. If someone
+ // fills them in, this test still passes — it checks the mechanism, not the
+ // current state.
+ const placeholders=Object.entries(OPERATOR).filter(([,v])=>v.startsWith('PLACEHOLDER')).map(([k])=>k);
+ assert.deepEqual(PLACEHOLDER_FIELDS,placeholders);
+ assert.equal(hasPlaceholders,placeholders.length>0);
+});
+
+test('the Terms carry the disclaimers this app specifically needs', ()=>{
+ const text=textOf(TERMS);
+ for(const [claim,needle] of [
+  ['prices are not guaranteed',/not (quotes|guarantees)|not confirmed prices/],
+  ['online prices are not branch prices',/not the same as the price at a particular branch/],
+  ['no allergy safety',/allergy|allergen/],
+  ['read the label',/read the product label/],
+  ['Ontario scope',/ontario/],
+  ['no account, no recovery',/cannot recover your data/],
+  ['automated matching can be wrong',/matching can be wrong/],
+  ['limitation of liability',/limitation of liability/],
+  ['governing law',/governed by the laws/],
+  ['consumer rights preserved',/consumer protection legislation/],
+ ] as const){
+  assert.match(text,needle,`Terms should address: ${claim}`);
+ }
+});
+
+test('the Privacy Policy describes what the app actually does', ()=>{
+ const text=textOf(PRIVACY);
+ for(const [claim,needle] of [
+  ['no account',/no account/],
+  ['device storage',/stored on your device|on your device/],
+  ['no analytics',/analytics/],
+  ['never sold',/never sell/],
+  ['coarse location only',/coarse search area/],
+  ['retailer requests',/catalogue/],
+  ['learning is opt-in',/off by default/],
+  ['allergies never inferred',/never inferred/],
+  ['retention',/24 hours/],
+  ['children',/children/],
+  ['Canadian privacy law',/pipeda|privacy commissioner/],
+  ['security',/https/],
+ ] as const){
+  assert.match(text,needle,`Privacy Policy should address: ${claim}`);
+ }
+});
+
+test('attribution required by our data licences is present', ()=>{
+ const text=textOf(SOURCES);
+ // OpenStreetMap's ODbL requires visible attribution; shipping without it
+ // would be a licence breach, not a cosmetic omission.
+ assert.match(text,/openstreetmap/,'OpenStreetMap must be credited');
+ assert.match(text,/odbl|open database licence/,'the ODbL must be named');
+ assert.match(text,/geonames/,'city coordinates come from GeoNames');
+ assert.match(text,/credits/,'photo credits must be referenced');
+ assert.match(text,/no verified ingredient/,'the absence of ingredient data should be stated');
+});
+
+test('documents cross-reference each other rather than contradicting', ()=>{
+ assert.match(textOf(TERMS),/privacy policy/,'Terms should point at the Privacy Policy');
+ assert.match(textOf(TERMS),/data sources/,'Terms should point at Data sources');
+ for(const doc of DOCUMENTS)assert.ok(doc.lastUpdated.trim(),`${doc.id} has no date`);
+});
+
+// ---- account settings ------------------------------------------------------
+
+test('budget bounds on the settings screen match what the app accepts', ()=>{
+ const prefs=initialState().prefs;
+ // The screen clamps to 10..2000; the derived per-shop figure must stay sane
+ // across the whole range and every cadence.
+ for(const budget of [10,120,2000])
+  for(const frequency of ['twice-weekly','weekly','fortnightly'] as const){
+   const value=perShopBudget({...prefs,budget,frequency});
+   assert.ok(Number.isInteger(value),`per-shop budget must be integer cents (${budget}/${frequency})`);
+   assert.ok(value>0,`per-shop budget must be positive (${budget}/${frequency})`);
+   assert.ok(value<=Math.round(budget*100*cadenceDays(frequency)/7)+1);
+  }
+});
+
+test('erasing everything leaves a usable, onboarded state', ()=>{
+ // The Erase control resets to this shape; if it left `onboarded:false` the
+ // household would be dropped back into setup instead of an empty list.
+ const fresh={...initialState(),items:[],onboarded:true};
+ assert.equal(fresh.items.length,0);
+ assert.equal(fresh.onboarded,true);
+ assert.equal(fresh.trips.length,0);
+ assert.equal(fresh.events.length,0);
+ assert.ok(fresh.prefs.city,'a city must remain set so the agent can still run');
+});

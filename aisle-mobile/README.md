@@ -11,6 +11,8 @@ A mobile grocery planning app with Ontario city selection. Built with React 19, 
 - A picture for every item. `npm run photos` fetches a generic, unbranded photograph per item; `npm run art` draws a flat illustration as the fallback. Nothing ever renders without an image.
 - An information-architecture study (`npm run ia`) that runs a simulated card sort and tree test over the whole catalogue and reports which placements are contested. See `docs/ia-study.md`.
 - Editable grocery lists, paste import, product matching, quantities, brand locks, and sharing.
+- An Account settings screen covering profile, household, budget, location, dietary and allergen preferences, and learning controls, with a separated destructive zone for forgetting or erasing.
+- Legal screens: Terms of Use, Privacy Policy, and Data sources & attribution, written to describe what this app actually does.
 - An on-demand price collection pipeline for two public online catalogues, with CAD verification, source links, freshness, availability, and honest failure states.
 - A tool-using agent that discovers nearby Ontario stores, probes which publish a readable catalogue, collects prices, matches the list and totals it — with an evidence ledger behind every figure and no estimation path. See `AGENTIC_SYSTEM.md`.
 - User-confirmed retailer matches, normalized pack quantities, integer-cent basket totals, and per-shop budget checks. Unknown prices or incompatible units prevent a complete basket.
@@ -203,3 +205,37 @@ cross-listed instead of being filed once.
 
 A test guards the result, so a later change that scrambles the tree fails CI
 rather than shipping.
+
+## Account settings and legal screens
+
+`src/app/account.tsx` is the single place a household changes anything about
+itself: profile, household size and cadence, budget and shopping priority,
+location and preferred chains, dietary and allergen settings, and what the app
+is allowed to remember. It replaced the older scattered preferences view rather
+than sitting beside it, so there is one settings screen rather than two
+competing ones. `#preferences` still resolves there.
+
+Each section is a card with the same header shape, so the page scans as a list
+of decisions. Derived figures — days per shop, budget per shop, per person —
+are shown next to the inputs that produce them. The destructive controls sit at
+the bottom, visually separated, behind a confirmation that names exactly what
+will be lost: there is no account and no server copy, so an accidental erase is
+not recoverable.
+
+`src/app/legal.tsx` renders three documents from `src/lib/legal.ts`: Terms of
+Use, Privacy Policy, and Data sources & attribution. Keeping them as structured
+data rather than prose blobs means the contents list cannot drift from the body
+and a diff shows exactly which clause changed.
+
+**The documents are drafts, and they are not legal advice.** They were written
+to describe what this application actually does — device-local storage, no
+accounts, coarse location only, unverified ingredient data, Ontario-only
+coverage — so that a lawyer has something accurate to review instead of a
+generic template. Operator details (legal name, contact addresses, effective
+date) are `PLACEHOLDER` values in `src/lib/legal.ts`, and while any remain the
+legal screens show a blocking notice naming the unfilled fields. Fill them in
+and get the wording reviewed before release.
+
+The Data sources page is not optional decoration: OpenStreetMap's ODbL requires
+visible attribution, and a test asserts that the credit and the licence are
+both present.

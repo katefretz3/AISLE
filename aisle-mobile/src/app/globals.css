@@ -219,3 +219,65 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
  .agent-chip,.filter-pill{min-height:44px}
  .icon-button{width:44px;height:44px}
 }
+
+/* Footer now carries the legal links alongside the price note. */
+.workspace-footer-right{display:flex;flex-wrap:wrap;align-items:center;gap:14px}
+.workspace-footer-right button{display:inline-flex;align-items:center;gap:6px;border:0;background:none;
+ padding:0;font:inherit;color:inherit;cursor:pointer}
+.workspace-footer-right button:hover{text-decoration:underline;text-underline-offset:3px}
+@media (max-width:640px){
+ .workspace-footer{flex-direction:column;align-items:flex-start;gap:10px}
+ .workspace-footer-right{gap:12px}
+}
+
+/* Touch sizing for the Account and Legal screens. Same 44px floor as the rest
+   of the app; these selectors are listed explicitly because the components are
+   new and do not reuse the older class names. */
+@media (max-width:960px){
+ .account-jump button,
+ .account-chip,
+ .account-option,
+ .account-chain,
+ .account-transport-choice,
+ .legal-related-link,
+ .legal-contents button,
+ .account-footer-links button,
+ .workspace-footer-right button,
+ [data-slot=select-trigger],
+ .account-select{min-height:44px!important}
+ .account-taglist li{min-height:36px}
+ .account-taglist button{width:28px;height:28px}
+ /* Inline text links in the footer still need a comfortable target. */
+ .workspace-footer-right button{padding:0 4px}
+ .account-money-input input:not([type=checkbox]):not([type=file]){min-height:44px}
+}
+
+/* Map controls. These predate the Account screen but are now one of its main
+   controls, so they get the same 44px floor. Leaflet's own attribution link is
+   left at its native size: it must stay visible for the OpenStreetMap licence,
+   and it is a credit rather than an app control. */
+@media (max-width:960px){
+ .map-actions button{min-height:44px;padding:0 14px}
+ .map-error button{min-height:44px;padding:0 10px}
+ .location-slider input[type=range]{min-height:44px}
+ .leaflet-control-zoom a{width:44px!important;height:44px!important;line-height:44px!important;font-size:20px!important}
+}
+
+/* Switches and inline footer links. The switch track is deliberately small for
+   visual weight, so the hit area is widened around it instead of resizing it. */
+@media (max-width:960px){
+ [data-slot=switch]{position:relative}
+ [data-slot=switch]::after{content:'';position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);width:56px;height:44px;border-radius:12px}
+ [data-slot=switch-thumb]{pointer-events:none}
+ .workspace-footer-right button{min-width:44px;justify-content:center}
+}
+
+/* The map pin is a drag handle. Its icon size and anchor are set by Leaflet, so
+   the touch area is grown around it rather than by resizing the marker, which
+   would shift where it points. */
+@media (max-width:960px){
+ .aisle-map-marker{position:relative}
+ .aisle-map-marker::after{content:'';position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);width:46px;height:46px;border-radius:50%}
+}
