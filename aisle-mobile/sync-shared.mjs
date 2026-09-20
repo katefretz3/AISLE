@@ -1,0 +1,17 @@
+import {cp,mkdir} from 'node:fs/promises';
+import {resolve} from 'node:path';
+const source=process.argv[2];
+if(!source)throw new Error('Pass the path to the Aisle web source.');
+for(const dir of ['src/app','src/lib','src/components/ui','src/hooks','src/vendor','public/images'])await mkdir(dir,{recursive:true});
+for(const file of ['aisle-app.tsx','onboarding.tsx','onboarding.css','globals.css'])await cp(resolve(source,'app',file),`src/app/${file}`);
+for(const file of ['catalog.ts','locations.ts','utils.ts'])await cp(resolve(source,'lib',file),`src/lib/${file}`);
+for(const file of ['store-logo.tsx','location-map.tsx','agent-workspace.tsx','agent-workspace.css'])await cp(resolve(source,'components',file),`src/components/${file}`);
+await cp(resolve(source,'lib/agent'),'src/lib/agent',{recursive:true});
+for(const name of ['accordion','sidebar','dialog','sheet','alert-dialog','tabs','switch','checkbox','select','slider','progress','sonner','button','separator','skeleton','tooltip','input'])await cp(resolve(source,'components/ui',`${name}.tsx`),`src/components/ui/${name}.tsx`);
+await cp(resolve(source,'hooks/use-mobile.ts'),'src/hooks/use-mobile.ts');
+await cp(resolve(source,'vendor/shadcn-tailwind-4.13.0.css'),'src/vendor/shadcn-tailwind-4.13.0.css');
+await cp(resolve(source,'public/images/grocery-bag.png'),'public/images/grocery-bag.png');
+await cp(resolve(source,'public/images/stores'),'public/images/stores',{recursive:true});
+await cp(resolve(source,'public/images/products'),'public/images/products',{recursive:true});
+await cp(resolve(source,'public/favicon.svg'),'public/favicon.svg');
+console.log('Shared application screens, styles, and recommendation logic copied.');

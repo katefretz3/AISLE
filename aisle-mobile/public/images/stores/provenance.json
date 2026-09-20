@@ -1,0 +1,170 @@
+{
+  "walmart": {
+    "filename": "walmart.png",
+    "source_page": "https://corporate.walmart.com",
+    "image_url": "https://corporate.walmart.com/content/dam/corporate/site-images/WMT-Wordmark-New-Small-Black_RGB.svg",
+    "size": [
+      800,
+      145
+    ],
+    "status": "visually_verified",
+    "official_source": true,
+    "notes": "Official logo, converted to PNG without redrawing."
+  },
+  "farmboy": {
+    "filename": "farmboy.png",
+    "source_page": "https://www.farmboy.ca",
+    "image_url": "https://www.farmboy.ca/wp-content/uploads/2026/01/FB-Primary-colour-black-R-2.png",
+    "size": [
+      650,
+      614
+    ],
+    "status": "visually_verified",
+    "official_source": true,
+    "notes": "Official logo, converted to PNG without redrawing."
+  },
+  "costco": {
+    "filename": "costco.png",
+    "source_page": "https://www.costco.ca",
+    "image_url": "https://gdx-assets.costco.com/adobe/assets/urn%3Aaaid%3Aaem%3Abf095274-d308-4f51-b914-85e700a0affc/as/costco-logo-cabc.png?auto-format=false",
+    "size": [
+      2048,
+      604
+    ],
+    "status": "visually_verified",
+    "official_source": true,
+    "notes": "Official logo, converted to PNG without redrawing."
+  },
+  "denningers": {
+    "filename": "denningers.png",
+    "source_page": "https://denningers.com",
+    "image_url": "https://denningers.com/cdn/shop/files/Denningers-Logo.svg?v=1698245218",
+    "size": [
+      800,
+      193
+    ],
+    "status": "visually_verified",
+    "official_source": true,
+    "notes": "Official logo, converted to PNG without redrawing."
+  },
+  "metro": {
+    "filename": "metro.png",
+    "source_page": "https://corpo.metro.ca/en/about-us/food.html",
+    "image_url": "https://corpo.metro.ca/images/logo_metro.svg",
+    "size": [
+      800,
+      168
+    ],
+    "status": "visually_verified",
+    "official_source": true,
+    "notes": "Official logo, converted to PNG without redrawing."
+  },
+  "loblaws": {
+    "filename": "loblaws.png",
+    "source_page": "https://www.loblaw.ca/en/what-we-do/",
+    "image_url": "https://dis-prod.assetful.loblaw.ca/content/dam/loblaw-companies-limited/creative-assets/loblaw-ca/cropped-for-web/home/Loblaws-CMYK-web.jpg",
+    "size": [
+      400,
+      224
+    ],
+    "status": "visually_verified",
+    "official_source": true,
+    "notes": "Official logo, converted to PNG without redrawing."
+  },
+  "zehrs": {
+    "filename": "zehrs.png",
+    "source_page": "https://www.loblaw.ca/en/what-we-do/",
+    "image_url": "https://dis-prod.assetful.loblaw.ca/content/dam/loblaw-companies-limited/creative-assets/loblaw-ca/cropped-for-web/home/ZEHRS%20CMYK-web.jpg",
+    "size": [
+      400,
+      224
+    ],
+    "status": "visually_verified",
+    "official_source": true,
+    "notes": "Official logo, converted to PNG without redrawing."
+  },
+  "fortinos": {
+    "filename": "fortinos.png",
+    "source_page": "https://www.loblaw.ca/en/what-we-do/",
+    "image_url": "https://dis-prod.assetful.loblaw.ca/content/dam/loblaw-companies-limited/creative-assets/loblaw-ca/cropped-for-web/home/Fortinos%20CMYK-web.jpg",
+    "size": [
+      400,
+      224
+    ],
+    "status": "visually_verified",
+    "official_source": true,
+    "notes": "Official logo, converted to PNG without redrawing."
+  },
+  "superstore": {
+    "filename": "superstore.png",
+    "source_page": "https://www.loblaw.ca/en/what-we-do/",
+    "image_url": "https://dis-prod.assetful.loblaw.ca/content/dam/loblaw-companies-limited/creative-assets/loblaw-ca/cropped-for-web/home/logos_rcss_en-web.jpg",
+    "size": [
+      401,
+      225
+    ],
+    "status": "visually_verified",
+    "official_source": true,
+    "notes": "Official logo, converted to PNG without redrawing."
+  },
+  "no-frills": {
+    "filename": "no-frills.png",
+    "source_page": "https://www.loblaw.ca/en/what-we-do/",
+    "image_url": "https://dis-prod.assetful.loblaw.ca/content/dam/loblaw-companies-limited/creative-assets/loblaw-ca/cropped-for-web/home/NO%20FRILLS_UNIFIER_RGB-web.jpg",
+    "size": [
+      400,
+      224
+    ],
+    "status": "visually_verified",
+    "official_source": true,
+    "notes": "Official logo, converted to PNG without redrawing."
+  },
+  "food-basics": {
+    "filename": "food-basics.png",
+    "source_page": "https://corpo.metro.ca/en/about-us/food.html",
+    "image_url": "https://corpo.metro.ca/userfiles/image/logo/foodBasics-logo.svg",
+    "size": [
+      800,
+      536
+    ],
+    "status": "visually_verified",
+    "official_source": true,
+    "notes": "Official logo, converted to PNG without redrawing."
+  },
+  "freshco": {
+    "filename": "freshco.png",
+    "source_page": "https://www.empireco.ca/about/businesses/grocery-and-retail",
+    "image_url": "https://www.empireco.ca/api/svgurl/uploads/2022/07/Freshco_1.svg",
+    "size": [
+      800,
+      325
+    ],
+    "status": "visually_verified",
+    "official_source": true,
+    "notes": "Official logo, converted to PNG without redrawing."
+  },
+  "foodland": {
+    "filename": "foodland.png",
+    "source_page": "https://www.empireco.ca/about/businesses/grocery-and-retail",
+    "image_url": "https://www.empireco.ca/api/svgurl/uploads/2022/07/Foodland_1.svg",
+    "size": [
+      800,
+      325
+    ],
+    "status": "visually_verified",
+    "official_source": true,
+    "notes": "Official logo, converted to PNG without redrawing."
+  },
+  "longos": {
+    "filename": "longos.png",
+    "source_page": "https://www.locationscloud.com/product/longos-store-locations-in-canada/",
+    "image_url": "https://www.locationscloud.com/wp-content/uploads/edd/2024/06/unnamed.png",
+    "size": [
+      512,
+      512
+    ],
+    "status": "visually_verified",
+    "official_source": false,
+    "notes": "Authentic Longo\u2019s mark from third-party retailer data page; official storefront retrieval blocked."
+  }
+}

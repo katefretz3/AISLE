@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.DS_Store
+android/.gradle/
+android/app/build/
+android/local.properties
+ios/App/Pods/
+ios/App/build/
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+.env*
+!.env.example
