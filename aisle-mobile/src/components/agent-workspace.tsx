@@ -5,15 +5,16 @@
 // items it matched to a real catalogue record, what it could not price, and the
 // HTTP response behind every figure. Nothing here is rendered unless it came
 // back from a run — an unpriced item shows as an unpriced item.
-import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {useMemo} from 'react';
 import {Accordion,AccordionContent,AccordionItem,AccordionTrigger} from '@/components/ui/accordion';
 import {ArrowUpRight,Check,ChevronRight,CircleAlert,FileSearch,Info,LoaderCircle,MapPin,RefreshCw,ShieldCheck,Sparkles,Store,X} from 'lucide-react';
-import {runAgent,basketsFrom,buildShopperModel,type AgentRun,type Basket} from '@/lib/agent';
+import type {Basket} from '@/lib/agent';
+import type {AgentSession} from '@/lib/use-agent-run';
 import {money,productById,productImagePath,type UserState} from '@/lib/catalog';
 import './agent-workspace.css';
 
-type Props={state:UserState;ready:boolean;commit:(update:(state:UserState)=>UserState)=>void;onAdd:(id:string)=>void;
- onList:()=>void;onPreferences:()=>void;onSetup:()=>void;onDemo:()=>void};
+type Props={state:UserState;agent:AgentSession;commit:(update:(state:UserState)=>UserState)=>void;onAdd:(id:string)=>void;
+ onList:()=>void;onPreferences:()=>void;onSetup:()=>void;onDemo:()=>void;onCompare:()=>void};
 
 const PHASES=[
  {id:'discover',label:'Finding stores near you'},
@@ -23,45 +24,9 @@ const PHASES=[
  {id:'compose',label:'Totalling your baskets'},
 ] as const;
 
-export default function AgentWorkspace({state,ready,commit,onList,onPreferences,onSetup,onDemo}:Props){
- const [run,setRun]=useState<AgentRun|null>(null);
- const [busy,setBusy]=useState(false);
- const [phase,setPhase]=useState<string>('');
- const [error,setError]=useState('');
- const alive=useRef(true),inFlight=useRef(false);
-
- const start=useCallback(async()=>{
-  if(inFlight.current)return;
-  inFlight.current=true;setBusy(true);setError('');setPhase('discover');
-  try{
-   const result=await runAgent({state});
-   if(alive.current){setRun(result);setPhase('');}
-  }catch(e){
-   if(alive.current)setError(e instanceof Error?e.message:'The price check could not be completed.');
-  }finally{inFlight.current=false;if(alive.current)setBusy(false);}
- // Deliberately not keyed on `state`: a run is a point-in-time snapshot and
- // must not restart every time someone edits a quantity.
- // eslint-disable-next-line react-hooks/exhaustive-deps
- },[]);
-
- useEffect(()=>{alive.current=true;if(ready&&!run&&!busy)void start();return()=>{alive.current=false;};},[ready,run,busy,start]);
-
- // Re-total locally when a match is confirmed or withdrawn. No network, no
- // re-collection, and no chance of the displayed figure drifting from the run.
- const baskets=useMemo<Basket[]>(()=>{
-  if(!run)return [];
-  return basketsFrom({
-   state,perShopBudget:buildShopperModel(state).perShopBudget,
-   sources:run.sources.map(s=>({chainId:s.chainId,origin:s.origin,name:s.name,status:s.status})),
-   offers:run.offers,
-   proposals:new Map(run.proposals.map(p=>[`${p.itemId}::${p.sourceId}`,p])),
-   unmatched:new Map(run.unmatched.map(u=>[u.itemId,u.reason])),
-  });
- },[run,state]);
-
- const best=baskets[0];
- const budget=useMemo(()=>buildShopperModel(state).perShopBudget,[state]);
- const readable=run?run.sources.filter(s=>s.status==='ready').length:0;
+export default function AgentWorkspace({state,agent,commit,onList,onPreferences,onSetup,onDemo,onCompare}:Props){
+ const {run,busy,error,baskets,best,perShopBudget:budget,readable,start}=agent;
+ const phase=busy?'discover':'';
 
  function decide(itemId:string,sourceId:string,offerId:string,brand:string,accept:boolean){
   commit(s=>{
@@ -84,10 +49,11 @@ export default function AgentWorkspace({state,ready,commit,onList,onPreferences,
     <p>Aisle looks for stores near you, reads the catalogues it is allowed to read, and matches your
      list against what they actually publish. Every figure traces back to a response it received.</p>
     <div className="agent-hero-actions">
-     <button className="button primary" disabled={busy||!ready} onClick={()=>void start()}>
+     <button className="button primary" disabled={busy} onClick={start}>
       {busy?<><LoaderCircle size={17} className="spin"/> Checking…</>:<><RefreshCw size={16}/> Run a price check</>}
      </button>
      <button className="button ghost" onClick={onList}>Edit my list <ChevronRight size={16}/></button>
+     {baskets.length>0&&<button className="button ghost" onClick={onCompare}>Compare baskets <ChevronRight size={16}/></button>}
     </div>
    </div>
    <dl className="agent-stats">
@@ -103,7 +69,7 @@ export default function AgentWorkspace({state,ready,commit,onList,onPreferences,
   </ol>}
 
   {error&&<p className="agent-alert error" role="alert"><CircleAlert size={17}/> {error}
-   <button onClick={()=>void start()}>Try again</button></p>}
+   <button onClick={start}>Try again</button></p>}
 
   {run&&<>
    <section className="agent-summary">
@@ -169,11 +135,14 @@ export default function AgentWorkspace({state,ready,commit,onList,onPreferences,
    </section>
 
    <section className="agent-block">
-    <div className="agent-block-head"><div><h2>Baskets</h2>
-     <p>Product subtotals in CAD. Delivery, tax, deposits and membership fees are not included.
-      An incomplete basket is never ranked as cheapest.</p></div></div>
+    <div className="agent-block-head">
+     <div><h2>Baskets</h2>
+      <p>Product subtotals in CAD. Delivery, tax, deposits and membership fees are not included.
+       An incomplete basket is never ranked as cheapest.</p></div>
+     {baskets.length>0&&<button className="text-button" onClick={onCompare}>Compare all <ArrowUpRight size={15}/></button>}
+    </div>
     {baskets.length?<div className="agent-cards">
-     {baskets.map(b=><article className={`agent-card${b===best&&b.complete?' is-best':''}`} key={b.sourceId}>
+     {baskets.slice(0,3).map(b=><article className={`agent-card${b===best&&b.complete?' is-best':''}`} key={b.sourceId}>
       <h3>{b.name}</h3>
       <strong className="agent-card-total">{b.priced?money(b.subtotal):'—'}</strong>
       <p>{b.complete?'Every item priced':`${b.priced} of ${b.total} items priced`}</p>

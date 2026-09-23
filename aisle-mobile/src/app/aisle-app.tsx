@@ -21,6 +21,8 @@ import LocationMap from "@/components/location-map";
 import {cityLocation,ontarioCities} from "@/lib/locations";
 import AgentWorkspace from '@/components/agent-workspace';
 import CategoryBrowser from '@/components/category-browser';
+import {useAgentRun} from '@/lib/use-agent-run';
+import BasketCompare from '@/components/basket-compare';
 import Account from './account';
 import Legal from './legal';
 import {loadState,saveState,uploadReceipt,openReceiptFile,captureReceipt,shareList,isDevice} from "@/lib/persistence";
@@ -29,7 +31,7 @@ import {recommendedBasket,personalSuggestions,recordChoice,swapConfidence,priori
 type View="home"|"list"|"compare"|"spending"|"account"|"legal"|"shop";
 const APP_VERSION="1.0.0";
 const icons:Record<string,typeof Apple>={apple:Apple,beef:Beef,banana:Banana,carrot:Carrot,cherry:Cherry,citrus:Citrus,coffee:Coffee,egg:Egg,fish:Fish,milk:Milk,package:Package,salad:Salad,sprout:Sprout,wheat:Wheat,leaf:Leaf};
-const nav=[{id:"home",label:"My week",icon:Home},{id:"list",label:"My grocery list",icon:ClipboardList},{id:"compare",label:"Compare stores",icon:StoreIcon},{id:"spending",label:"My spending",icon:BarChart3}] as const;
+const nav=[{id:"home",label:"My week",icon:Home},{id:"list",label:"My grocery list",icon:ClipboardList},{id:"compare",label:"Compare baskets",icon:StoreIcon},{id:"spending",label:"My spending",icon:BarChart3}] as const;
 function newId(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,"0")).join("");}
 const cx=(...v:(string|false|null|undefined)[])=>v.filter(Boolean).join(" ");
 function ProductIcon({product,small=false}:{product?:Product|null;small?:boolean}){return <span className={cx("product-art",small&&"small",!product&&"unknown")}><img src={productImagePath(product?.id)} alt="" loading="lazy" decoding="async"/></span>;}
@@ -51,13 +53,37 @@ export default function AisleApp(){
  const [receiptStore,setReceiptStore]=useState("food-basics"),[receiptTotal,setReceiptTotal]=useState(""),[receiptDate,setReceiptDate]=useState(""),[receiptId,setReceiptId]=useState<string|undefined>(),[receiptName,setReceiptName]=useState(""),[uploading,setUploading]=useState(false),[actuals,setActuals]=useState<Record<string,string>>({});
  const [matchingItem,setMatchingItem]=useState<string|null>(null);
  const fileRef=useRef<HTMLInputElement>(null);
+ const agent=useAgentRun(state,ready&&state.onboarded);
  const comparison=useMemo(()=>dataMode==='sample'?compareBasket(state.items,state.prefs):[],[state.items,state.prefs,dataMode]);
- const best=dataMode==='sample'?recommendedBasket(state):undefined,usual=comparison.find(s=>s.id===state.prefs.usualStore),baseline=usual?.complete?usual.subtotal:null;
+ const sampleBest=dataMode==='sample'?recommendedBasket(state):undefined,usual=comparison.find(s=>s.id===state.prefs.usualStore),baseline=usual?.complete?usual.subtotal:null;
+ const best=sampleBest;
+ // One shape for "a basket you are shopping from", whichever engine produced it.
+ // `lineTotal` is always the cost of that whole list line, packs included.
+ const fromSample=(store:ReturnType<typeof compareBasket>[number]|undefined)=>store?{
+  id:store.id,name:store.name,subtotal:store.subtotal,complete:store.complete,
+  total:state.items.length,priced:state.items.length-store.missing,
+  lineTotal:(itemId:string)=>{const line=store.lines.find(l=>l.item.id===itemId);
+   return line&&line.price!=null?line.price*line.item.qty:null;},
+ }:null;
+ const fromAgent=(basket:ReturnType<typeof agent.basketFor>)=>basket?{
+  id:basket.sourceId,name:basket.name,subtotal:basket.subtotal,complete:basket.complete,
+  total:basket.total,priced:basket.priced,
+  lineTotal:(itemId:string)=>{const line=basket.lines.find(l=>l.itemId===itemId);
+   return line?.offer?line.lineTotal:null;},
+ }:null;
+ const activeBasket=useMemo(()=>dataMode==='sample'
+  ?fromSample(comparison.find(store=>store.id===state.activeShop))
+  :fromAgent(agent.basketFor(state.activeShop)),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [dataMode,comparison,state.activeShop,state.items,agent.baskets]);
+ const headlineBasket=useMemo(()=>dataMode==='sample'?fromSample(sampleBest):fromAgent(agent.best),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [dataMode,sampleBest,agent.best,state.items]);
  const savings=best&&baseline!==null?Math.max(0,baseline-best.subtotal):0;
  const swaps=useMemo(()=>dataMode==='sample'?swapCandidates(state):[],[state,dataMode]);
  const potential=swaps.reduce((a,s)=>a+s.saving,0);
  const selected=comparison.find(s=>s.id===detail);
- const active=comparison.find(s=>s.id===state.activeShop);
+ const active=activeBasket;
  const itemCount=state.items.reduce((n,i)=>n+i.qty,0);
  const checked=state.items.filter(i=>i.checked).length;
  const missing=state.items.filter(i=>!i.productId).length;
@@ -82,7 +108,7 @@ export default function AisleApp(){
  function removeItem(item:ListItem){commit(s=>({...s,items:s.items.filter(i=>i.id!==item.id)}));toast("Item removed",{action:{label:"Undo",onClick:()=>commit(s=>({...s,items:[...s.items,item]}))}});}
  function applySwap(swap:ReturnType<typeof swapCandidates>[number]){commit(s=>({...s,items:s.items.map(i=>i.id===swap.item.id?{...i,productId:swap.to.id,name:swap.to.name}:i),events:s.prefs.learning?[...s.events,{category:swap.from.category,action:"accepted_swap",date:new Date().toISOString()}].slice(-200):s.events}));toast.success(`Swapped to ${swap.to.brand}. Example basket reduced by ${money(swap.saving)}.`);}
  function rejectSwap(swap:ReturnType<typeof swapCandidates>[number]){commit(s=>({...s,items:s.items.map(i=>i.id===swap.item.id?{...i,locked:true}:i),events:s.prefs.learning?[...s.events,{category:swap.from.category,action:"kept_brand",date:new Date().toISOString()}].slice(-200):s.events}));toast("Original product kept and locked for this list.");}
- function beginShop(id:string){commit(s=>({...s,activeShop:id,items:s.items.map(i=>({...i,checked:false}))}));setDetail(null);go("shop");toast.success("Your shopping checklist is ready");}
+ function beginShop(id:string){const name=dataMode==='sample'?stores.find(store=>store.id===id)?.name:agent.basketFor(id)?.name;commit(s=>({...s,activeShop:id,items:s.items.map(i=>({...i,checked:false}))}));setDetail(null);go("shop");toast.success(name?`Your checklist for ${name} is ready`:"Your shopping checklist is ready");}
  function openReceipt(){setReceiptStore(state.activeShop??best?.id??"food-basics");setReceiptTotal("");setReceiptDate(new Date().toISOString().slice(0,10));setReceiptId(undefined);setReceiptName("");setActuals({});setReceiptOpen(true);}
  async function upload(file?:File){if(!file)return;setUploading(true);try{const body=await uploadReceipt(file);setReceiptId(body.id);setReceiptName(body.name);toast.success("Receipt attached. Enter the amount you paid below.");}catch(e){toast.error(e instanceof Error?e.message:"Upload failed");}finally{setUploading(false);if(fileRef.current)fileRef.current.value="";}}
  function saveReceipt(){const total=Math.round(Number(receiptTotal)*100);if(!receiptTotal||!Number.isFinite(total)||total<=0||total>10000000){toast.error("Enter a valid receipt total.");return;}if(!receiptDate||receiptDate>new Date().toISOString().slice(0,10)){toast.error("Choose today or an earlier shopping date.");return;}const basket=comparison.find(s=>s.id===receiptStore);const lines=state.items.filter(i=>actuals[i.id]?.trim()).map(i=>({name:i.name,quantity:i.qty,actual:Math.round(Number(actuals[i.id])*100),predicted:(basket?.lines.find(l=>l.item.id===i.id)?.price??0)*i.qty}));if(lines.some(l=>!Number.isFinite(l.actual)||l.actual<0)||lines.reduce((sum,l)=>sum+l.actual,0)>total){toast.error("Item totals must be valid and cannot exceed your receipt total.");return;}const trip:Trip={id:newId(),storeId:receiptStore,date:receiptDate,total,predicted:basket?.subtotal??0,comparisonTotal:baseline??0,items:state.items.length,receiptId,prices:lines};commit(s=>{let next=s;for(const item of s.items.filter(i=>i.checked||actuals[i.id]?.trim()))if(item.productId)next=recordChoice(next,"purchased",item.productId,receiptStore);return {...next,trips:[trip,...s.trips].slice(0,200),activeShop:null};});setReceiptOpen(false);go("spending");toast.success("Shopping trip saved to your spending history.");}
@@ -91,16 +117,38 @@ export default function AisleApp(){
  useEffect(()=>{const mc=(document as unknown as {modelContext?:{registerTool:(t:unknown,o:unknown)=>void}}).modelContext;if(!mc)return;const abort=new AbortController();try{mc.registerTool({name:"compare_grocery_basket",title:"Compare grocery basket",description:"Return complete and partial basket comparisons using clearly labelled sample prices. Does not purchase groceries.",inputSchema:{type:"object",properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute(input:unknown){if(!input||typeof input!=="object"||Object.keys(input).length)throw new Error("No arguments expected");return {dataMode:"illustrative",stores:compareBasket(ref.current.items,ref.current.prefs).map(s=>({name:s.name,subtotalCents:s.subtotal,missing:s.missing,complete:s.complete}))};}},{signal:abort.signal});mc.registerTool({name:"open_grocery_list",title:"Open grocery list",description:"Navigate to the current list without changing its items.",inputSchema:{type:"object",properties:{},additionalProperties:false},annotations:{readOnlyHint:false},execute(input:unknown){if(!input||typeof input!=="object"||Object.keys(input).length)throw new Error("No arguments expected");go("list");return {view:"list"};}},{signal:abort.signal});}catch{}return()=>abort.abort();},[]);
 
  function Empty({icon:Icon=ShoppingBasket,title,children,action}:{icon?:typeof ShoppingBasket;title:string;children:ReactNode;action?:ReactNode}){return <div className="empty-state"><span className="empty-icon"><Icon/></span><h3>{title}</h3><p>{children}</p>{action}</div>;}
- function ItemRow({item,compact=false,shopping=false}:{item:ListItem;compact?:boolean;shopping?:boolean}){const p=item.productId?productById[item.productId]:null;const price=(shopping?active:best)?.lines.find(l=>l.item.id===item.id)?.price;return <div className={cx("item-row",item.checked&&"is-checked")}>
+ function ItemRow({item,compact=false,shopping=false}:{item:ListItem;compact?:boolean;shopping?:boolean}){const p=item.productId?productById[item.productId]:null;const price=(shopping?activeBasket:headlineBasket)?.lineTotal(item.id)??null;return <div className={cx("item-row",item.checked&&"is-checked")}>
   {shopping&&<Checkbox aria-label={`Mark ${item.name} as bought`} checked={item.checked} onCheckedChange={v=>updateItem(item.id,{checked:v===true})} className="item-check"/>}
   <ProductIcon product={p} small={compact}/><div className="item-copy"><strong>{item.name}</strong><span>{p?`${p.brand} · ${p.size}`:"Not in the sample catalogue"}</span></div>
   {!compact&&!shopping&&<button className={cx("icon-button lock-button",item.locked&&"is-locked")} aria-label={`${item.locked?"Unlock":"Lock"} ${item.name}`} title={item.locked?"Exact product locked":"Keep this exact product"} onClick={()=>updateItem(item.id,{locked:!item.locked})}><LockKeyhole size={15}/></button>}
   {!compact&&!shopping&&<div className="quantity"><button aria-label={`Decrease ${item.name} quantity`} disabled={item.qty===1} onClick={()=>updateItem(item.id,{qty:item.qty-1})}><Minus size={13}/></button><span>{item.qty}</span><button aria-label={`Increase ${item.name} quantity`} disabled={item.qty>=99} onClick={()=>updateItem(item.id,{qty:item.qty+1})}><Plus size={13}/></button></div>}
   {compact||shopping?<span className="item-quantity">×{item.qty}</span>:null}
-  <span className="item-price">{price!=null?money(price*item.qty):"—"}</span>
+  <span className="item-price">{price!=null?money(price):"—"}</span>
   {!p&&!compact&&<button className="text-button" onClick={()=>{setMatchingItem(item.id);setQuery("");setCategory("All items");setImportMode("browse");setCatalogOpen(true);}}>Match</button>}
   {!compact&&!shopping&&<button className="icon-button remove" aria-label={`Remove ${item.name}`} onClick={()=>removeItem(item)}><X size={16}/></button>}
  </div>;}
+ function AgentBudgetCard(){
+  const basket=headlineBasket,budget=agent.perShopBudget;
+  const spent=basket?basket.subtotal:0;
+  const pct=budget>0?Math.min(100,Math.round(spent/budget*100)):0;
+  const over=basket?Math.max(0,spent-budget):0;
+  return <section className="card budget-card">
+   <div className="section-top"><h3>This shop&rsquo;s budget</h3>
+    <button className="icon-button" aria-label="Edit budget" onClick={()=>go("account")}><SlidersHorizontal size={17}/></button></div>
+   <div className="budget-numbers"><strong>{basket&&basket.priced?money(spent):"\u2014"}</strong><span>of {money(budget)}</span></div>
+   <Progress value={pct} className={cx("budget-progress",over>0&&"over-budget")}/>
+   <p>{!basket||!basket.priced
+    ?"No verified prices yet. Run a price check to see what your list costs."
+    :!basket.complete
+     ?<>{money(spent)} for <strong>{basket.priced} of {basket.total}</strong> items at {basket.name}. The rest
+      have no collected price, so this is not your whole shop.</>
+     :over>0
+      ?<><span className="warning-text">{money(over)} over budget</span> at {basket.name}. Compare other baskets or trim the list.</>
+      :<><span className="green-text">{money(budget-spent)} to spare</span> at {basket.name}, with every item priced.</>}</p>
+   {agent.baskets.length>1&&<button className="budget-link" onClick={()=>go("compare")}>
+    <Sparkles size={16}/> Compare {agent.baskets.length} baskets <ArrowRight size={16}/></button>}
+  </section>;
+ }
  function BudgetCard(){return <section className="card budget-card"><div className="section-top"><h3>This week’s budget</h3><button className="icon-button" aria-label="Edit budget" onClick={()=>go("account")}><SlidersHorizontal size={17}/></button></div><div className="budget-numbers"><strong>{best?money(best.subtotal):"—"}</strong><span>of {money(state.prefs.budget*100)}</span></div><Progress value={best?Math.min(100,best.subtotal/state.prefs.budget):0} className={cx("budget-progress",best&&best.subtotal>state.prefs.budget*100&&"over-budget")}/><p>{best?(best.subtotal<=state.prefs.budget*100?<><span className="green-text">{money(state.prefs.budget*100-best.subtotal)} to spare</span> with your example basket.</>:<><span className="warning-text">{money(best.subtotal-state.prefs.budget*100)} over budget.</span> {swaps.length?"Review a few swaps.":"Adjust your list or compare other stores."}</>):"Add and match your items to calculate a basket."}</p>{swaps.length>0&&<button className="budget-link" onClick={()=>setSwapsOpen(true)}><Sparkles size={16}/> {swaps.length} swaps could save {money(potential)} <ArrowRight size={16}/></button>}</section>;}
 
  const sortedComparisons=[...comparison].sort((a,b)=>Number(b.complete)-Number(a.complete)||(comparisonSort==="distance"?a.km-b.km:comparisonSort==="trip"?a.total-b.total:a.subtotal-b.subtotal));
@@ -122,7 +170,7 @@ export default function AisleApp(){
    {!ready&&!loadError&&<div className="system-message"><LoaderCircle className="spin" size={16}/> Getting your list ready…</div>}
    <main className="workspace" id="main-content">
    {dataMode==='sample'&&<div className="compare-info"><Info size={17}/><span>Sample-price demo. These are not collected retailer offers.</span><button className="text-button" onClick={()=>setDataMode('observed')}>Return to real price checks</button></div>}
-   {dataMode==='observed'&&(view==='home'||view==='compare')&&<AgentWorkspace state={state} ready={ready&&state.onboarded} commit={commit} onAdd={addProduct} onList={()=>go('list')} onPreferences={()=>go('account')} onSetup={()=>setOnboard(true)} onDemo={()=>{setDataMode('sample');go('compare');}}/>}
+   {dataMode==='observed'&&view==='home'&&<AgentWorkspace state={state} agent={agent} commit={commit} onAdd={addProduct} onList={()=>go('list')} onPreferences={()=>go('account')} onSetup={()=>setOnboard(true)} onDemo={()=>{setDataMode('sample');go('compare');}} onCompare={()=>go('compare')}/>}
    {view==="home"&&dataMode==='sample'&&<>
     <div className="page-heading"><div><span className="eyebrow">LET’S MAKE THIS SHOP COUNT</span><h1>{state.prefs.name?`Your week, ${state.prefs.name}.`:"Your next shop, sorted."}</h1><p>Your list. Your budget. A better place to shop.</p></div><button className="button primary" onClick={()=>{setCatalogOpen(true);setImportMode("browse");}}><Plus size={18}/> Add groceries</button></div>
     <div className="dashboard-top"><section className="grocery-hero"><div className="hero-copy"><Pill kind="outline"><Leaf size={13}/> Thoughtful shopping</Pill><h2>Good groceries.<br/><em>Better choices.</em></h2><p>Find the best place for your<br className="desktop-only"/> entire list, in one trip.</p><button className="button dark" onClick={()=>go(state.items.length?"compare":"list")}>{state.items.length?"Find my best store":"Start my list"}<ArrowRight size={17}/></button></div><img src="/images/grocery-bag.png" alt="Fresh vegetables and a baguette in a paper grocery bag" className="hero-photo"/><div className="hero-stamp"><ShoppingBasket size={20}/><span>YOUR WHOLE<br/>LIST, COMPARED</span></div></section><section className="recommendation-card"><div className="recommendation-top"><span className="lime-icon"><Sparkles size={18}/></span><span>YOUR BEST MATCH</span><button className="icon-button" aria-label="About recommendations" onClick={()=>setHelp(true)}><Info size={16}/></button></div>{best?<><div className="recommendation-store"><StoreLogo store={best}/><div><h2>{best.name}</h2><p>{state.items.length} of {state.items.length} items priced</p></div></div><div className="recommended-price">{money(best.subtotal)}<span>example basket total</span></div><div className="savings-inline"><TrendingDown size={17}/>{savings>0?<span>{money(savings)} less than {usual?.name}</span>:<span>Your recommended complete example basket</span>}</div><button className="button lime full" onClick={()=>setDetail(best.id)}>See the breakdown <ArrowRight size={17}/></button><p className="recommendation-foot">{priorityLabels[state.prefs.priority]} · Your chosen priority</p></>:<div className="recommendation-empty"><h2>{state.items.length?"Let’s complete the picture.":"Your best store starts with a list."}</h2><p>{state.items.length?"Match your items or widen your radius to compare a complete basket.":"Add a few groceries to see your options."}</p><button className="button lime" onClick={()=>go(state.items.length?"account":"list")}>Review {state.items.length?"account":"list"}<ArrowRight size={16}/></button></div>}</section></div>
@@ -138,8 +186,11 @@ export default function AisleApp(){
     {missing>0&&<div className="inline-warning"><Info size={16}/>{missing} {missing===1?"item needs":"items need"} a match before we can recommend a complete basket.</div>}
     {state.items.length?state.items.filter(i=>listFilter==="All items"||(listFilter==="Unmatched"?!i.productId:i.productId&&productById[i.productId].category===listFilter)).map(i=><ItemRow key={i.id} item={i}/>):<Empty title="Your next good shop starts here" action={<button className="button primary" onClick={()=>setCatalogOpen(true)}><Plus size={16}/> Add your first item</button>}>Add products or paste the list you already have.</Empty>}
     <button className="list-add" onClick={()=>setCatalogOpen(true)}><Plus size={17}/> Add another item</button><div className="list-bottom-note"><LockKeyhole size={14}/> Lock a product to keep it out of swap suggestions.</div></section>
-    <aside className="list-aside">{dataMode==='sample'?<BudgetCard/>:<section className="card"><h3>Your weekly budget</h3><strong>{money(state.prefs.budget*100)}</strong><p>Confirm retailer products to see your per-shop subtotal and budget remaining.</p></section>}<section className="card list-summary"><h3>Your list at a glance</h3>{dataMode==='sample'?<><div><span>Example basket</span><strong>{best?money(best.subtotal):'Incomplete'}</strong></div><div><span>Compared stores</span><strong>{comparison.length}</strong></div></>:<div><span>List items</span><strong>{state.items.length}</strong></div>}<div><span>Products locked</span><strong>{state.items.filter(i=>i.locked).length}</strong></div><button className="button primary full" onClick={()=>go("compare")} disabled={!state.items.length}>Compare my list <ArrowRight size={17}/></button><p>Review observed prices and confirm retailer products before comparing.</p></section><div className="quiet-tip"><ShieldCheck size={20}/><p>Your choices stay yours. We ask before changing anything on your list.</p></div></aside></div>
+    <aside className="list-aside">{dataMode==='sample'?<BudgetCard/>:<AgentBudgetCard/>}<section className="card list-summary"><h3>Your list at a glance</h3>{dataMode==='sample'?<><div><span>Example basket</span><strong>{best?money(best.subtotal):'Incomplete'}</strong></div><div><span>Compared stores</span><strong>{comparison.length}</strong></div></>:<><div><span>List items</span><strong>{state.items.length}</strong></div><div><span>Priced by Aisle</span><strong>{headlineBasket?`${headlineBasket.priced} of ${headlineBasket.total}`:'—'}</strong></div><div><span>Baskets compared</span><strong>{agent.baskets.length}</strong></div></>}<div><span>Products locked</span><strong>{state.items.filter(i=>i.locked).length}</strong></div><button className="button primary full" onClick={()=>go("compare")} disabled={!state.items.length}>Compare my list <ArrowRight size={17}/></button><p>Review observed prices and confirm retailer products before comparing.</p></section><div className="quiet-tip"><ShieldCheck size={20}/><p>Your choices stay yours. We ask before changing anything on your list.</p></div></aside></div>
    </>}
+   {view==="compare"&&dataMode==='observed'&&<BasketCompare state={state} agent={agent}
+    onShop={beginShop} onList={()=>go('list')} onSetup={()=>setOnboard(true)}
+    onDemo={()=>{setDataMode('sample');go('compare');}}/>}
    {view==="compare"&&dataMode==='sample'&&<>
     <div className="page-heading"><div><span className="eyebrow">ONE LIST. A CLEARER CHOICE.</span><h1>Find your best store</h1><p>{state.items.length} products · Same sizes · {state.prefs.radius} km example radius</p></div><button className="button secondary" onClick={()=>go("account")}><SlidersHorizontal size={17}/> Shopping preferences</button></div>
     <div className="compare-info"><Info size={17}/><span>Exploring the concept: all prices and travel estimates below are illustrative. Availability is not confirmed.</span></div>
@@ -165,11 +216,11 @@ export default function AisleApp(){
    />}
    {view==="legal"&&<Legal docId={legalDoc} onSelect={goLegal} onBack={()=>goLegal(null)}/>}
    {view==="shop"&&<>
-    <div className="page-heading"><div><span className="eyebrow">ONE ITEM AT A TIME</span><h1>{active?`Your shop at ${active.name}`:"Ready when you are."}</h1><p>Check off what’s in your basket. Your list saves as you go.</p></div><button className="button secondary" onClick={()=>go("compare")}><ArrowLeft size={16}/> Change store</button></div>{active?<div className="list-layout"><section className="card"><div className="shopping-progress"><div><strong>{checked} of {state.items.length} products</strong><span>{money(active.subtotal)} example total</span></div><Progress value={state.items.length?checked/state.items.length*100:0}/></div>{state.items.map(i=><ItemRow key={i.id} item={i} shopping/>)}<div className="list-bottom-note"><Info size={14}/> Check shelf prices before buying. This checklist uses sample prices.</div></section><aside><section className="card shop-summary"><div className="shopping-circle"><ShoppingBag size={32}/></div><h3>{checked===state.items.length?"Everything’s in the basket.":"You’ve got this."}</h3><p>{checked===state.items.length?"After checkout, save the receipt and record what you actually spent.":"Take your time. We’ll keep your place on the list."}</p><button className="button primary full" onClick={openReceipt}><ReceiptText size={16}/> Finish & add receipt</button><button className="text-button" onClick={exportList}><Download size={15}/> Export checklist</button></section></aside></div>:<Empty title="Pick your store first" action={<button className="button primary" onClick={()=>go("compare")}>Compare stores</button>}>Your shopping checklist will be ready once you choose a basket.</Empty>}
+    <div className="page-heading"><div><span className="eyebrow">ONE ITEM AT A TIME</span><h1>{active?`Your shop at ${active.name}`:"Ready when you are."}</h1><p>Check off what’s in your basket. Your list saves as you go.</p></div><button className="button secondary" onClick={()=>go("compare")}><ArrowLeft size={16}/> Change store</button></div>{active?<div className="list-layout"><section className="card"><div className="shopping-progress"><div><strong>{checked} of {state.items.length} products</strong><span>{money(active.subtotal)} {dataMode==='sample'?'example total':active.complete?'basket total':`for ${active.priced} of ${active.total} priced`}</span></div><Progress value={state.items.length?checked/state.items.length*100:0}/></div>{state.items.map(i=><ItemRow key={i.id} item={i} shopping/>)}<div className="list-bottom-note"><Info size={14}/> Check shelf prices before buying. {dataMode==='sample'?'This checklist uses sample prices.':'These are online catalogue prices, not confirmed branch prices.'}</div></section><aside><section className="card shop-summary"><div className="shopping-circle"><ShoppingBag size={32}/></div><h3>{checked===state.items.length?"Everything’s in the basket.":"You’ve got this."}</h3><p>{checked===state.items.length?"After checkout, save the receipt and record what you actually spent.":"Take your time. We’ll keep your place on the list."}</p><button className="button primary full" onClick={openReceipt}><ReceiptText size={16}/> Finish & add receipt</button><button className="text-button" onClick={exportList}><Download size={15}/> Export checklist</button></section></aside></div>:<Empty title="Pick your basket first" action={<button className="button primary" onClick={()=>go("compare")}>Compare baskets</button>}>Your shopping checklist will be ready once you choose a basket to shop from.</Empty>}
    </>}
    <footer className="workspace-footer"><span><Leaf size={14}/> Made for a more thoughtful shop.</span><div className="workspace-footer-right"><button onClick={()=>setHelp(true)}>Prices in CAD · Check retailer sources <Info size={13}/></button><button onClick={()=>goLegal("terms")}>Terms</button><button onClick={()=>goLegal("privacy")}>Privacy</button><button onClick={()=>goLegal("sources")}>Data sources</button></div></footer>
    </main>
-   <nav className="mobile-nav" aria-label="Main navigation">{nav.map(({id,label,icon:Icon})=><button key={id} aria-label={label} aria-current={view===id?"page":undefined} className={view===id?"selected":""} onClick={()=>go(id)}><Icon size={21}/><span>{id==="home"?"My week":id==="list"?"My list":id==="compare"?"Stores":"Spending"}</span></button>)}<button aria-label="Account settings" className={view==="account"||view==="legal"?"selected":""} onClick={()=>go("account")}><Settings2 size={21}/><span>You</span></button></nav>
+   <nav className="mobile-nav" aria-label="Main navigation">{nav.map(({id,label,icon:Icon})=><button key={id} aria-label={label} aria-current={view===id?"page":undefined} className={view===id?"selected":""} onClick={()=>go(id)}><Icon size={21}/><span>{id==="home"?"My week":id==="list"?"My list":id==="compare"?"Baskets":"Spending"}</span></button>)}<button aria-label="Account settings" className={view==="account"||view==="legal"?"selected":""} onClick={()=>go("account")}><Settings2 size={21}/><span>You</span></button></nav>
   </div>
 
   <Onboarding open={onboard} initial={state.prefs} revisit={state.onboarded} onClose={()=>{if(!state.onboarded)commit(s=>({...s,onboarded:true}));setOnboard(false);}} onFinish={finishOnboarding} onPrivacy={()=>{setOnboard(false);goLegal("privacy");}}/>

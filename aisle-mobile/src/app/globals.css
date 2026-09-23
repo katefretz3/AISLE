@@ -308,3 +308,11 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .crash-detail pre{margin:8px 0 0;padding:12px;border-radius:10px;background:var(--muted);
  overflow-x:auto;font-size:.78rem;white-space:pre-wrap;word-break:break-word}
 .system-message.error button+button{margin-left:12px}
+
+/* With viewport-fit=cover the containing block for fixed elements can be a
+   pixel wider than the visual viewport, so the bottom bar resolved to 361px on
+   a 360px screen and gave the whole page a horizontal scroll. `clip` stops the
+   overflow without creating a scroll container, which `hidden` would do and
+   which breaks position:sticky inside the page. */
+html{overflow-x:clip}
+@media (max-width:960px){nav.mobile-nav{max-width:100%}}

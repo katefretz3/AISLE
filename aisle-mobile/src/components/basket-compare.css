@@ -1,0 +1,86 @@
+/* Compare baskets. Same tokens as everywhere else; the one new idea is the
+   coverage meter, which makes "how much of my list is actually priced"
+   readable at a glance so a cheap-looking partial basket cannot mislead. */
+
+.compare-screen{display:flex;flex-direction:column;gap:22px}
+
+.compare-spread{display:flex;gap:14px;align-items:flex-start;padding:18px 20px;border-radius:var(--radius-lg);
+ background:var(--accent);border:1px solid color-mix(in srgb,var(--primary) 22%,transparent)}
+.compare-spread-icon{display:grid;place-items:center;flex:0 0 auto;width:42px;height:42px;border-radius:12px;
+ background:var(--primary);color:var(--primary-foreground)}
+.compare-spread strong{display:block;font-size:1rem;letter-spacing:-.015em;color:var(--accent-foreground)}
+.compare-spread p{margin:5px 0 0;font-size:.86rem;line-height:1.55;color:var(--muted-foreground)}
+
+.compare-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:14px;align-items:start}
+.compare-card{position:relative;display:flex;flex-direction:column;gap:10px;padding:20px;
+ border-radius:var(--radius-lg);border:1px solid var(--border);background:var(--card);box-shadow:var(--shadow-sm)}
+.compare-card.is-best{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary),var(--shadow-md)}
+.compare-badge{display:inline-flex;align-items:center;gap:5px;align-self:flex-start;padding:5px 11px;
+ border-radius:999px;background:var(--primary);color:var(--primary-foreground);
+ font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.compare-card h3{margin:0;font-size:.95rem;font-weight:650;color:var(--muted-foreground)}
+.compare-total{font-size:1.85rem;font-weight:650;letter-spacing:-.03em;font-variant-numeric:tabular-nums;
+ line-height:1;color:var(--foreground)}
+.compare-sub{margin:0;font-size:.83rem;color:var(--muted-foreground)}
+
+.compare-meter{height:6px;border-radius:999px;background:var(--muted);overflow:hidden}
+.compare-meter span{display:block;height:100%;border-radius:999px;background:var(--primary);transition:width .3s ease}
+.compare-card.is-best .compare-meter span{background:var(--primary)}
+
+.compare-facts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:2px 0 0}
+.compare-facts dt{margin:0;font-size:.68rem;font-weight:650;letter-spacing:.05em;text-transform:uppercase;
+ color:var(--muted-foreground)}
+.compare-facts dd{margin:3px 0 0;font-size:.88rem;font-weight:600;font-variant-numeric:tabular-nums;color:var(--foreground)}
+.compare-facts dd.is-over{color:var(--destructive)}
+.compare-facts dd.is-under{color:var(--primary)}
+
+.compare-warn{display:flex;gap:7px;align-items:flex-start;margin:0;padding:10px 12px;border-radius:10px;
+ background:var(--muted);font-size:.78rem;line-height:1.5;color:var(--muted-foreground)}
+.compare-warn svg{flex:0 0 auto;margin-top:2px}
+
+.compare-note{display:flex;gap:12px;align-items:flex-start;padding:16px 18px;border-radius:var(--radius-lg);
+ background:var(--muted)}
+.compare-note svg{flex:0 0 auto;margin-top:1px;color:var(--primary)}
+.compare-note p{margin:0;font-size:.84rem;line-height:1.6;color:var(--muted-foreground);max-width:78ch}
+
+.compare-section-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:14px}
+.compare-section-head h2{display:flex;align-items:center;gap:9px;margin:0;font-size:1.12rem;
+ letter-spacing:-.015em;color:var(--foreground)}
+.compare-section-head p{margin:5px 0 0;font-size:.84rem;color:var(--muted-foreground)}
+.compare-stores{display:flex;flex-direction:column;gap:12px}
+.compare-stores ul{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.compare-stores li{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:12px;
+ padding:13px 16px;border-radius:13px;border:1px solid var(--border);background:var(--card)}
+.compare-stores svg{color:var(--muted-foreground)}
+.compare-store-copy strong{display:block;font-size:.9rem;color:var(--foreground)}
+.compare-store-copy small{display:block;font-size:.76rem;color:var(--muted-foreground)}
+.compare-km{font-size:.82rem;font-variant-numeric:tabular-nums;color:var(--muted-foreground)}
+.compare-gap{display:flex;gap:12px;align-items:flex-start;padding:16px 18px;border-radius:var(--radius-lg);
+ background:var(--muted);color:var(--muted-foreground)}
+.compare-gap svg{flex:0 0 auto;margin-top:1px;color:var(--primary)}
+.compare-gap strong{display:block;margin-bottom:4px;font-size:.9rem;color:var(--foreground)}
+.compare-gap p{margin:0;font-size:.84rem;line-height:1.58}
+
+.compare-empty{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:34px 28px;
+ border-radius:var(--radius-lg);border:1px solid var(--border);background:var(--card)}
+.compare-empty-icon{display:grid;place-items:center;width:56px;height:56px;border-radius:16px;
+ background:var(--muted);color:var(--muted-foreground)}
+.compare-empty h2{margin:0;font-size:1.15rem;letter-spacing:-.018em;color:var(--foreground)}
+.compare-empty p{margin:0;max-width:66ch;font-size:.9rem;line-height:1.62;color:var(--muted-foreground)}
+.compare-empty-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:6px}
+
+@media (max-width:760px){
+ .compare-grid{grid-template-columns:1fr}
+ .compare-spread{flex-direction:column}
+ .compare-stores li{grid-template-columns:auto minmax(0,1fr);row-gap:8px}
+ .compare-stores .compare-km,.compare-stores .agent-feed{grid-column:2;justify-self:start}
+ .compare-empty{padding:26px 20px}
+}
+
+@media (max-width:640px){
+ /* The heading's action sat beside the title and ran off the right edge on a
+    360px screen. Stack it under the copy and let it fill the width. */
+ .compare-screen .page-heading{flex-direction:column;align-items:stretch;gap:14px}
+ .compare-screen .page-heading .button{width:100%;justify-content:center}
+ .compare-total{font-size:1.65rem}
+}

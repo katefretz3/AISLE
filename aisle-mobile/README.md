@@ -10,6 +10,8 @@ A mobile grocery planning app with Ontario city selection. Built with React 19, 
 - A 557-item catalogue organized the way a shop is: 14 departments → 76 aisles → items (Produce → Fruit → Blueberries), with keyword search that understands everyday synonyms (“pop” finds cola, “capsicum” finds bell peppers, “mince” finds ground meat). Items that honestly live in two places, like frozen blueberries, are cross-listed rather than filed once and lost.
 - A picture for every item. `npm run photos` fetches a generic, unbranded photograph per item; `npm run art` draws a flat illustration as the fallback. Nothing ever renders without an image.
 - An information-architecture study (`npm run ia`) that runs a simulated card sort and tree test over the whole catalogue and reports which placements are contested. See `docs/ia-study.md`.
+- A Compare baskets screen that ranks the agent's verified baskets against each other, shows how much of your list each one actually covers, and is where a shop starts from.
+- A shopping checklist driven by those verified prices, with real per-line totals.
 - Editable grocery lists, paste import, product matching, quantities, brand locks, and sharing.
 - An Account settings screen covering profile, household, budget, location, dietary and allergen preferences, and learning controls, with a separated destructive zone for forgetting or erasing.
 - Legal screens: Terms of Use, Privacy Policy, and Data sources & attribution, written to describe what this app actually does.
@@ -244,3 +246,23 @@ workspace footer.
 The Data sources page is not optional decoration: OpenStreetMap's ODbL requires
 visible attribution, and a test asserts that the credit and the licence are
 both present.
+
+## One run, shared by every screen
+
+`src/lib/use-agent-run.ts` owns the agent run and `aisle-app` passes it down.
+Before, the run lived inside the home screen, which meant only the home screen
+had verified prices: "Compare stores" fell back to rendering the same component,
+the shopping checklist could never be started because nothing could set an
+active basket, and the budget card showed a dash. Those were three symptoms of
+one cause.
+
+Now the home screen, Compare baskets, the checklist and the budget card all read
+the same run. Confirming a match re-totals every one of them at once through
+`basketsFrom()`, with no re-collection, so a figure cannot drift between screens.
+
+Two rules hold throughout. A complete basket always outranks a partial one, and
+an incomplete basket is never labelled cheapest — only best-covered, with a
+coverage meter so a cheap-looking half-priced basket cannot mislead. And every
+line total is the cost of that whole list line, packs included: the screens
+render it directly rather than multiplying by quantity again, which a test
+guards because doing it twice would silently double every multi-unit row.

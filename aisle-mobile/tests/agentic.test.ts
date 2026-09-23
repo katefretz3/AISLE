@@ -10,7 +10,7 @@ import {OriginGuard,safeHost,assertReadable} from '@/lib/agent/net';
 import {shopifyAdapter} from '@/lib/agent/adapters';
 import {buildShopperModel} from '@/lib/agent/memory';
 import {reviewNarrative,allowedFigures,allowedDistances} from '@/lib/agent/policy';
-import {toolByName,computeBaskets,type ToolContext} from '@/lib/agent/tools';
+import {toolByName,computeBaskets,basketsFrom,type ToolContext} from '@/lib/agent/tools';
 import {feedCandidates,coverageGaps,discoverStores} from '@/lib/agent/discovery';
 import {runAgent} from '@/lib/agent/orchestrator';
 import {chainFor,inOntario} from '@/lib/agent/registry';
@@ -324,3 +324,61 @@ test('when no catalogue can be read the run says so instead of estimating', asyn
 });
 
 function DAY(n:number){return n*86400000;}
+
+// ---- basket totals shared across screens ------------------------------------
+// The compare screen, the shopping checklist and the budget card all read these
+// numbers now, so the arithmetic has to hold in one place rather than three.
+
+test('a quantity of two is counted once, inside the line total', async()=>{
+ const ctx=await fixtureContext(fixtureState({items:[
+  {id:'item-bread',productId:'bread',name:'Whole wheat bread',qty:2,checked:false,locked:false},
+ ]}));
+ const bread=ctx.offers.find(o=>/Whole Wheat Bread/.test(o.title))!;
+ await toolByName('propose_match')!.run(
+  {itemId:'item-bread',offerId:bread.id,confidence:'high',rationale:'Same size and brand'},ctx);
+ const [basket]=computeBaskets(ctx);
+ const line=basket.lines.find(l=>l.itemId==='item-bread')!;
+ assert.equal(line.packs,2,'two loaves means two packs');
+ assert.equal(line.lineTotal,bread.price*2);
+ // The screens render lineTotal directly. Multiplying by quantity again would
+ // silently double every multi-unit row.
+ assert.equal(basket.subtotal,line.lineTotal);
+});
+
+test('a complete basket outranks a cheaper incomplete one', async()=>{
+ const state=fixtureState();
+ const {ledger,outcome}=await collectFixture();
+ const bread=outcome.offers.find(o=>/Whole Wheat Bread/.test(o.title))!;
+ const milk=outcome.offers.find(o=>/2% Milk/.test(o.title))!;
+ const salmonStandIn={...bread,id:'fixture:salmon',title:'Atlantic salmon · 500 g',
+  pack:{amount:500,unit:'g' as const,label:'500 g'},price:1299};
+
+ const proposals=new Map([
+  // A cheap shop that only covers two of the three items.
+  ['item-bread::cheap',{itemId:'item-bread',sourceId:'cheap',offerId:bread.id,packs:1,
+   lineTotal:bread.price,confidence:'high' as const,rationale:'',origin:'agent' as const}],
+  ['item-milk::cheap',{itemId:'item-milk',sourceId:'cheap',offerId:milk.id,packs:1,
+   lineTotal:milk.price,confidence:'high' as const,rationale:'',origin:'agent' as const}],
+  // A dearer shop that covers all three.
+  ['item-bread::whole',{itemId:'item-bread',sourceId:'whole',offerId:bread.id,packs:1,
+   lineTotal:bread.price,confidence:'high' as const,rationale:'',origin:'agent' as const}],
+  ['item-milk::whole',{itemId:'item-milk',sourceId:'whole',offerId:milk.id,packs:1,
+   lineTotal:milk.price,confidence:'high' as const,rationale:'',origin:'agent' as const}],
+  ['item-salmon::whole',{itemId:'item-salmon',sourceId:'whole',offerId:salmonStandIn.id,packs:1,
+   lineTotal:salmonStandIn.price,confidence:'high' as const,rationale:'',origin:'agent' as const}],
+ ]);
+
+ const baskets=basketsFrom({
+  state,perShopBudget:12000,
+  sources:[{chainId:'cheap',origin:'https://cheap.example.ca',name:'Cheap Shop',status:'ready'},
+           {chainId:'whole',origin:'https://whole.example.ca',name:'Whole Shop',status:'ready'}],
+  offers:[...outcome.offers,{...salmonStandIn,evidenceId:bread.evidenceId,excerpt:'fixture'}],
+  proposals,unmatched:new Map(),
+ });
+
+ assert.equal(baskets[0].sourceId,'whole','the complete basket ranks first');
+ assert.equal(baskets[0].complete,true);
+ assert.equal(baskets[1].complete,false,'the cheaper shop is incomplete');
+ assert.ok(baskets[1].subtotal<baskets[0].subtotal,'and it really is cheaper');
+ assert.ok(ledger.has(baskets[0].lines.find(l=>l.offer)!.offer!.evidenceId));
+});
