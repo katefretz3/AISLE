@@ -11,7 +11,8 @@ A mobile grocery planning app with Ontario city selection. Built with React 19, 
 - A picture for every item. `npm run photos` fetches a generic, unbranded photograph per item; `npm run art` draws a flat illustration as the fallback. Nothing ever renders without an image.
 - An information-architecture study (`npm run ia`) that runs a simulated card sort and tree test over the whole catalogue and reports which placements are contested. See `docs/ia-study.md`.
 - A Compare baskets screen that ranks the agent's verified baskets against each other, shows how much of your list each one actually covers, and is where a shop starts from.
-- A shopping checklist driven by those verified prices, with real per-line totals.
+- A shopping checklist ordered the way a shop is walked, with a live running total pinned to the top.
+- Start from a previous list: the last shop is snapshotted automatically, lists can be named and kept, and your usuals are one tap away.
 - Editable grocery lists, paste import, product matching, quantities, brand locks, and sharing.
 - An Account settings screen covering profile, household, budget, location, dietary and allergen preferences, and learning controls, with a separated destructive zone for forgetting or erasing.
 - Legal screens: Terms of Use, Privacy Policy, and Data sources & attribution, written to describe what this app actually does.
@@ -266,3 +267,33 @@ coverage meter so a cheap-looking half-priced basket cannot mislead. And every
 line total is the cost of that whole list line, packs included: the screens
 render it directly rather than multiplying by quantity again, which a test
 guards because doing it twice would silently double every multi-unit row.
+
+## In the shop
+
+Two details on the checklist matter more than they look.
+
+**It is ordered by the walk, not by the list.** `src/lib/shopping-order.ts` holds
+a walk order that is deliberately different from the catalogue's browse order:
+browsing is a lookup problem, walking is a route problem. Perimeter departments
+come first and frozen comes last, because picking frozen up first means carrying
+thawing food around the shop. Items somebody typed themselves have no department
+and collect in one group at the end rather than being scattered. A toggle returns
+to list order and the choice is remembered.
+
+**The total is live, pinned, and honest.** It counts only what has actually been
+ticked. An item that was picked up but that nothing could price is reported
+separately rather than counted as zero — counting it as zero would make the
+running total read lower than the shop really is, and that is the one number a
+shopper has to be able to trust. A test guards it.
+
+## Starting from a previous list
+
+Most shops are mostly the same list, so retyping it is the largest piece of
+avoidable work in the app. Finishing a shop snapshots that list automatically,
+which means "start from last shop" always exists without anyone deciding to save
+anything. Lists can also be named and kept, and automatic snapshots are pruned
+without ever crowding out a named one.
+
+"Your usuals" combines the staples chosen during setup with whatever the shopper
+model says is due again. Adding something already on the list raises its quantity
+instead of creating a second line to tick twice in the shop.

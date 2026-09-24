@@ -322,3 +322,9 @@ html{overflow-x:clip}
 .store-logo-fallback{display:grid;place-items:center;width:100%;height:100%;
  border-radius:9px;background:var(--secondary);color:var(--secondary-foreground);
  font-size:.82rem;font-weight:700;letter-spacing:.04em}
+
+/* Toast dismiss. Small even for a transient control, and toasts appear right
+   above the thumb on a phone. */
+@media (max-width:960px){
+ [data-sonner-toast] [data-close-button]{width:44px!important;height:44px!important}
+}

@@ -1,0 +1,74 @@
+/* In-store checklist. Larger touch targets and higher contrast than the rest of
+   the app: this screen is used one-handed, in bad light, sometimes with a
+   trolley in the other hand. */
+
+.checklist{display:flex;flex-direction:column;gap:14px}
+
+/* Running total ------------------------------------------------------------*/
+.checklist-running{position:sticky;top:78px;z-index:15;display:flex;flex-direction:column;gap:9px;
+ padding:16px 18px;border-radius:var(--radius-lg);border:1px solid var(--border);
+ background:color-mix(in srgb,var(--card) 94%,transparent);
+ backdrop-filter:saturate(1.6) blur(12px);-webkit-backdrop-filter:saturate(1.6) blur(12px);
+ box-shadow:var(--shadow-md)}
+.checklist-running-top{display:flex;align-items:flex-end;justify-content:space-between;gap:14px}
+.checklist-running-label{display:block;font-size:.7rem;font-weight:650;letter-spacing:.07em;
+ text-transform:uppercase;color:var(--muted-foreground)}
+.checklist-running-total{display:block;margin-top:3px;font-size:1.9rem;font-weight:650;line-height:1;
+ letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--foreground)}
+.checklist-running-right{text-align:right}
+.checklist-remaining{display:block;font-size:1rem;font-weight:650;font-variant-numeric:tabular-nums;
+ color:var(--primary)}
+.checklist-remaining.is-over{color:var(--destructive)}
+.checklist-running-right small{display:block;margin-top:2px;font-size:.75rem;color:var(--muted-foreground)}
+.checklist-running-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+ gap:8px;margin:0;font-size:.78rem;color:var(--muted-foreground)}
+.checklist-unpriced{display:inline-flex;align-items:center;gap:5px;color:var(--destructive)}
+
+/* Toolbar ------------------------------------------------------------------*/
+.checklist-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.checklist-where{display:inline-flex;align-items:center;gap:7px;font-size:.84rem;font-weight:600;
+ color:var(--muted-foreground)}
+.checklist-order{display:inline-flex;gap:3px;padding:3px;border-radius:999px;background:var(--muted)}
+.checklist-order button{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:0;
+ border-radius:999px;background:none;font:inherit;font-size:.79rem;font-weight:600;
+ color:var(--muted-foreground);cursor:pointer;transition:background .15s,color .15s}
+.checklist-order button[aria-pressed=true]{background:var(--card);color:var(--foreground);
+ box-shadow:var(--shadow-sm)}
+
+/* Groups -------------------------------------------------------------------*/
+.checklist-group{display:flex;flex-direction:column;gap:2px}
+.checklist-group-head{display:flex;align-items:center;justify-content:space-between;gap:10px;
+ margin:0;padding:10px 4px 8px;font-size:.75rem;font-weight:700;letter-spacing:.08em;
+ text-transform:uppercase;color:var(--muted-foreground);
+ border-bottom:1px solid var(--border);position:sticky;top:206px;z-index:10;
+ background:color-mix(in srgb,var(--background) 92%,transparent);
+ backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.checklist-group-name{display:inline-flex;align-items:center;gap:7px}
+.checklist-group-name svg{color:var(--primary)}
+.checklist-group-count{font-variant-numeric:tabular-nums;letter-spacing:0}
+.checklist-group.is-done .checklist-group-head{color:var(--primary);opacity:.75}
+.checklist-rows{display:flex;flex-direction:column}
+
+@media (max-width:960px){
+ .checklist-running{top:calc(env(safe-area-inset-top) + 68px)}
+ .checklist-group-head{top:calc(env(safe-area-inset-top) + 196px)}
+}
+@media (max-width:420px){
+ .checklist-running{padding:13px 14px}
+ .checklist-running-total{font-size:1.6rem}
+ .checklist-toolbar{flex-direction:column;align-items:stretch}
+ .checklist-order{justify-content:center}
+}
+
+/* The tick box is the most-used control in the app and gets tapped one-handed,
+   often with a trolley in the other. Give it a full 44px target without
+   inflating the visual box, and the same for the order toggle. */
+@media (max-width:960px){
+ .checklist-order button{min-height:44px}
+ .checklist-rows [data-slot=checkbox],
+ .checklist-rows .item-check{position:relative}
+ .checklist-rows [data-slot=checkbox]::after,
+ .checklist-rows .item-check::after{content:'';position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);width:48px;height:48px;border-radius:12px}
+ .checklist-rows .item-row{min-height:60px}
+}

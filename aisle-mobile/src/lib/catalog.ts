@@ -6,7 +6,11 @@ export type Store = { id: string; name: string; short: string; color: string; te
 export type ListItem = { id: string; productId: string | null; name: string; qty: number; checked: boolean; locked: boolean };
 export type Preferences = { searchLocation?:SearchLocation; name: string; area: string; city: string; budget: number; household: number; transport: "drive" | "walk" | "transit"; radius: number; usualStore: string; substitutions: boolean; learning: boolean; categoryLocks: string[]; neighbourhood:string; priority:"saving"|"balanced"|"convenience"; frequency:"weekly"|"twice-weekly"|"fortnightly"; dietary:string[]; allergens:string[]; preferredBrands:string[]; favouriteProducts:string[]; excludedProducts:string[]; preferredStores:string[]; minimumSwapSaving:number };
 export type Trip = { id: string; storeId: string; storeName?: string; date: string; total: number; predicted: number; comparisonTotal: number; items: number; receiptId?: string; prices: {name: string; quantity: number; actual: number; predicted: number}[] };
-export type UserState = { onboarded: boolean; listName: string; items: ListItem[]; prefs: Preferences; trips: Trip[]; offerSelections?:Record<string,Record<string,string>>; events: {category: string; action: string; date: string; productId?:string; storeId?:string;brand?:string;offerId?:string}[]; activeShop: string | null };
+/** A list kept for reuse. `auto` marks the snapshot taken when a shop is
+ *  finished, so "start from last shop" exists without anyone having to think
+ *  about saving. */
+export type SavedList = { id: string; name: string; savedAt: string; auto?: boolean; items: ListItem[] };
+export type UserState = { onboarded: boolean; listName: string; items: ListItem[]; savedLists?: SavedList[]; prefs: Preferences; trips: Trip[]; offerSelections?:Record<string,Record<string,string>>; events: {category: string; action: string; date: string; productId?:string; storeId?:string;brand?:string;offerId?:string}[]; activeShop: string | null };
 export const stores: Store[] = [
  {id:"food-basics",name:"Food Basics",short:"fb",color:"#e9f1d5",text:"#416324",factor:.95,km:3.2,url:"https://www.foodbasics.ca",priced:true},
  {id:"no-frills",name:"No Frills",short:"nf",color:"#ffed42",text:"#20251a",factor:.97,km:2.4,url:"https://www.nofrills.ca",priced:true},
@@ -58,8 +62,8 @@ export const productImagePath = (id?:string|null) =>
 export const categories = ["All items",...DEPARTMENT_NAMES];
 export const money = (cents:number) => new Intl.NumberFormat("en-CA",{style:"currency",currency:"CAD"}).format(cents/100);
 export const profileDefaults={city:"Burlington",neighbourhood:"Burlington",priority:"balanced" as const,frequency:"weekly" as const,dietary:[] as string[],allergens:[] as string[],preferredBrands:[] as string[],favouriteProducts:[] as string[],excludedProducts:[] as string[],preferredStores:[] as string[],minimumSwapSaving:50};
-export function normalizeState(s:UserState):UserState{const city=ontarioCities.find(c=>c.name===(s.prefs.city??s.prefs.area))?.name??"Burlington";const point=s.prefs.searchLocation;const valid=point&&point.city===city&&Number.isFinite(point.lat)&&Math.abs(point.lat)<=85&&Number.isFinite(point.lng)&&Math.abs(point.lng)<=180;const prefs={...profileDefaults,...s.prefs,city,searchLocation:valid?point:cityLocation(city)};return {...s,prefs,events:s.events??[]};}
-export const initialState = ():UserState => ({onboarded:false,listName:"The weekly shop",items:["strawberries","avocados","bananas","milk","eggs","bread","chicken","pasta","yogurt","broccoli","coffee","tomatoes"].map((id,i)=>({id:`starter-${i}`,productId:id,name:productById[id].name,qty:1,checked:false,locked:id==="coffee"})),prefs:{name:"",area:"Burlington",budget:120,household:2,transport:"drive",radius:10,usualStore:"fortinos",substitutions:true,learning:false,categoryLocks:[],...profileDefaults},trips:[],events:[],activeShop:null});
+export function normalizeState(s:UserState):UserState{const city=ontarioCities.find(c=>c.name===(s.prefs.city??s.prefs.area))?.name??"Burlington";const point=s.prefs.searchLocation;const valid=point&&point.city===city&&Number.isFinite(point.lat)&&Math.abs(point.lat)<=85&&Number.isFinite(point.lng)&&Math.abs(point.lng)<=180;const prefs={...profileDefaults,...s.prefs,city,searchLocation:valid?point:cityLocation(city)};return {...s,prefs,events:s.events??[],savedLists:s.savedLists??[]};}
+export const initialState = ():UserState => ({onboarded:false,listName:"The weekly shop",savedLists:[],items:["strawberries","avocados","bananas","milk","eggs","bread","chicken","pasta","yogurt","broccoli","coffee","tomatoes"].map((id,i)=>({id:`starter-${i}`,productId:id,name:productById[id].name,qty:1,checked:false,locked:id==="coffee"})),prefs:{name:"",area:"Burlington",budget:120,household:2,transport:"drive",radius:10,usualStore:"fortinos",substitutions:true,learning:false,categoryLocks:[],...profileDefaults},trips:[],events:[],activeShop:null});
 // Demonstration fixtures only. Never observed retailer prices or live inventory.
 export function priceAt(productId:string, storeId:string):number|null {
  const p=productById[productId],s=stores.find(s=>s.id===storeId);
@@ -155,4 +159,17 @@ export function swapConfidence(state:UserState,category:string){
 export function starterList(prefs:Preferences):ListItem[]{
  const ids=prefs.favouriteProducts.length?prefs.favouriteProducts:prefs.allergens.length?[]:initialState().items.map(i=>i.productId!).filter(id=>allowedSuggestion(productById[id],prefs));
  return ids.filter(id=>productById[id]&&!prefs.excludedProducts.includes(id)).map((id,i)=>({id:`setup-${i}`,productId:id,name:productById[id].name,qty:1,checked:false,locked:prefs.preferredBrands.includes(productById[id].brand)}));
+}
+
+/** A fresh, unchecked copy of a saved list's items, with new ids. */
+export function reopenList(list:SavedList):ListItem[]{
+ return list.items.map((item,index)=>({...item,id:`reopened-${Date.now().toString(36)}-${index}`,checked:false}));
+}
+
+/** Keep the newest snapshots and every named list, so automatic saves cannot
+ *  crowd out the ones somebody chose to keep. */
+export function pruneSavedLists(lists:SavedList[],keepAuto=5):SavedList[]{
+ const named=lists.filter(l=>!l.auto);
+ const auto=lists.filter(l=>l.auto).sort((a,b)=>b.savedAt.localeCompare(a.savedAt)).slice(0,keepAuto);
+ return [...auto,...named].sort((a,b)=>b.savedAt.localeCompare(a.savedAt)).slice(0,30);
 }
