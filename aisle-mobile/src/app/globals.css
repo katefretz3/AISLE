@@ -316,3 +316,9 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
    which breaks position:sticky inside the page. */
 html{overflow-x:clip}
 @media (max-width:960px){nav.mobile-nav{max-width:100%}}
+
+/* A retailer the agent discovered has no bundled logo; show initials instead of
+   a broken image. */
+.store-logo-fallback{display:grid;place-items:center;width:100%;height:100%;
+ border-radius:9px;background:var(--secondary);color:var(--secondary-foreground);
+ font-size:.82rem;font-weight:700;letter-spacing:.04em}

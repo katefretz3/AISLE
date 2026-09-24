@@ -8,7 +8,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DOCUMENTS,OPERATOR,PLACEHOLDER_FIELDS,PRIVACY,SOURCES,TERMS,documentById,hasPlaceholders} from '@/lib/legal';
-import {initialState} from '@/lib/catalog';
+import {initialState,stores,type Trip} from '@/lib/catalog';
 import {perShopBudget,cadenceDays} from '@/lib/agent';
 import ErrorBoundary from '@/components/error-boundary';
 
@@ -135,4 +135,27 @@ test('the error boundary captures a render error instead of blanking the app', (
 
  const instance=new ErrorBoundary({children:null});
  assert.equal(instance.state.error,null,'starts clean so it renders children normally');
+});
+
+// ---- shopping history ------------------------------------------------------
+
+test('a trip records its shop name so history survives an unknown source', ()=>{
+ // Shops can now start from an agent basket, whose retailer is not one of the
+ // bundled chains. History used to assert the chain existed, which crashed the
+ // spending screen for anyone who shopped at a discovered retailer.
+ const trip:Trip={id:'t1',storeId:'goodnessme',storeName:'Goodness Me!',date:'2026-09-20',
+  total:4250,predicted:0,comparisonTotal:0,items:3,prices:[]};
+ assert.equal(stores.find(s=>s.id===trip.storeId),undefined,
+  'this retailer is deliberately not a bundled chain');
+ // The screen resolves the chain, then the recorded name, then the raw id.
+ const resolved=stores.find(s=>s.id===trip.storeId)?.name??trip.storeName??trip.storeId;
+ assert.equal(resolved,'Goodness Me!');
+
+ // A trip saved before this field existed still resolves to something showable.
+ const legacy:Trip={...trip,storeName:undefined};
+ const legacyResolved=stores.find(s=>s.id===legacy.storeId)?.name??legacy.storeName??legacy.storeId;
+ assert.equal(legacyResolved,'goodnessme','falls back to the id rather than throwing');
+
+ const bundled:Trip={...trip,storeId:'metro',storeName:undefined};
+ assert.equal(stores.find(s=>s.id===bundled.storeId)?.name,'Metro');
 });
