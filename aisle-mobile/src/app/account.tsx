@@ -71,6 +71,7 @@ export default function Account({state,saveStatus,onPrefs,onCommit,onEditFood,on
  const learnedCount=state.events.length;
  const boughtItems=state.trips.reduce((n,t)=>n+(t.lines?.length??0),0);
  const shelfCount=(state.shelfPrices??[]).length;
+ const shelfPhotos=(state.shelfPrices??[]).filter(r=>r.photoId).length;
  const hasLearned=learnedCount>0||p.categoryLocks.length>0||p.excludedProducts.length>0;
 
  function commitBudget(next:string){
@@ -329,7 +330,7 @@ export default function Account({state,saveStatus,onPrefs,onCommit,onEditFood,on
      <li><Sparkles size={16}/><span>{p.learning?`${plural(learnedCount,'recorded choice')} in use`:'Learning is off — explicit settings only'}</span></li>
      <li><CheckCheck size={16}/><span>{plural(state.trips.length,'shopping trip')} recorded</span></li>
      <li><ReceiptText size={16}/><span>{plural(boughtItems,'item')} on those receipts, with any prices you entered</span></li>
-     <li><Tag size={16}/><span>{plural(shelfCount,'shelf price')} you read off a label</span></li>
+     <li><Tag size={16}/><span>{plural(shelfCount,'shelf price')} you read off a label{shelfPhotos>0&&`, ${shelfPhotos} with a photo`}</span></li>
     </ul>
     <p className="account-memory-note">A saved receipt records which items were in that
      shop, so Aisle can tell you what you usually buy and what you last paid. It stays on
@@ -338,7 +339,8 @@ export default function Account({state,saveStatus,onPrefs,onCommit,onEditFood,on
     <p className="account-memory-note">Prices you type off a shelf are kept apart from prices
      Aisle collected itself. They are shown as yours wherever they appear, are never counted
      towards a verified saving, and are dropped after a year because a shelf does not stay
-     still that long.</p>
+     still that long. A photograph of a label is stored on this device only, never uploaded,
+     and is deleted along with the price it belongs to.</p>
    </div>
 
    <div className="account-danger">

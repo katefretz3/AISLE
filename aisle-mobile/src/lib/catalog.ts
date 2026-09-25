@@ -57,6 +57,9 @@ export type ShelfPrice = {
  packLabel: string;
  observedAt: string;
  note?: string;
+ /** A photograph of the label, stored separately. The price stands without it:
+  *  a dangling id is treated as no photo rather than as an error. */
+ photoId?: string;
 };
 
 /** Superseded by `TripLine`. Kept so trips saved before the change still load. */

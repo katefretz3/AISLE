@@ -2,9 +2,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {recordShelfPrice,latestShelfPrice,shelfLineTotal,resolveLinePrice,
- tallyProvenance,isStale,shelfPriceAgeDays,expectedPackLabel,removeShelfPrice} from '@/lib/shelf-prices';
+ tallyProvenance,isStale,shelfPriceAgeDays,expectedPackLabel,removeShelfPrice,referencedPhotoIds} from '@/lib/shelf-prices';
 import {normalizeState,pruneShelfPrices,type ListItem,type ShelfPrice,type UserState} from '@/lib/catalog';
 import {faultsOf,EvidenceLedger} from '@/lib/agent';
+import {scaledSize,orphanPhotoIds,photoRejection,MAX_PHOTO_EDGE,TARGET_PHOTO_BYTES} from '@/lib/photo';
 import {fixtureState} from './fixtures';
 
 const DAY=86400000;
@@ -132,4 +133,55 @@ test('captures survive a reload and can be removed', ()=>{
 test('the capture form is prefilled with the size the list asked for', ()=>{
  assert.equal(expectedPackLabel(item('bread')),'675 g');
  assert.equal(expectedPackLabel(item(null)),'','nothing to suggest for a custom item');
+});
+
+// ---- stored photographs ------------------------------------------------------
+
+test('photos are only ever scaled down', ()=>{
+ assert.deepEqual(scaledSize(4032,3024,MAX_PHOTO_EDGE),{width:1200,height:900},'landscape fits the long edge');
+ assert.deepEqual(scaledSize(3024,4032,MAX_PHOTO_EDGE),{width:900,height:1200},'portrait too');
+ assert.deepEqual(scaledSize(800,600,MAX_PHOTO_EDGE),{width:800,height:600},'a small photo is left alone');
+ assert.deepEqual(scaledSize(0,0,MAX_PHOTO_EDGE),{width:0,height:0},'nothing to scale');
+ assert.equal(scaledSize(1,1,MAX_PHOTO_EDGE).width,1,'never rounds away to zero');
+ assert.ok(MAX_PHOTO_EDGE*MAX_PHOTO_EDGE*3<TARGET_PHOTO_BYTES*8,
+  're-encoding is the exception, not the rule, at this edge length');
+});
+
+test('every route that drops a price leaves its photo collectable', ()=>{
+ // Deleting by hand, the year-old cutoff and the 500 cap all remove rows
+ // without touching the filesystem. Hooking each one would eventually miss a
+ // path, so the live ids are reconciled against what is on disk instead.
+ const onDisk=['aaaaaaaaaaaaaaaa.json','bbbbbbbbbbbbbbbb.json','cccccccccccccccc.json'];
+ assert.deepEqual(orphanPhotoIds(onDisk,['bbbbbbbbbbbbbbbb']),
+  ['aaaaaaaaaaaaaaaa','cccccccccccccccc']);
+ assert.deepEqual(orphanPhotoIds(onDisk,onDisk.map(f=>f.replace('.json',''))),[],
+  'nothing referenced is deleted');
+ assert.deepEqual(orphanPhotoIds([],['aaaaaaaaaaaaaaaa']),[],'a dangling id deletes nothing');
+ // Anything that is not one of ours is left alone.
+ assert.deepEqual(orphanPhotoIds(['household.json','notes.txt','../escape.json'],[]),[]);
+});
+
+test('a pruned price surrenders its photo id to the sweep', ()=>{
+ const kept:ShelfPrice={id:'r1',productId:'bread',itemName:'Bread',storeId:'metro',storeName:'Metro',
+  priceCents:449,pack:null,packLabel:'not stated',observedAt:new Date(NOW-DAY).toISOString(),
+  photoId:'aaaaaaaaaaaaaaaa'};
+ const aged={...kept,id:'r2',observedAt:new Date(NOW-400*DAY).toISOString(),photoId:'bbbbbbbbbbbbbbbb'};
+ const state={...fixtureState(),shelfPrices:pruneShelfPrices([kept,aged],NOW)};
+ assert.deepEqual(referencedPhotoIds(state),['aaaaaaaaaaaaaaaa'],'the aged-out photo is no longer referenced');
+ assert.deepEqual(orphanPhotoIds(['aaaaaaaaaaaaaaaa.json','bbbbbbbbbbbbbbbb.json'],referencedPhotoIds(state)),
+  ['bbbbbbbbbbbbbbbb'],'so the sweep collects it');
+});
+
+test('a photo is refused before any of it is read', ()=>{
+ assert.equal(photoRejection(2_000_000,'image/jpeg'),null);
+ assert.match(photoRejection(2_000_000,'application/pdf')!,/JPEG, PNG or WebP/);
+ assert.match(photoRejection(20_000_000,'image/jpeg')!,/under 8 MB/);
+ assert.match(photoRejection(0,'image/png')!,/empty/);
+});
+
+test('a price stands on its own without a photograph', ()=>{
+ const state=capture(fixtureState());
+ assert.equal(state.shelfPrices![0].photoId,undefined,'a photo is optional');
+ assert.equal(shelfLineTotal(state.shelfPrices![0],item('bread')),449,'and changes nothing about the price');
+ assert.deepEqual(referencedPhotoIds(state),[]);
 });

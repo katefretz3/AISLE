@@ -7,12 +7,14 @@
 // size is offered rather than assumed, because noticing that the shelf has a
 // 450 g loaf when your list says 675 g is the single most useful thing a person
 // can tell this app.
-import {useEffect,useState} from 'react';
-import {Info,Tag,Trash2} from 'lucide-react';
+import {useEffect,useRef,useState} from 'react';
+import {Camera,Info,LoaderCircle,Tag,Trash2,X} from 'lucide-react';
 import {Dialog,DialogContent,DialogDescription,DialogTitle} from '@/components/ui/dialog';
 import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from '@/components/ui/select';
 import {money,type ListItem,type ShelfPrice} from '@/lib/catalog';
 import {expectedPackLabel,shelfPriceAgeDays,isStale} from '@/lib/shelf-prices';
+import {isDevice,captureShelfPhoto,saveShelfPhoto,readShelfPhoto,deleteShelfPhoto} from '@/lib/persistence';
+import {PHOTO_TYPES} from '@/lib/photo';
 import './shelf-price-capture.css';
 
 type StoreOption={value:string;label:string};
@@ -26,7 +28,7 @@ type Props={
  stores:StoreOption[];
  /** Whatever was captured for this item before, so it can be corrected. */
  existing:ShelfPrice|null;
- onSave:(input:{priceCents:number;packLabel:string;storeId:string;note:string})=>void;
+ onSave:(input:{priceCents:number;packLabel:string;storeId:string;note:string;photoId?:string})=>void;
  onRemove:(id:string)=>void;
 };
 
@@ -38,6 +40,10 @@ export default function ShelfPriceCapture({
  const [storeId,setStoreId]=useState(defaultStoreId);
  const [note,setNote]=useState('');
  const [error,setError]=useState('');
+ const [photoId,setPhotoId]=useState<string|undefined>();
+ const [preview,setPreview]=useState<string|null>(null);
+ const [busy,setBusy]=useState(false);
+ const fileRef=useRef<HTMLInputElement>(null);
 
  // Reset to this item every time the sheet opens, so a price typed for one
  // product can never be saved against another.
@@ -48,8 +54,28 @@ export default function ShelfPriceCapture({
    ?existing.packLabel:expectedPackLabel(item));
   setStoreId(existing?.storeId??defaultStoreId);
   setNote(existing?.note??'');
+  setPhotoId(existing?.photoId);
   setError('');
+  setPreview(null);
+  // Photos are read one at a time, when one is actually on screen. Holding
+  // several hundred base64 images in memory to render a thumbnail is not a
+  // trade worth making.
+  if(existing?.photoId)void readShelfPhoto(existing.photoId).then(setPreview);
  },[open,item,existing,defaultStoreId]);
+
+ async function attach(file?:File|null){
+  if(!file)return;
+  setBusy(true);setError('');
+  try{
+   const saved=await saveShelfPhoto(file);
+   // Replacing an image leaves the old one behind unless it goes now. The sweep
+   // on load would catch it eventually; doing it here keeps the device tidy.
+   if(photoId&&photoId!==existing?.photoId)void deleteShelfPhoto(photoId);
+   setPhotoId(saved);
+   setPreview(await readShelfPhoto(saved));
+  }catch(e){setError(e instanceof Error?e.message:'That photo could not be saved.');}
+  finally{setBusy(false);if(fileRef.current)fileRef.current.value='';}
+ }
 
  if(!item)return null;
 
@@ -59,7 +85,7 @@ export default function ShelfPriceCapture({
    setError('Enter the price on the label, in dollars.');return;
   }
   if(cents>100000){setError('That looks too high for a shelf price. Check the decimal point.');return;}
-  onSave({priceCents:cents,packLabel,storeId,note});
+  onSave({priceCents:cents,packLabel,storeId,note,photoId});
   onOpenChange(false);
  }
 
@@ -104,16 +130,34 @@ export default function ShelfPriceCapture({
      aria-label="Note about this price" value={note} onChange={e=>setNote(e.target.value)}/>
    </label>
 
+   <input type="file" accept={PHOTO_TYPES.join(',')} ref={fileRef} className="sr-only"
+    onChange={e=>void attach(e.target.files?.[0])}/>
+   {preview
+    ?<div className="shelf-photo">
+      <img src={preview} alt={`The shelf label you photographed for ${item.name}`}/>
+      <button type="button" className="icon-button shelf-photo-remove" aria-label="Remove this photo"
+       onClick={()=>{if(photoId&&photoId!==existing?.photoId)void deleteShelfPhoto(photoId);
+        setPhotoId(undefined);setPreview(null);}}><X size={15}/></button>
+     </div>
+    :<button type="button" className="shelf-photo-add" disabled={busy}
+      onClick={()=>{if(isDevice)void captureShelfPhoto().then(attach).catch(()=>setError('Could not open the camera.'));
+       else fileRef.current?.click();}}>
+      {busy?<LoaderCircle className="spin" size={19}/>:<Camera size={19}/>}
+      <span>{busy?'Saving the photo…':'Photograph the label'}<small>optional · kept on this device</small></span>
+     </button>}
+
    {error&&<p role="alert" className="shelf-error">{error}</p>}
 
    <div className="shelf-honesty">
     <Info size={15}/>
     <p>This is your own reading of the label, so Aisle records it as yours. It is
      kept apart from prices Aisle collected itself, shown as something you saw
-     rather than something it verified, and never used to claim a saving.</p>
+     rather than something it verified, and never used to claim a saving. A photo is
+     stored on this device only, and goes when the price does — so keep other people
+     out of the frame.</p>
    </div>
 
-   <button className="button primary full" onClick={save}>
+   <button className="button primary full shelf-save" onClick={save}>
     Save this price
    </button>
 

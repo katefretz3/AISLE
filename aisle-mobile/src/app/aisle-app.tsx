@@ -27,10 +27,10 @@ import DueThisWeek from '@/components/due-this-week';
 import ShelfPriceCapture from '@/components/shelf-price-capture';
 import Account from './account';
 import Legal from './legal';
-import {loadState,saveState,uploadReceipt,openReceiptFile,captureReceipt,shareList,isDevice} from "@/lib/persistence";
+import {loadState,saveState,uploadReceipt,openReceiptFile,captureReceipt,shareList,isDevice,sweepShelfPhotos,deleteShelfPhoto} from "@/lib/persistence";
 import {personalSuggestions,recordChoice,starterList,products,productById,productImagePath,stores,categories,money,initialState,parseList,type Product,type Store,type UserState,type ListItem,type Preferences,type Trip,type TripLine} from "@/lib/catalog";
 import {priceHistory,accuracy} from '@/lib/shopping-history';
-import {recordShelfPrice,removeShelfPrice,latestShelfPrice,resolveLinePrice,tallyProvenance,shelfPriceAgeDays,isStale} from '@/lib/shelf-prices';
+import {recordShelfPrice,removeShelfPrice,latestShelfPrice,resolveLinePrice,tallyProvenance,shelfPriceAgeDays,isStale,referencedPhotoIds} from '@/lib/shelf-prices';
 import {valueSwaps,totalSaving,type ValueSwap} from "@/lib/value-swaps";
 
 type View="home"|"list"|"compare"|"spending"|"account"|"legal"|"shop";
@@ -116,7 +116,11 @@ export default function AisleApp(){
  const checked=state.items.filter(i=>i.checked).length;
  const missing=state.items.filter(i=>!i.productId).length;
 
- async function load(){setLoadError(false);try{const data=await loadState();ref.current=data.state;setState(data.state);revision.current=data.revision;setDraft(data.state.prefs);setOnboard(!data.state.onboarded);setSavingError("");setSaveStatus("Saved");setReady(true);}catch{setLoadError(true);}}
+ async function load(){setLoadError(false);try{const data=await loadState();ref.current=data.state;setState(data.state);revision.current=data.revision;setDraft(data.state.prefs);setOnboard(!data.state.onboarded);setSavingError("");setSaveStatus("Saved");setReady(true);
+   // Prices are dropped by several routes — removed by hand, aged out, pushed
+   // past the cap — and each would otherwise leave its photo behind.
+   void sweepShelfPhotos(referencedPhotoIds(data.state));
+  }catch{setLoadError(true);}}
  useEffect(()=>{void load();const handle=()=>{
    const raw=location.hash.slice(1);
    const [head,tail]=raw.split("/");
@@ -449,9 +453,11 @@ export default function AisleApp(){
    onSave={input=>{if(!captureItem)return;
     commit(st=>recordShelfPrice(st,{item:captureItem,storeId:input.storeId,
      storeName:shopIdentity(input.storeId).name,priceCents:input.priceCents,
-     packLabel:input.packLabel,note:input.note}));
+     packLabel:input.packLabel,note:input.note,photoId:input.photoId}));
     toast.success(`Saved ${money(input.priceCents)} for ${captureItem.name}. Recorded as your own reading.`);}}
-   onRemove={id=>{commit(st=>removeShelfPrice(st,id));toast('Removed that price.');}}/>
+   onRemove={id=>{const gone=(state.shelfPrices??[]).find(r=>r.id===id);
+    if(gone?.photoId)void deleteShelfPhoto(gone.photoId);
+    commit(st=>removeShelfPrice(st,id));toast('Removed that price.');}}/>
   <ListStarters open={startersOpen} onOpenChange={setStartersOpen} state={state} onUse={useStarter}/>
   <AlertDialog open={resetOpen} onOpenChange={setResetOpen}><AlertDialogContent><AlertDialogTitle>Start fresh?</AlertDialogTitle><AlertDialogDescription>Your saved data cannot be read, so Aisle will replace it with an empty list and default preferences. Anything currently stored on this device is discarded. This cannot be undone.</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={()=>{void (async()=>{try{const blank=initialState();await saveState({...blank,onboarded:true},0).catch(async()=>{await saveState({...blank,onboarded:true},(await loadState()).revision);});setResetOpen(false);window.location.reload();}catch{setResetOpen(false);setSavingError("Aisle could not reset its storage. Reinstalling the app will clear it.");}})();}}>Start fresh</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog><AlertDialog open={clearOpen} onOpenChange={setClearOpen}><AlertDialogContent><AlertDialogTitle>Start with a fresh list?</AlertDialogTitle><AlertDialogDescription>This removes all {state.items.length} products from the current list. Your preferences and past receipts will stay saved.</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel>Keep my list</AlertDialogCancel><AlertDialogAction onClick={()=>{commit(s=>({...s,items:[],activeShop:null}));setListFilter("All items");toast.success("Your list is ready for a fresh start.");}}>Clear list</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   <Toaster position="bottom-right" theme="light" closeButton/>

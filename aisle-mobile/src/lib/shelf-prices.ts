@@ -28,6 +28,7 @@ export type ShelfPriceInput={
  /** What the label was for, e.g. "675 g". Blank records an unknown pack. */
  packLabel:string;
  note?:string;
+ photoId?:string;
 };
 
 /**
@@ -51,6 +52,7 @@ export function recordShelfPrice(state:UserState,input:ShelfPriceInput,now=Date.
   packLabel:packLabel||'not stated',
   observedAt:new Date(now).toISOString(),
   ...(input.note?.trim()?{note:input.note.trim().slice(0,140)}:{}),
+  ...(input.photoId?{photoId:input.photoId}:{}),
  };
  return {...state,shelfPrices:pruneShelfPrices([row,...(state.shelfPrices??[])],now)};
 }
@@ -151,3 +153,7 @@ export function tallyProvenance(items:ListItem[],resolve:(item:ListItem)=>LinePr
  }
  return {collected,observed,unpriced};
 }
+
+/** Every photo id still referenced by a stored price, for the orphan sweep. */
+export const referencedPhotoIds=(state:UserState):string[]=>
+ (state.shelfPrices??[]).map(row=>row.photoId).filter((id):id is string=>!!id);
