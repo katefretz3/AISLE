@@ -55,11 +55,17 @@
 .compare-store-copy strong{display:block;font-size:.9rem;color:var(--foreground)}
 .compare-store-copy small{display:block;font-size:.76rem;color:var(--muted-foreground)}
 .compare-km{font-size:.82rem;font-variant-numeric:tabular-nums;color:var(--muted-foreground)}
-.compare-gap{display:flex;gap:12px;align-items:flex-start;padding:16px 18px;border-radius:var(--radius-lg);
- background:var(--muted);color:var(--muted-foreground)}
-.compare-gap svg{flex:0 0 auto;margin-top:1px;color:var(--primary)}
-.compare-gap strong{display:block;margin-bottom:4px;font-size:.9rem;color:var(--foreground)}
-.compare-gap p{margin:0;font-size:.84rem;line-height:1.58}
+.coverage-directory{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+.coverage-list{display:flex;flex-direction:column;gap:8px;width:100%;margin:0;padding:0;list-style:none}
+.coverage-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;
+ padding:13px 16px;border-radius:13px;border:1px solid var(--border);background:var(--card)}
+.coverage-row.is-read{border-color:color-mix(in srgb,var(--primary) 34%,var(--border))}
+.coverage-copy strong{display:block;font-size:.9rem;color:var(--foreground)}
+.coverage-copy small{display:block;margin-top:2px;font-size:.76rem;line-height:1.5;color:var(--muted-foreground)}
+.coverage-nearby{font-variant-numeric:tabular-nums}
+.agent-feed.coverage-read{background:color-mix(in srgb,var(--primary) 14%,transparent);color:var(--primary)}
+.agent-feed.coverage-readable{background:var(--muted);color:var(--foreground)}
+.agent-feed.coverage-no-feed,.agent-feed.coverage-unknown{background:var(--muted);color:var(--muted-foreground)}
 
 .compare-empty{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:34px 28px;
  border-radius:var(--radius-lg);border:1px solid var(--border);background:var(--card)}
@@ -75,6 +81,8 @@
  .compare-stores li{grid-template-columns:auto minmax(0,1fr);row-gap:8px}
  .compare-stores .compare-km,.compare-stores .agent-feed{grid-column:2;justify-self:start}
  .compare-empty{padding:26px 20px}
+ .coverage-row{grid-template-columns:minmax(0,1fr);row-gap:8px}
+ .coverage-row .agent-feed{justify-self:start}
 }
 
 @media (max-width:640px){

@@ -10,10 +10,11 @@
 // partial one, and an incomplete basket is never labelled cheapest — only
 // best-covered. A retailer with a readable catalogue but nothing matched still
 // appears, because "we looked and found nothing" is a result.
-import {useMemo} from 'react';
+import {useMemo,useState} from 'react';
 import {ArrowUpRight,Check,ChevronRight,CircleAlert,Info,MapPin,RefreshCw,ShieldCheck,ShoppingBag,Store,TrendingDown} from 'lucide-react';
 import {money,type UserState} from '@/lib/catalog';
-import type {Basket} from '@/lib/agent';
+import type {Basket,AgentRun} from '@/lib/agent';
+import {coverageRows,coverageSummary,STATUS_LABEL} from '@/lib/coverage';
 import type {AgentSession} from '@/lib/use-agent-run';
 import './basket-compare.css';
 
@@ -23,10 +24,9 @@ type Props={
  onShop:(sourceId:string)=>void;
  onList:()=>void;
  onSetup:()=>void;
- onDemo:()=>void;
 };
 
-export default function BasketCompare({state,agent,onShop,onList,onSetup,onDemo}:Props){
+export default function BasketCompare({state,agent,onShop,onList,onSetup}:Props){
  const {run,busy,error,baskets,best,perShopBudget,readable,start}=agent;
  const complete=useMemo(()=>baskets.filter(b=>b.complete),[baskets]);
 
@@ -65,7 +65,7 @@ export default function BasketCompare({state,agent,onShop,onList,onSetup,onDemo}
   </section>}
 
   {baskets.length===0
-   ? <EmptyCompare busy={busy} readable={readable} run={!!run} onList={onList} onSetup={onSetup} onDemo={onDemo}/>
+   ? <EmptyCompare busy={busy} readable={readable} run={!!run} onList={onList} onSetup={onSetup}/>
    : <>
     <div className="compare-grid">
      {baskets.map(basket=>
@@ -97,13 +97,9 @@ export default function BasketCompare({state,agent,onShop,onList,onSetup,onDemo}
       {store.feed==='connected'?'Prices read':store.feed==='no-public-feed'?'No price feed':'Not checked'}</span>
     </li>)}
    </ul>
-   {run.coverageGaps.length>0&&<div className="compare-gap">
-    <ShieldCheck size={18}/>
-    <div><strong>Chains Aisle deliberately does not price</strong>
-     <p>{run.coverageGaps.map(g=>g.name).join(', ')} {run.coverageGaps.length===1?'publishes':'publish'} no
-      public price feed. They are listed without prices rather than estimated.</p></div>
-   </div>}
   </section>}
+
+  <CoverageDirectory run={run}/>
  </div>;
 }
 
@@ -139,8 +135,8 @@ function BasketCard({basket,budget,isBest,onShop}:{basket:Basket;budget:number;i
  </article>;
 }
 
-function EmptyCompare({busy,readable,run,onList,onSetup,onDemo}:{
- busy:boolean;readable:number;run:boolean;onList:()=>void;onSetup:()=>void;onDemo:()=>void;
+function EmptyCompare({busy,readable,run,onList,onSetup}:{
+ busy:boolean;readable:number;run:boolean;onList:()=>void;onSetup:()=>void;
 }){
  return <section className="compare-empty">
   <span className="compare-empty-icon"><Store size={26}/></span>
@@ -154,7 +150,45 @@ function EmptyCompare({busy,readable,run,onList,onSetup,onDemo}:{
   {!busy&&<div className="compare-empty-actions">
    <button className="button secondary" onClick={onList}>Edit my list <ChevronRight size={15}/></button>
    <button className="button secondary" onClick={onSetup}>Widen my search area <ChevronRight size={15}/></button>
-   <button className="text-button" onClick={onDemo}>Explore the sample-price demo</button>
   </div>}
+ </section>;
+}
+
+/**
+ * Every Ontario chain Aisle knows, and whether it can read that chain's prices.
+ *
+ * This replaces a "store directory" that listed six retailers with invented
+ * distances and a flag deciding which fake prices to generate. The useful fact
+ * is the uncomfortable one: most large banners publish nothing machine-readable,
+ * so Aisle cannot price them and says so instead of guessing.
+ */
+function CoverageDirectory({run}:{run:AgentRun|null}){
+ const [open,setOpen]=useState(false);
+ const rows=useMemo(()=>coverageRows(run),[run]);
+ const summary=useMemo(()=>coverageSummary(rows),[rows]);
+ const shown=open?rows:rows.slice(0,6);
+ return <section className="coverage-directory">
+  <div className="compare-section-head">
+   <div><h2><ShieldCheck size={18}/> What Aisle can price</h2>
+    <p>{summary.readable} of {summary.total} Ontario chains publish a price feed Aisle is allowed to
+     read.{summary.nearbyUnreadable>0&&` ${summary.nearbyUnreadable} ${summary.nearbyUnreadable===1?'chain':'chains'} near you `+
+     `${summary.nearbyUnreadable===1?'does':'do'} not.`}</p></div>
+  </div>
+  <ul className="coverage-list">
+   {shown.map(row=><li key={row.chain.id} className={`coverage-row is-${row.status}`}>
+    <span className="coverage-copy">
+     <strong>{row.chain.name}</strong>
+     <small>{row.explanation}</small>
+     {row.nearby>0&&<small className="coverage-nearby">
+      {row.nearby} {row.nearby===1?'branch':'branches'} near you
+      {row.nearestKm!==null&&`, closest ${row.nearestKm.toFixed(1)} km`}</small>}
+    </span>
+    <span className={`agent-feed coverage-${row.status}`}>{STATUS_LABEL[row.status]}</span>
+   </li>)}
+  </ul>
+  {rows.length>6&&<button className="text-button" onClick={()=>setOpen(v=>!v)}>
+   {open?'Show fewer':`Show all ${rows.length} chains`}</button>}
+  <p className="field-help">A chain with no feed is not missing from your area — Aisle simply has no
+   lawful, machine-readable source for its prices, so it leaves them blank rather than estimating.</p>
  </section>;
 }

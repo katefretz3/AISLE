@@ -15,7 +15,7 @@ import {withUnitPrices} from '@/lib/unit-price';
 import './agent-workspace.css';
 
 type Props={state:UserState;agent:AgentSession;commit:(update:(state:UserState)=>UserState)=>void;onAdd:(id:string)=>void;
- onList:()=>void;onPreferences:()=>void;onSetup:()=>void;onDemo:()=>void;onCompare:()=>void};
+ onList:()=>void;onPreferences:()=>void;onSetup:()=>void;onCompare:()=>void};
 
 const PHASES=[
  {id:'discover',label:'Finding stores near you'},
@@ -25,7 +25,7 @@ const PHASES=[
  {id:'compose',label:'Totalling your baskets'},
 ] as const;
 
-export default function AgentWorkspace({state,agent,commit,onList,onPreferences,onSetup,onDemo,onCompare}:Props){
+export default function AgentWorkspace({state,agent,commit,onList,onPreferences,onSetup,onCompare}:Props){
  const {run,busy,error,baskets,best,perShopBudget:budget,readable,start}=agent;
  const phase=busy?'discover':'';
 
@@ -216,8 +216,6 @@ export default function AgentWorkspace({state,agent,commit,onList,onPreferences,
      </AccordionContent>
     </AccordionItem>
    </Accordion>
-
-   <button className="text-button agent-demo" onClick={onDemo}>Explore the separate sample-price demo</button>
   </>}
  </div>;
 }

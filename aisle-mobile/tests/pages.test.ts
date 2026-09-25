@@ -10,6 +10,13 @@ import assert from 'node:assert/strict';
 import {DOCUMENTS,OPERATOR,PLACEHOLDER_FIELDS,PRIVACY,SOURCES,TERMS,documentById,hasPlaceholders} from '@/lib/legal';
 import {initialState,stores,productById,reopenList,pruneSavedLists,type Trip,type ListItem,type SavedList} from '@/lib/catalog';
 import {groupForWalk,tallyBasket} from '@/lib/shopping-order';
+import {valueSwaps} from '@/lib/value-swaps';
+import {personalSuggestions} from '@/lib/catalog';
+import {coverageRows,coverageSummary} from '@/lib/coverage';
+import {CHAINS} from '@/lib/agent/registry';
+import type {SourcedOffer} from '@/lib/agent/provenance';
+import type {UserState} from '@/lib/catalog';
+import {fixtureState} from './fixtures';
 import {chooseBasis,unitPriceCents,formatUnitPrice,withUnitPrices} from '@/lib/unit-price';
 import type {Pack} from '@/lib/agent/types';
 import {perShopBudget,cadenceDays} from '@/lib/agent';
@@ -306,4 +313,107 @@ test('a lone offer is never crowned best value', ()=>{
  // Nor is a tie, where there is nothing to choose between them.
  const tied=withUnitPrices([{price:200,pack:pack(100,'g')},{price:400,pack:pack(200,'g')}],r=>r);
  assert.ok(tied.priced.every(p=>!p.best));
+});
+
+// ---- better-value suggestions ----------------------------------------------
+// These replace the retired demo's "swaps", which compared two hash-generated
+// numbers. Every rule below exists to stop a suggestion that is not a saving.
+
+const offer=(id:string,title:string,price:number,amount:number,unit:'g'|'ml'|'each'='g',
+ sourceId='fixture'):SourcedOffer=>({
+ id,sourceId,retailer:'Fixture Grocer',title,brand:'Dempster’s',url:'https://fixture.example.ca/p',
+ price,currency:'CAD',pack:{amount,unit,label:`${amount} ${unit}`},available:true,
+ observedAt:new Date().toISOString(),expiresAt:new Date(Date.now()+864e5).toISOString(),
+ scope:'online',tags:[],evidenceId:'ev-1',excerpt:'{}'});
+
+function breadState(over:Partial<UserState['prefs']>={}):UserState{
+ const base=fixtureState();
+ return {...base,items:[{id:'item-bread',productId:'bread',name:'Whole wheat bread',qty:1,checked:false,locked:false}],
+  prefs:{...base.prefs,minimumSwapSaving:50,...over}};
+}
+const pick=(o:SourcedOffer,packs=1)=>new Map([['item-bread',{offer:o,packs,lineTotal:o.price*packs}]]);
+
+test('a cheaper offer for the same amount is suggested, with both records named', ()=>{
+ const current=offer('a','Whole Wheat Bread',449,675);
+ const rival=offer('b','Whole Wheat Bread Bakery',349,675);
+ const [swap]=valueSwaps(breadState(),[current,rival],pick(current));
+ assert.ok(swap,'a genuinely cheaper equal-size offer is offered');
+ assert.equal(swap.to.offer.id,'b');
+ assert.equal(swap.from.offer.id,'a','the suggestion says what it is replacing');
+ assert.equal(swap.saving,100);
+ assert.equal(swap.sizeNote,'Same amount');
+});
+
+test('a smaller pack is never dressed up as a saving', ()=>{
+ // The trap: less food for less money looks like a discount and is not one.
+ const current=offer('a','Whole Wheat Bread',449,675);
+ const smaller=offer('b','Whole Wheat Bread',299,450);
+ assert.deepEqual(valueSwaps(breadState(),[current,smaller],pick(current)),[],
+  'buying less bread is not a saving');
+ // More food for less money is a real one.
+ const bigger=offer('c','Whole Wheat Bread',399,900);
+ const [swap]=valueSwaps(breadState(),[current,bigger],pick(current));
+ assert.equal(swap.to.offer.id,'c');
+ assert.match(swap.sizeNote,/Gives you more/);
+});
+
+test('suggestions stay inside the shop you are actually visiting', ()=>{
+ const current=offer('a','Whole Wheat Bread',449,675);
+ const elsewhere=offer('b','Whole Wheat Bread',249,675,'g','other-shop');
+ assert.deepEqual(valueSwaps(breadState(),[current,elsewhere],pick(current)),[],
+  'a cheaper loaf at a different shop is a different trip, not a swap');
+});
+
+test('locks, thresholds, diets and allergies all suppress suggestions', ()=>{
+ const current=offer('a','Whole Wheat Bread',449,675);
+ const rival=offer('b','Whole Wheat Bread',349,675);
+ const offers=[current,rival];
+ const locked=breadState();
+ locked.items=[{...locked.items[0],locked:true}];
+ assert.deepEqual(valueSwaps(locked,offers,pick(current)),[],'a locked item is left alone');
+ assert.deepEqual(valueSwaps(breadState({minimumSwapSaving:200}),offers,pick(current)),[],
+  'a saving under the household threshold is not worth interrupting for');
+ assert.deepEqual(valueSwaps(breadState({substitutions:false}),offers,pick(current)),[],
+  'substitutions turned off means no suggestions');
+ assert.deepEqual(valueSwaps(breadState({allergens:['Wheat']}),offers,pick(current)),[],
+  'an allergy is never traded against a price');
+ assert.deepEqual(valueSwaps(breadState({dietary:['Vegan']}),offers,pick(current)),[],
+  'nor is a diet');
+});
+
+test('an item with no collected price has nothing to compare against', ()=>{
+ const rival=offer('b','Whole Wheat Bread',349,675);
+ assert.deepEqual(valueSwaps(breadState(),[rival],new Map()),[],
+  'without a current pick there is no saving to compute');
+});
+
+// ---- coverage directory -----------------------------------------------------
+
+test('the coverage directory tells the truth about every chain', ()=>{
+ const rows=coverageRows(null);
+ assert.equal(rows.length,CHAINS.length,'no chain is quietly left out');
+ const loblaws=rows.find(r=>r.chain.id==='loblaws')!;
+ assert.equal(loblaws.status,'no-feed');
+ assert.match(loblaws.explanation,/no public machine-readable price feed/i);
+ const readable=rows.find(r=>r.chain.id==='goodnessme')!;
+ assert.equal(readable.status,'readable','a chain with a feed is marked readable before any run');
+ const summary=coverageSummary(rows);
+ assert.equal(summary.total,CHAINS.length);
+ assert.ok(summary.readable>0&&summary.readable<summary.total,
+  'the honest headline is that most chains cannot be priced');
+ // Readable chains sort above the ones Aisle cannot price.
+ assert.ok(rows.findIndex(r=>r.status==='readable')<rows.findIndex(r=>r.status==='no-feed'));
+});
+
+test('the "often on your list" strip has data to show once a favourite is set', ()=>{
+ // It survived the demo's retirement because it is built from preferences and
+ // confirmed choices, not from prices. A fresh household sees nothing, which
+ // is why it renders conditionally.
+ const base=fixtureState();
+ assert.deepEqual(personalSuggestions(base),[],'nothing to suggest before anything is known');
+ const withFavourite={...base,prefs:{...base.prefs,favouriteProducts:['apples']}};
+ const rows=personalSuggestions(withFavourite);
+ assert.ok(rows.length>0,'a picked staple is suggested');
+ assert.equal(rows[0].product.id,'apples');
+ assert.equal(rows[0].why,'A staple you picked','every row says why it is there');
 });

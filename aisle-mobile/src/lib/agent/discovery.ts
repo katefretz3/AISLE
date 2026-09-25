@@ -11,7 +11,7 @@ import {ADAPTERS,type ProbeVerdict} from './adapters';
 import {OriginGuard,safeHost,type Reader} from './net';
 import type {Preferences} from '../catalog';
 
-export type DiscoveredStore=GroceryPlace&{km:number;preferred:boolean;chainName:string|null;feed:'connected'|'no-public-feed'|'unprobed'};
+export type DiscoveredStore=GroceryPlace&{km:number;preferred:boolean;chainId:string|null;chainName:string|null;feed:'connected'|'no-public-feed'|'unprobed'};
 export type FeedCandidate={origin:string;name:string;chainId:string|null;storeCount:number;source:'registry'|'openstreetmap'};
 
 /** Nearby Ontario grocery stores for this household's saved pin and radius. */
@@ -22,7 +22,7 @@ export async function discoverStores(prefs:Preferences,fetchPlaces:(area:{lat:nu
  const nearby=nearbyPlaces(withinOntario,prefs);
  const stores:DiscoveredStore[]=nearby.map(place=>{
   const chain=chainFor(place.name,place.brand??'');
-  return {...place,chainName:chain?.name??null,
+  return {...place,chainId:chain?.id??null,chainName:chain?.name??null,
    feed:chain?.feed.kind==='shopify-public'?'connected':chain?.feed.kind==='none'?'no-public-feed':'unprobed'};
  });
  return {area,status:withinOntario.status,message:withinOntario.message,checkedAt:withinOntario.checkedAt,stores,
