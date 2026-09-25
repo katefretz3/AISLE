@@ -138,7 +138,7 @@ export const productById:Record<string,Product> = Object.fromEntries(products.ma
 const PHOTOS=new Set(photoManifest as string[]);
 export const hasPhoto=(id?:string|null)=>!!id&&PHOTOS.has(id);
 export const productImagePath = (id?:string|null) =>
- hasPhoto(id)?`/images/photos/${id}.jpg`:`/images/products/${id&&productById[id]?id:'custom-item'}.png`;
+ hasPhoto(id)?`/images/photos/${id}.png`:`/images/products/${id&&productById[id]?id:'custom-item'}.png`;
 export const categories = ["All items",...DEPARTMENT_NAMES];
 export const money = (cents:number) => new Intl.NumberFormat("en-CA",{style:"currency",currency:"CAD"}).format(cents/100);
 export const profileDefaults={city:"Burlington",neighbourhood:"Burlington",priority:"balanced" as const,frequency:"weekly" as const,dietary:[] as string[],allergens:[] as string[],preferredBrands:[] as string[],favouriteProducts:[] as string[],excludedProducts:[] as string[],preferredStores:[] as string[],minimumSwapSaving:50};

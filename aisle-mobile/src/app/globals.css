@@ -32,6 +32,13 @@
 /* Product PNGs replace symbolic grocery icons for stronger recognition. */
 .product-art{background:#f8faf2;border-color:#e6eddb;overflow:visible}
 .product-art img{display:block;width:118%;height:118%;object-fit:contain;filter:drop-shadow(0 4px 6px #163a3012)}
+/* A fetched photograph already carries an even inset from the pipeline, which
+   normalises every one onto the same square canvas. The generated
+   illustrations are drawn oversized because their SVG canvas has wide built-in
+   margins; applying that same zoom to a photo pushes its edges outside the
+   tile. Keyed on the path so it covers every place an item image is drawn
+   rather than needing a prop threaded through five components. */
+.product-art img[src*="/images/photos/"]{width:100%!important;height:100%!important;object-fit:contain;border-radius:9px}
 .product-art.small img{width:120%;height:120%}
 .product-art.unknown{background:#f4f6ee}
 .suggestion-card .product-art{width:48px;height:48px}
