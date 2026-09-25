@@ -1,0 +1,33 @@
+.due-week{display:flex;flex-direction:column;gap:14px;padding:22px 24px;margin-bottom:22px;
+ border-radius:var(--radius-lg);border:1px solid var(--border);background:var(--card)}
+.due-head h2{display:flex;align-items:center;gap:9px;margin:0;font-size:1.12rem;
+ letter-spacing:-.015em;color:var(--foreground)}
+.due-head p{margin:5px 0 0;max-width:68ch;font-size:.84rem;line-height:1.6;color:var(--muted-foreground)}
+
+.due-list{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.due-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:14px;
+ padding:14px 16px;border-radius:13px;border:1px solid var(--border);background:var(--background)}
+.due-row.is-observed{border-color:color-mix(in srgb,var(--primary) 30%,var(--border))}
+.due-copy{display:flex;flex-direction:column;gap:2px;min-width:0}
+.due-copy strong{font-size:.92rem;color:var(--foreground)}
+.due-copy small{font-size:.76rem;line-height:1.5;color:var(--muted-foreground)}
+.due-paid{font-variant-numeric:tabular-nums;color:var(--primary)}
+.due-pack{opacity:.8}
+
+.due-actions{display:flex;flex-direction:column;align-items:stretch;gap:6px}
+.due-add{min-height:44px;padding:0 16px;font-size:.82rem;gap:6px;white-space:nowrap}
+.due-skip{position:relative;font-size:.76rem;text-align:center}
+/* The tap target extends past the label so it clears 44px on a phone. */
+.due-skip::after{content:"";position:absolute;inset:-12px -8px}
+
+.due-more{align-self:flex-start;display:flex;align-items:center;gap:6px;font-size:.82rem}
+.due-foot{display:flex;align-items:flex-start;gap:8px;margin:0;font-size:.78rem;line-height:1.6;
+ color:var(--muted-foreground)}
+.due-foot svg{flex:0 0 auto;margin-top:2px}
+
+@media (max-width:640px){
+ .due-week{padding:20px 18px}
+ .due-row{grid-template-columns:minmax(0,1fr);row-gap:12px}
+ .due-actions{flex-direction:row;align-items:center;gap:12px}
+ .due-add{flex:1}
+}

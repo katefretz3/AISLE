@@ -170,3 +170,6 @@
  .account-transport{grid-template-columns:1fr}
  .account-transport-choice{flex-direction:row;justify-content:center;gap:10px}
 }
+
+/* Why a receipt keeps its items, stated where the record is listed. */
+.account-memory-note{margin:12px 0 0;font-size:.76rem;line-height:1.65;color:var(--muted-foreground)}

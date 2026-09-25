@@ -76,3 +76,8 @@
 /* Unit price under the line total: what to check against the shelf label. */
 .checklist-rows .item-unit{display:block;margin-top:2px;font-size:.72rem;font-weight:500;
  font-variant-numeric:tabular-nums;color:var(--muted-foreground)}
+
+/* What this household paid last time. Shown only where no price was collected,
+   so it fills the gap rather than competing with a live figure. */
+.checklist-rows .item-paid{display:block;margin-top:2px;font-size:.72rem;font-weight:500;
+ font-variant-numeric:tabular-nums;color:var(--primary)}

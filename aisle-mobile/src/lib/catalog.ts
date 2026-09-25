@@ -7,12 +7,56 @@ export type Product = { id: string; name: string; brand: string; size: string; c
 export type Store = { id: string; name: string; short: string; color: string; text: string; url: string };
 export type ListItem = { id: string; productId: string | null; name: string; qty: number; checked: boolean; locked: boolean };
 export type Preferences = { searchLocation?:SearchLocation; name: string; area: string; city: string; budget: number; household: number; transport: "drive" | "walk" | "transit"; radius: number; usualStore: string; substitutions: boolean; learning: boolean; categoryLocks: string[]; neighbourhood:string; priority:"saving"|"balanced"|"convenience"; frequency:"weekly"|"twice-weekly"|"fortnightly"; dietary:string[]; allergens:string[]; preferredBrands:string[]; favouriteProducts:string[]; excludedProducts:string[]; preferredStores:string[]; minimumSwapSaving:number };
-export type Trip = { id: string; storeId: string; storeName?: string; date: string; total: number; predicted: number; comparisonTotal: number; items: number; receiptId?: string; prices: {name: string; quantity: number; actual: number; predicted: number}[] };
+/**
+ * One line of a shop that actually happened.
+ *
+ * The product id is the point: a receipt keyed only on a display name cannot be
+ * joined back to the catalogue, so neither price history nor repurchase
+ * intervals can be built from it. `actual` is the LINE total for `quantity`
+ * units, not a unit price — dividing is the caller's job and getting that wrong
+ * misreports by a factor of the quantity.
+ */
+export type TripLine = {
+ productId: string | null;
+ name: string;
+ quantity: number;
+ /** Line total paid, in cents. Null when the household did not enter one. */
+ actual: number | null;
+ /** Aisle's line total when the trip was saved. Null when it had no price. */
+ predicted: number | null;
+};
+
+/** Superseded by `TripLine`. Kept so trips saved before the change still load. */
+export type LegacyTripPrice = {name: string; quantity: number; actual: number; predicted: number};
+
+export type Trip = {
+ id: string; storeId: string; storeName?: string; date: string;
+ /** What the household actually paid for the whole shop, in cents. */
+ total: number;
+ /** Aisle's basket subtotal when the trip was saved, in cents. */
+ predicted: number;
+ /** How much of the list that estimate covered. Without these two numbers
+  *  `predicted` cannot honestly be compared with `total`: an estimate covering
+  *  4 of 12 items is not a forecast of the shop. */
+ predictedPriced?: number;
+ predictedTotal?: number;
+ /** Always 0. Once held the sample engine's fabricated baseline. */
+ comparisonTotal: number;
+ items: number;
+ receiptId?: string;
+ /** What was bought. Canonical; `prices` is the pre-migration shape. */
+ lines?: TripLine[];
+ prices?: LegacyTripPrice[];
+};
 /** A list kept for reuse. `auto` marks the snapshot taken when a shop is
  *  finished, so "start from last shop" exists without anyone having to think
  *  about saving. */
 export type SavedList = { id: string; name: string; savedAt: string; auto?: boolean; items: ListItem[] };
-export type UserState = { onboarded: boolean; listName: string; items: ListItem[]; savedLists?: SavedList[]; prefs: Preferences; trips: Trip[]; offerSelections?:Record<string,Record<string,string>>; events: {category: string; action: string; date: string; productId?:string; storeId?:string;brand?:string;offerId?:string}[]; activeShop: string | null };
+export type UserState = { onboarded: boolean; listName: string; items: ListItem[]; savedLists?: SavedList[]; prefs: Preferences; trips: Trip[]; offerSelections?:Record<string,Record<string,string>>;
+ /** Products the household waved off on the home screen, with the date they did
+  *  it. A snooze, not an exclusion: saying "not this week" about milk should not
+  *  quietly drop milk from your staples forever. */
+ dueSnoozed?:Record<string,string>; events: {category: string; action: string; date: string; productId?:string; storeId?:string;brand?:string;offerId?:string}[]; activeShop: string | null };
 export const stores: Store[] = [
  {id:"food-basics",name:"Food Basics",short:"fb",color:"#e9f1d5",text:"#416324",url:"https://www.foodbasics.ca"},
  {id:"no-frills",name:"No Frills",short:"nf",color:"#ffed42",text:"#20251a",url:"https://www.nofrills.ca"},
@@ -60,7 +104,37 @@ export const productImagePath = (id?:string|null) =>
 export const categories = ["All items",...DEPARTMENT_NAMES];
 export const money = (cents:number) => new Intl.NumberFormat("en-CA",{style:"currency",currency:"CAD"}).format(cents/100);
 export const profileDefaults={city:"Burlington",neighbourhood:"Burlington",priority:"balanced" as const,frequency:"weekly" as const,dietary:[] as string[],allergens:[] as string[],preferredBrands:[] as string[],favouriteProducts:[] as string[],excludedProducts:[] as string[],preferredStores:[] as string[],minimumSwapSaving:50};
-export function normalizeState(s:UserState):UserState{const city=ontarioCities.find(c=>c.name===(s.prefs.city??s.prefs.area))?.name??"Burlington";const point=s.prefs.searchLocation;const valid=point&&point.city===city&&Number.isFinite(point.lat)&&Math.abs(point.lat)<=85&&Number.isFinite(point.lng)&&Math.abs(point.lng)<=180;const prefs={...profileDefaults,...s.prefs,city,searchLocation:valid?point:cityLocation(city)};return {...s,prefs,events:s.events??[],savedLists:s.savedLists??[]};}
+/**
+ * Bring a stored trip up to the current shape.
+ *
+ * Trips saved before receipts carried product ids keep their price rows, but
+ * `productId` stays null: we genuinely do not know which catalogue item a bare
+ * display name referred to, and guessing would put invented history behind a
+ * price. Those rows still show in the trip's own detail view; they simply
+ * cannot feed repurchase intervals or price history.
+ */
+/** A snooze only means anything for a shopping cycle or two, so old ones are
+ *  dropped rather than accumulating one entry per product for ever. */
+function pruneSnoozes(snoozed:Record<string,string>|undefined,now=Date.now()):Record<string,string>{
+ const keep:Record<string,string>={};
+ for(const [productId,at] of Object.entries(snoozed??{})){
+  const stamp=Date.parse(at);
+  if(Number.isFinite(stamp)&&now-stamp<30*86400000)keep[productId]=at;
+ }
+ return keep;
+}
+
+function migrateTrip(trip:Trip):Trip{
+ if(trip.lines)return trip;
+ const lines:TripLine[]=(trip.prices??[]).map(row=>({
+  productId:null,name:row.name,quantity:row.quantity,
+  actual:Number.isFinite(row.actual)?row.actual:null,
+  predicted:Number.isFinite(row.predicted)&&row.predicted>0?row.predicted:null,
+ }));
+ return {...trip,lines};
+}
+
+export function normalizeState(s:UserState):UserState{const city=ontarioCities.find(c=>c.name===(s.prefs.city??s.prefs.area))?.name??"Burlington";const point=s.prefs.searchLocation;const valid=point&&point.city===city&&Number.isFinite(point.lat)&&Math.abs(point.lat)<=85&&Number.isFinite(point.lng)&&Math.abs(point.lng)<=180;const prefs={...profileDefaults,...s.prefs,city,searchLocation:valid?point:cityLocation(city)};return {...s,prefs,events:s.events??[],savedLists:s.savedLists??[],dueSnoozed:pruneSnoozes(s.dueSnoozed),trips:(s.trips??[]).map(migrateTrip)};}
 export const initialState = ():UserState => ({onboarded:false,listName:"The weekly shop",savedLists:[],items:["strawberries","avocados","bananas","milk","eggs","bread","chicken","pasta","yogurt","broccoli","coffee","tomatoes"].map((id,i)=>({id:`starter-${i}`,productId:id,name:productById[id].name,qty:1,checked:false,locked:id==="coffee"})),prefs:{name:"",area:"Burlington",budget:120,household:2,transport:"drive",radius:10,usualStore:"fortinos",substitutions:true,learning:false,categoryLocks:[],...profileDefaults},trips:[],events:[],activeShop:null});
 // There is deliberately no price function here.
 //

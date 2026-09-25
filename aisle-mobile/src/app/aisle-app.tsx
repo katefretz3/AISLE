@@ -2,7 +2,7 @@
 
 import {useEffect,useMemo,useRef,useState,type ReactNode,type CSSProperties} from "react";
 import {ArrowLeft,ArrowRight,ArrowUpRight,BarChart3,Check,CheckCheck,ChevronDown,ChevronRight,ChevronsUpDown,ClipboardList,Download,HelpCircle,Home,Info,Leaf,ListPlus,LoaderCircle,LockKeyhole,MapPin,Minus,Plus,ReceiptText,Settings2,ShieldCheck,ShoppingBasket,ShoppingBag,SlidersHorizontal,Sparkles,Store as StoreIcon,Trash2,X,Apple,Beef,Banana,Carrot,Cherry,Citrus,Coffee,Egg,Fish,Milk,Package,Salad,Sprout,Wheat,Upload,Camera,CheckCircle2,TriangleAlert,Wallet,RefreshCw,FileText,HeartHandshake} from "lucide-react";
-import {Scale,History,Bookmark} from "lucide-react";
+import {Scale,History,Bookmark,Target} from "lucide-react";
 import {Sidebar,SidebarProvider,SidebarContent,SidebarHeader,SidebarFooter,SidebarMenu,SidebarMenuItem,SidebarMenuButton} from "@/components/ui/sidebar";
 import {Dialog,DialogContent,DialogTitle,DialogDescription} from "@/components/ui/dialog";
 import {AlertDialog,AlertDialogContent,AlertDialogTitle,AlertDialogDescription,AlertDialogAction,AlertDialogCancel,AlertDialogFooter} from "@/components/ui/alert-dialog";
@@ -23,10 +23,12 @@ import {chooseBasis,unitPriceCents,formatUnitPrice} from '@/lib/unit-price';
 import BasketCompare from '@/components/basket-compare';
 import ShopChecklist,{type ChecklistOrder} from '@/components/shop-checklist';
 import ListStarters from '@/components/list-starters';
+import DueThisWeek from '@/components/due-this-week';
 import Account from './account';
 import Legal from './legal';
 import {loadState,saveState,uploadReceipt,openReceiptFile,captureReceipt,shareList,isDevice} from "@/lib/persistence";
-import {personalSuggestions,recordChoice,starterList,products,productById,productImagePath,stores,categories,money,initialState,parseList,type Product,type Store,type UserState,type ListItem,type Preferences,type Trip} from "@/lib/catalog";
+import {personalSuggestions,recordChoice,starterList,products,productById,productImagePath,stores,categories,money,initialState,parseList,type Product,type Store,type UserState,type ListItem,type Preferences,type Trip,type TripLine} from "@/lib/catalog";
+import {priceHistory,accuracy} from '@/lib/shopping-history';
 import {valueSwaps,totalSaving,type ValueSwap} from "@/lib/value-swaps";
 
 type View="home"|"list"|"compare"|"spending"|"account"|"legal"|"shop";
@@ -61,6 +63,9 @@ export default function AisleApp(){
  const [matchingItem,setMatchingItem]=useState<string|null>(null);
  const fileRef=useRef<HTMLInputElement>(null);
  const agent=useAgentRun(state,ready&&state.onboarded);
+ // What this household has actually paid. For the 17 Ontario chains Aisle
+ // cannot read, this is the only price any of their items will ever carry.
+ const paidHistory=useMemo(()=>priceHistory(state.trips),[state.trips]);
  agentRef.current=agent.run;
  const best=agent.best?{id:agent.best.sourceId,name:agent.best.name,subtotal:agent.best.subtotal}:undefined;
  // One shape for "a basket you are shopping from", whichever engine produced it.
@@ -169,23 +174,90 @@ export default function AisleApp(){
  function beginShop(id:string){const name=agent.basketFor(id)?.name;commit(s=>({...s,activeShop:id,items:s.items.map(i=>({...i,checked:false}))}));go("shop");toast.success(name?`Your checklist for ${name} is ready`:"Your shopping checklist is ready");}
  function openReceipt(){setReceiptStore(state.activeShop??best?.id??stores[0].id);setReceiptTotal("");setReceiptDate(new Date().toISOString().slice(0,10));setReceiptId(undefined);setReceiptName("");setActuals({});setReceiptOpen(true);}
  async function upload(file?:File){if(!file)return;setUploading(true);try{const body=await uploadReceipt(file);setReceiptId(body.id);setReceiptName(body.name);toast.success("Receipt attached. Enter the amount you paid below.");}catch(e){toast.error(e instanceof Error?e.message:"Upload failed");}finally{setUploading(false);if(fileRef.current)fileRef.current.value="";}}
- function saveReceipt(){const total=Math.round(Number(receiptTotal)*100);if(!receiptTotal||!Number.isFinite(total)||total<=0||total>10000000){toast.error("Enter a valid receipt total.");return;}if(!receiptDate||receiptDate>new Date().toISOString().slice(0,10)){toast.error("Choose today or an earlier shopping date.");return;}const basket=fromAgent(agent.basketFor(receiptStore));const lines=state.items.filter(i=>actuals[i.id]?.trim()).map(i=>({name:i.name,quantity:i.qty,actual:Math.round(Number(actuals[i.id])*100),predicted:basket?.lineTotal(i.id)??0}));if(lines.some(l=>!Number.isFinite(l.actual)||l.actual<0)||lines.reduce((sum,l)=>sum+l.actual,0)>total){toast.error("Item totals must be valid and cannot exceed your receipt total.");return;}const trip:Trip={id:newId(),storeId:receiptStore,storeName:shopIdentity(receiptStore).name,date:receiptDate,total,predicted:basket?.subtotal??0,comparisonTotal:0,items:state.items.length,receiptId,prices:lines};commit(s=>{let next=s;for(const item of s.items.filter(i=>i.checked||actuals[i.id]?.trim()))if(item.productId)next=recordChoice(next,"purchased",item.productId,receiptStore);const shopName=shopIdentity(receiptStore).name;
+ function saveReceipt(){const total=Math.round(Number(receiptTotal)*100);if(!receiptTotal||!Number.isFinite(total)||total<=0||total>10000000){toast.error("Enter a valid receipt total.");return;}if(!receiptDate||receiptDate>new Date().toISOString().slice(0,10)){toast.error("Choose today or an earlier shopping date.");return;}const basket=fromAgent(agent.basketFor(receiptStore));
+  // The receipt records everything that came home, not only the lines somebody
+  // typed a price against. Without that, an item bought every week but never
+  // priced would never build a repurchase interval.
+  const bought=state.items.filter(i=>i.checked||actuals[i.id]?.trim());
+  const lines:TripLine[]=bought.map(i=>{
+   const typed=actuals[i.id]?.trim();
+   return {productId:i.productId,name:i.name,quantity:i.qty,
+    actual:typed?Math.round(Number(typed)*100):null,
+    predicted:basket?.lineTotal(i.id)??null};
+  });
+  const entered=lines.filter(l=>l.actual!==null) as (TripLine&{actual:number})[];
+  if(entered.some(l=>!Number.isFinite(l.actual)||l.actual<0)||entered.reduce((sum,l)=>sum+l.actual,0)>total){toast.error("Item totals must be valid and cannot exceed your receipt total.");return;}const trip:Trip={id:newId(),storeId:receiptStore,storeName:shopIdentity(receiptStore).name,date:receiptDate,total,
+   predicted:basket?.subtotal??0,predictedPriced:basket?.priced??0,predictedTotal:basket?.total??state.items.length,
+   comparisonTotal:0,items:state.items.length,receiptId,lines};commit(s=>{let next=s;for(const item of s.items.filter(i=>i.checked||actuals[i.id]?.trim()))if(item.productId)next=recordChoice(next,"purchased",item.productId,receiptStore);const shopName=shopIdentity(receiptStore).name;
    return {...next,trips:[trip,...s.trips].slice(0,200),activeShop:null,savedLists:snapshotList(s,`${shopName}, ${new Date(receiptDate+'T12:00:00').toLocaleDateString('en-CA',{day:'numeric',month:'short'})}`,true)};});setReceiptOpen(false);go("spending");toast.success("Shopping trip saved to your spending history.");}
  function exportList(){const content=`${state.listName}\n\n${state.items.map(i=>`${i.checked?"[x]":"[ ]"} ${i.qty} × ${i.name}${i.productId?` — ${productById[i.productId].brand}, ${productById[i.productId].size}`:" — match needed"}`).join("\n")}\n\nAisle grocery list. Refer to retailer sources for current prices.`;void shareList(content).then(()=>toast.success(isDevice?"List ready to share":"Shopping list downloaded")).catch(()=>toast.error("Could not share the list."));}
  async function finishOnboarding(profile:Preferences,buildList:boolean){await saveChain.current;const build=(source:UserState):UserState=>({...source,prefs:profile,onboarded:true,items:buildList?starterList(profile):source.items,activeShop:buildList?null:source.activeShop});setSaveStatus("Saving…");try{const next=build(ref.current);const result=await saveState(next,revision.current);revision.current=result.revision;ref.current=next;setState(next);setSaveStatus("Saved");setSavingError("");setOnboard(false);go("home");toast.success("Your Aisle is ready. Your preferences are saved.");}catch(error){if(error instanceof Error&&/another window/i.test(error.message)){const latest=await loadState();const next=build(latest.state);const result=await saveState(next,latest.revision);revision.current=result.revision;ref.current=next;setState(next);setSaveStatus("Saved");setSavingError("");setOnboard(false);go("home");toast.success("Your Aisle is ready. I merged it with your latest list.");return;}setSaveStatus("Not saved");throw error;}}
  useEffect(()=>{const mc=(document as unknown as {modelContext?:{registerTool:(t:unknown,o:unknown)=>void}}).modelContext;if(!mc)return;const abort=new AbortController();try{mc.registerTool({name:"compare_grocery_basket",title:"Compare grocery basket",description:"Return the basket totals Aisle has collected from public retailer catalogues. Every figure traces to an HTTP response; items with no collected price are reported as unpriced rather than estimated. Does not purchase groceries.",inputSchema:{type:"object",properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute(input:unknown){if(!input||typeof input!=="object"||Object.keys(input).length)throw new Error("No arguments expected");return {dataMode:"observed",collectedAt:agentRef.current?.finishedAt??null,stores:(agentRef.current?.baskets??[]).map(b=>({name:b.name,subtotalCents:b.subtotal,itemsPriced:b.priced,itemsOnList:b.total,complete:b.complete}))};}},{signal:abort.signal});mc.registerTool({name:"open_grocery_list",title:"Open grocery list",description:"Navigate to the current list without changing its items.",inputSchema:{type:"object",properties:{},additionalProperties:false},annotations:{readOnlyHint:false},execute(input:unknown){if(!input||typeof input!=="object"||Object.keys(input).length)throw new Error("No arguments expected");go("list");return {view:"list"};}},{signal:abort.signal});}catch{}return()=>abort.abort();},[]);
 
  function Empty({icon:Icon=ShoppingBasket,title,children,action}:{icon?:typeof ShoppingBasket;title:string;children:ReactNode;action?:ReactNode}){return <div className="empty-state"><span className="empty-icon"><Icon/></span><h3>{title}</h3><p>{children}</p>{action}</div>;}
- function ItemRow({item,compact=false,shopping=false}:{item:ListItem;compact?:boolean;shopping?:boolean}){const p=item.productId?productById[item.productId]:null;const price=(shopping?activeBasket:headlineBasket)?.lineTotal(item.id)??null;const unitText=shopping?activeBasket?.unitPrice(item.id)??null:null;return <div className={cx("item-row",item.checked&&"is-checked")}>
+ function ItemRow({item,compact=false,shopping=false}:{item:ListItem;compact?:boolean;shopping?:boolean}){const p=item.productId?productById[item.productId]:null;const price=(shopping?activeBasket:headlineBasket)?.lineTotal(item.id)??null;const unitText=shopping?activeBasket?.unitPrice(item.id)??null:null;
+  const paid=item.productId?paidHistory.get(item.productId)??null:null;
+  // At most one line under the price. While shopping, the unit price of the
+  // offer in front of you wins; what you paid before only fills the gap where
+  // no price was collected at all.
+  const secondary=shopping
+   ?(unitText?<small className="item-unit">{unitText}</small>
+     :paid&&price===null?<small className="item-paid">paid {money(Math.round(paid.last.unitCents))} last time</small>:null)
+   :(paid?<small className="item-paid">paid {money(Math.round(paid.last.unitCents))} at {paid.last.storeName}</small>:null);
+  return <div className={cx("item-row",item.checked&&"is-checked")}>
   {shopping&&<Checkbox aria-label={`Mark ${item.name} as bought`} checked={item.checked} onCheckedChange={v=>updateItem(item.id,{checked:v===true})} className="item-check"/>}
-  <ProductIcon product={p} small={compact}/><div className="item-copy"><strong>{item.name}</strong><span>{p?`${p.brand} · ${p.size}`:"Not in the sample catalogue"}</span></div>
+  <ProductIcon product={p} small={compact}/><div className="item-copy"><strong>{item.name}</strong><span>{p?`${p.brand} · ${p.size}`:"Not matched to a catalogue item"}</span></div>
   {!compact&&!shopping&&<button className={cx("icon-button lock-button",item.locked&&"is-locked")} aria-label={`${item.locked?"Unlock":"Lock"} ${item.name}`} title={item.locked?"Exact product locked":"Keep this exact product"} onClick={()=>updateItem(item.id,{locked:!item.locked})}><LockKeyhole size={15}/></button>}
   {!compact&&!shopping&&<div className="quantity"><button aria-label={`Decrease ${item.name} quantity`} disabled={item.qty===1} onClick={()=>updateItem(item.id,{qty:item.qty-1})}><Minus size={13}/></button><span>{item.qty}</span><button aria-label={`Increase ${item.name} quantity`} disabled={item.qty>=99} onClick={()=>updateItem(item.id,{qty:item.qty+1})}><Plus size={13}/></button></div>}
   {compact||shopping?<span className="item-quantity">×{item.qty}</span>:null}
-  <span className="item-price">{price!=null?money(price):"—"}{shopping&&unitText&&<small className="item-unit">{unitText}</small>}</span>
+  <span className="item-price">{price!=null?money(price):"—"}{secondary}</span>
   {!p&&!compact&&<button className="text-button" onClick={()=>{setMatchingItem(item.id);setQuery("");setCategory("All items");setImportMode("browse");setCatalogOpen(true);}}>Match</button>}
   {!compact&&!shopping&&<button className="icon-button remove" aria-label={`Remove ${item.name}`} onClick={()=>removeItem(item)}><X size={16}/></button>}
  </div>;}
+ /**
+  * How Aisle's estimate compared with the till.
+  *
+  * Only whole-list estimates are scored. `predicted` is the subtotal of what
+  * Aisle could price, so on a shop where it priced 4 of 12 items, putting it
+  * beside the receipt total would manufacture an error that says nothing about
+  * the estimate. Those trips are counted and named instead.
+  */
+ function AccuracyCard(){
+  const scored=useMemo(()=>accuracy(state.trips),[state.trips]);
+  const partial=state.trips.length-scored.comparable.length;
+  if(!state.trips.length)return null;
+  return <section className="card accuracy-card">
+   <div className="section-top"><div>
+    <h3><Target size={17}/> How close Aisle got</h3>
+    <p>Only shops where Aisle had a price for every item on your list can be
+     scored against the receipt.</p>
+   </div></div>
+   {scored.comparable.length&&scored.meanDifference!==null
+    ?<>
+      <div className="accuracy-headline">
+       <strong>{scored.meanDifference===0
+        ?'Spot on'
+        :`${money(Math.abs(scored.meanDifference))} ${scored.meanDifference>0?'more':'less'} than estimated`}</strong>
+       <span>on average across {scored.comparable.length} fully priced {scored.comparable.length===1?'shop':'shops'}</span>
+      </div>
+      <ul className="accuracy-rows">
+       {scored.comparable.slice(0,4).map(({trip,predicted,actual,difference})=>
+        <li key={trip.id}>
+         <span>{shopIdentity(trip.storeId,trip.storeName).name} · {new Date(trip.date+'T12:00:00').toLocaleDateString('en-CA',{day:'numeric',month:'short'})}</span>
+         <span className="accuracy-figures">
+          <small>est. {money(predicted)}</small>
+          <strong>{money(actual)}</strong>
+          <em className={difference>0?'warning-text':'green-text'}>
+           {difference===0?'exact':`${difference>0?'+':'−'}${money(Math.abs(difference))}`}</em>
+         </span>
+        </li>)}
+      </ul>
+     </>
+    :<p className="accuracy-empty">No shop has been fully priced yet, so there is nothing
+      honest to score. {partial>0&&`${partial} recorded ${partial===1?'shop':'shops'} had items Aisle could not price.`}</p>}
+  </section>;
+ }
+
  function AgentBudgetCard(){
   const basket=headlineBasket,budget=agent.perShopBudget;
   const spent=basket?basket.subtotal:0;
@@ -252,6 +324,8 @@ export default function AisleApp(){
    {savingError&&<div className="system-message error"><TriangleAlert size={17}/>{savingError}<button onClick={()=>persist(ref.current)}>Retry save</button><button onClick={()=>void load()}>Reload saved list</button></div>}
    {!ready&&!loadError&&<div className="system-message"><LoaderCircle className="spin" size={16}/> Getting your list ready…</div>}
    <main className="workspace" id="main-content">
+   {view==='home'&&<DueThisWeek state={state} onAdd={addProduct}
+    onDismiss={id=>commit(s=>({...s,dueSnoozed:{...s.dueSnoozed,[id]:new Date().toISOString()}}))}/>}
    {view==='home'&&<AgentWorkspace state={state} agent={agent} commit={commit} onAdd={addProduct} onList={()=>go('list')} onPreferences={()=>go('account')} onSetup={()=>setOnboard(true)} onCompare={()=>go('compare')}/>}
    {view==="home"&&suggestions.length>0&&<section className="personal-recommendations"><div className="section-top"><div><h3>Often on your list</h3><p>Picked from your preferences and confirmed choices.</p></div><Pill kind="neutral">Made for you</Pill></div><div className="suggestion-grid">{suggestions.map(({product:p,why})=><div className="suggestion-card" key={p.id}><ProductIcon product={p}/><div><strong>{p.name}</strong><span>{p.brand} · {p.size}</span><small>{why}</small></div><button className="add-product" aria-label={`Add suggested ${p.name}`} onClick={()=>addProduct(p.id)}><Plus size={17}/></button><button className="icon-button" aria-label={`Dismiss suggestion ${p.name}`} onClick={()=>{commit(s=>({...recordChoice(s,"dismissed",p.id),prefs:{...s.prefs,excludedProducts:[...s.prefs.excludedProducts,p.id]}}));toast("Suggestion hidden. You can reset hidden suggestions in preferences.");}}><X size={13}/></button></div>)}</div></section>}
    {view==="list"&&<>
@@ -269,6 +343,7 @@ export default function AisleApp(){
    {view==="spending"&&<>
     <div className="page-heading"><div><span className="eyebrow">A LITTLE MORE CLARITY</span><h1>Your grocery spending</h1><p>Make sense of your shops, one receipt at a time.</p></div><button className="button primary" onClick={openReceipt}><Plus size={17}/> Add a receipt</button></div>
     {state.trips.length>0&&<div className="spending-stats"><div className="card metric"><span><Wallet size={18}/> Recorded spending</span><strong>{money(state.trips.reduce((sum,t)=>sum+t.total,0))}</strong><p>Across {state.trips.length} saved {state.trips.length===1?"trip":"trips"}</p></div><div className="card metric"><span><ShoppingBag size={18}/> Average shop</span><strong>{money(Math.round(state.trips.reduce((sum,t)=>sum+t.total,0)/state.trips.length))}</strong><p>From the totals you entered</p></div><div className="card metric"><span><Wallet size={18}/> Against your budget</span><strong>{(()=>{const avg=Math.round(state.trips.reduce((sum,t)=>sum+t.total,0)/state.trips.length);const diff=avg-agent.perShopBudget;return diff===0?"On budget":`${money(Math.abs(diff))} ${diff>0?"over":"under"}`;})()}</strong><p>Average shop vs your {money(agent.perShopBudget)} per-shop budget</p></div></div>}
+    <AccuracyCard/>
     <section className="card history-card"><div className="section-top"><h3>Your shopping history</h3><Pill kind="neutral">{state.trips.length} receipts</Pill></div>{state.trips.length?<div>{state.trips.map(t=>{const s=shopIdentity(t.storeId,t.storeName);return <button className="history-row" key={t.id} onClick={()=>setHistoryDetail(t)}><StoreLogo store={s}/><div><strong>{s.name}</strong><span>{new Date(t.date+"T12:00:00").toLocaleDateString("en-CA",{day:"numeric",month:"long",year:"numeric"})} · {t.receiptId?"Receipt attached":"Manual entry"}</span></div><strong>{money(t.total)}</strong><ChevronRight size={17}/></button>;})}</div>:<Empty icon={ReceiptText} title="No shops recorded yet" action={<button className="button secondary" onClick={openReceipt}><Upload size={16}/> Record a shop</button>}>After a shop, enter what you actually paid. Aisle compares that against your budget — it is the only figure here it does not have to guess at.</Empty>}</section>
     <div className="transparency-note"><ShieldCheck size={21}/><div><strong>A receipt proves what you paid.</strong><p>It doesn’t prove what another store would have charged. We’ll only call savings verified when both sides have reliable, same-day prices for the same products.</p></div></div>
    </>}
@@ -302,7 +377,7 @@ export default function AisleApp(){
 
   <Dialog open={receiptOpen} onOpenChange={setReceiptOpen}><DialogContent className="receipt-modal"><DialogTitle>How did your shop go?</DialogTitle><DialogDescription>Keep the receipt, record what you spent, and build your history.</DialogDescription><input type="file" accept="image/jpeg,image/png,image/webp" ref={fileRef} className="sr-only" onChange={e=>void upload(e.target.files?.[0])}/><button className={cx("upload-zone",receiptId&&"uploaded")} onClick={()=>{if(isDevice)void captureReceipt().then(file=>{if(file)void upload(file);}).catch(()=>toast.error("Could not open the camera. Please try again."));else fileRef.current?.click();}} disabled={uploading}>{uploading?<LoaderCircle className="spin" size={27}/>:receiptId?<CheckCircle2 size={27}/>:<Camera size={27}/>}<strong>{uploading?"Saving your receipt…":receiptId?receiptName:"Attach a receipt photo"}</strong><span>JPG, PNG or WebP · up to 5 MB · optional</span></button><div className="form-grid"><label>Store<Choice label="Receipt store" value={receiptStore} onChange={setReceiptStore} options={receiptStoreOptions}/></label><label>Shopping date<input type="date" value={receiptDate} max={new Date().toISOString().slice(0,10)} onChange={e=>setReceiptDate(e.target.value)}/></label></div><label className="field-label">Total paid (CAD)<div className="budget-input"><span>$</span><input type="number" min="0.01" step="0.01" placeholder="0.00" aria-label="Receipt total paid" value={receiptTotal} onChange={e=>setReceiptTotal(e.target.value)}/></div></label><details className="receipt-line-details"><summary>Add item prices for a closer review <ChevronDown size={14}/></summary><p>Enter each line total, including the quantity. Leave unpurchased items blank.</p><div>{state.items.map(i=><label key={i.id}><span>{i.qty} × {i.name}</span><input aria-label={`Actual total for ${i.name}`} type="number" min="0" step="0.01" placeholder="0.00" value={actuals[i.id]??""} onChange={e=>setActuals({...actuals,[i.id]:e.target.value})}/></label>)}</div></details><div className="receipt-honesty"><Info size={15}/><p>Photos are stored for your reference. Enter totals manually; automatic receipt reading isn’t connected yet. Sample comparisons cannot verify real savings.</p></div><button className="button primary full" disabled={uploading||!receiptTotal||!ready} onClick={saveReceipt}>Save shopping trip <Check size={17}/></button></DialogContent></Dialog>
 
-  <Dialog open={!!historyDetail} onOpenChange={v=>{if(!v)setHistoryDetail(null);}}><DialogContent className="receipt-modal"><DialogTitle>{stores.find(s=>s.id===historyDetail?.storeId)?.name} receipt</DialogTitle><DialogDescription>{historyDetail?.date} · Manually recorded spending</DialogDescription>{historyDetail&&<><div className="history-total"><span>Actual total paid</span><strong>{money(historyDetail.total)}</strong></div>{historyDetail.receiptId&&<button onClick={()=>void openReceiptFile(historyDetail.receiptId!).catch(()=>toast.error("Could not open the receipt."))} className="button secondary"><FileText size={17}/> View saved receipt <ArrowUpRight size={15}/></button>}{historyDetail.prices.length>0&&<div className="receipt-records">{historyDetail.prices.map((p,i)=><div key={i}><span>{p.quantity} × {p.name}</span><strong>{money(p.actual)}</strong></div>)}</div>}<p className="field-help">Only your entered amounts are recorded as actual spending. No savings are claimed against the illustrative catalogue.</p></>}</DialogContent></Dialog>
+  <Dialog open={!!historyDetail} onOpenChange={v=>{if(!v)setHistoryDetail(null);}}><DialogContent className="receipt-modal"><DialogTitle>{stores.find(s=>s.id===historyDetail?.storeId)?.name} receipt</DialogTitle><DialogDescription>{historyDetail?.date} · Manually recorded spending</DialogDescription>{historyDetail&&<><div className="history-total"><span>Actual total paid</span><strong>{money(historyDetail.total)}</strong></div>{historyDetail.receiptId&&<button onClick={()=>void openReceiptFile(historyDetail.receiptId!).catch(()=>toast.error("Could not open the receipt."))} className="button secondary"><FileText size={17}/> View saved receipt <ArrowUpRight size={15}/></button>}{(historyDetail.lines??[]).length>0&&<div className="receipt-records">{(historyDetail.lines??[]).map((p,i)=><div key={i}><span>{p.quantity} × {p.name}</span><strong className={p.actual===null?'record-blank':undefined}>{p.actual===null?'no price entered':money(p.actual)}</strong></div>)}</div>}<p className="field-help">Only your entered amounts are recorded as actual spending. No savings are claimed against the illustrative catalogue.</p></>}</DialogContent></Dialog>
 
   <Dialog open={help} onOpenChange={setHelp}><DialogContent className="help-modal"><div className="modal-icon"><ShoppingBasket size={26}/></div><DialogTitle>A clearer way to shop.</DialogTitle><DialogDescription>Aisle helps you compare your whole grocery list and keep control of every choice.</DialogDescription><div className="how-steps">{[{n:"01",t:"Make your list",d:"Add products, choose sizes, and lock the favourites you don’t want to change."},{n:"02",t:"Compare complete baskets",d:"Review retailer products and pack sizes. Only complete, confirmed online baskets can be compared. Missing prices remain visible."},{n:"03",t:"Shop, then reflect",d:"Check off your list and save your receipt. Your spending stays separate from estimated savings."}].map(x=><div key={x.n}><span>{x.n}</span><div><strong>{x.t}</strong><p>{x.d}</p></div></div>)}</div><div className="help-data"><strong>This is a working product preview.</strong><p>The default plan collects limited public online catalogues with source links and expiry times. Check each connection status. Branch prices, branch stock, live routing, automated receipt extraction and LLM services are not connected. The separate sample demo uses illustrative prices and travel estimates. {isDevice?"Your lists, preferences and receipts are stored on this device and work offline. Cloud sync is not connected.":"Your lists, preferences and recorded receipts are saved to your account."} Personalization uses explicit preferences and a small adaptive ranking model, not a continuously running chatbot.</p></div><button className="button primary full" onClick={()=>setHelp(false)}>Got it <Check size={17}/></button><p className="help-legal-links"><button onClick={()=>{setHelp(false);goLegal("privacy");}}>Privacy Policy</button><span aria-hidden="true"> · </span><button onClick={()=>{setHelp(false);goLegal("terms");}}>Terms of Use</button><span aria-hidden="true"> · </span><button onClick={()=>{setHelp(false);goLegal("sources");}}>Data sources</button></p></DialogContent></Dialog>
   <ListStarters open={startersOpen} onOpenChange={setStartersOpen} state={state} onUse={useStarter}/>

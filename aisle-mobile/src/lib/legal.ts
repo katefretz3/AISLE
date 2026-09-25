@@ -145,6 +145,7 @@ export const PRIVACY:LegalDocument={
     `your preferences: name, household size, budget, cadence, city, radius, transport, preferred chains`,
     `your dietary preferences, allergen settings, excluded products and protected brands`,
     `receipt photographs you add, and the totals you enter`,
+    `for each shop you save: which items were in it, their quantities, and any per-item prices you typed. This is how the app can tell you what you usually buy and what you last paid, and it is kept whether or not learning is on — it is a record of a receipt you chose to save, not an inference about you. Deleting the trip deletes it.`,
     `your shopping history and, if you turn learning on, the choices it records`,
     `cached retailer prices, which expire after 24 hours`]},
 
@@ -168,7 +169,8 @@ export const PRIVACY:LegalDocument={
     `Allergies and dietary restrictions are never inferred from behaviour. They are only ever what you set yourself.`]},
 
   {id:'receipts',heading:'7. Receipts and photographs',
-   body:[`If you add a receipt, the image is stored in the app's private storage on your device. It is not uploaded, and no text is extracted from it automatically. Totals are whatever you type in.`,
+   body:[`A saved shop records the store, the date, the total you entered, and the items that were on your list for that shop with any per-item prices you typed. The app reads that record back to you as your own price history and to work out how often you buy something. It never leaves your device and is not used to build a profile for anyone else.`,
+    `If you add a receipt, the image is stored in the app's private storage on your device. It is not uploaded, and no text is extracted from it automatically. Totals are whatever you type in.`,
     `Camera and photo-library access is requested only when you choose to add a receipt, and you can refuse it without losing any other function.`]},
 
   {id:'legal-basis',heading:'8. Consent and legal basis',
