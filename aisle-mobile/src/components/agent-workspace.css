@@ -157,6 +157,28 @@
 .agent-blocked li{padding:5px 11px;border-radius:999px;background:var(--card);border:1px solid var(--border);
  font-size:.78rem;color:var(--muted-foreground)}
 
+/* Unpriced items, grouped by why. One block per reason rather than one
+   paragraph per row: the sentence was identical on every line, and eight of
+   them in a column read as an apology instead of an explanation. */
+.agent-gap-group{display:flex;flex-direction:column;gap:12px;padding:20px 22px;
+ border-radius:var(--radius-lg);border:1px solid var(--border);background:var(--muted)}
+.agent-gap-head{display:flex;gap:14px;align-items:flex-start}
+.agent-gap-head svg{flex:0 0 auto;margin-top:2px;color:var(--muted-foreground)}
+.agent-gap-group.is-discarded .agent-gap-head svg{color:var(--destructive)}
+.agent-gap-head strong{display:block;font-size:.96rem;color:var(--foreground)}
+.agent-gap-head p{margin:6px 0 0;max-width:72ch;font-size:.87rem;line-height:1.6;color:var(--muted-foreground)}
+.agent-gap-items{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+.agent-gap-items li{padding:5px 11px;border-radius:999px;background:var(--card);
+ border:1px solid var(--border);font-size:.78rem;color:var(--muted-foreground)}
+.agent-gap-actions{display:flex;flex-wrap:wrap;align-items:center;gap:2px 18px}
+/* The buttons carry their own 44px+ height, so wrapped rows need no extra
+   vertical gap on top of it. */
+.agent-gap-actions .text-button{display:flex;align-items:center;gap:5px;font-size:.8rem}
+.agent-gap-detail{margin:0;padding:14px 0 0;border-top:1px solid var(--border)}
+.agent-gap-detail>div{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;padding:8px 0}
+.agent-gap-detail dt{font-size:.82rem;font-weight:600;color:var(--foreground)}
+.agent-gap-detail dd{margin:0;font-size:.8rem;line-height:1.55;color:var(--muted-foreground)}
+
 /* Unit price. The number a shopper actually compares, so it sits directly under
    the pack size it was derived from. */
 .agent-unit{font-size:.78rem;font-variant-numeric:tabular-nums;color:var(--muted-foreground)}

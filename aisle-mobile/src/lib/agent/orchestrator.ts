@@ -12,7 +12,7 @@
 import {buildShopperModel} from './memory';
 import {EvidenceLedger,verifiedOffers,type Evidence,type SourcedOffer} from './provenance';
 import {OriginGuard,createReader,type Reader} from './net';
-import {basketsFrom,computeBaskets,toolByName,type Basket,type Budget,type Proposal,type ToolContext} from './tools';
+import {basketsFrom,computeBaskets,toolByName,type Basket,type Budget,type Proposal,type ToolContext,type UnmatchedKind} from './tools';
 import {matchOffer,requiredPacks} from './engine';
 import {AGENT_SYSTEM_PROMPT,allowedDistances,allowedFigures,reviewNarrative,type Violation} from './policy';
 import {brokerConfig,runToolLoop,type LoopEvent} from './model';
@@ -35,7 +35,7 @@ export type AgentRun={
  /** The verified pool, so the interface can re-total without re-collecting. */
  offers:SourcedOffer[];
  baskets:Basket[];
- unmatched:{itemId:string;name:string;reason:string}[];
+ unmatched:{itemId:string;name:string;reason:string;kind:UnmatchedKind}[];
  proposals:Proposal[];
  narrative:string;
  violations:Violation[];
@@ -126,7 +126,7 @@ export async function runAgent(options:RunOptions):Promise<AgentRun>{
   if(keptIds.has(proposal.offerId))continue;
   ctx.proposals.delete(key);
   const item=ctx.state.items.find(i=>i.id===proposal.itemId);
-  if(item)ctx.unmatched.set(item.id,'The collected price for this match did not pass verification and was discarded');
+  if(item)ctx.unmatched.set(item.id,{kind:'discarded',detail:'The collected price for this match did not pass verification and was discarded'});
  }
  mark('verification',`${kept.length} price records verified against their source responses; ${rejected.length} discarded`);
 
@@ -148,7 +148,9 @@ export async function runAgent(options:RunOptions):Promise<AgentRun>{
   offers:ctx.offers,
   baskets,
   unmatched:ctx.state.items.filter(item=>!baskets.some(b=>b.lines.some(l=>l.itemId===item.id&&l.offer)))
-   .map(item=>({itemId:item.id,name:item.name,reason:ctx.unmatched.get(item.id)||'No collected record matched this item'})),
+   .map(item=>{const row=ctx.unmatched.get(item.id);
+    return {itemId:item.id,name:item.name,kind:row?.kind??'no-record',
+     reason:row?.detail||'No collected record matched this item'};}),
   proposals:[...ctx.proposals.values()],
   narrative:reviewed.text,violations:reviewed.violations,
   rejectedOffers:rejected.map(r=>({offerId:r.offer.id,retailer:r.offer.retailer,faults:r.faults})),
@@ -201,9 +203,9 @@ function planDeterministically(ctx:ToolContext){
    matched=true;
   }
   if(matched){filled+=1;ctx.unmatched.delete(item.id);}
-  else ctx.unmatched.set(item.id,product
-   ?`No collected catalogue record matches ${product.name} (${product.brand}, ${product.size}) within your brand and pack rules`
-   :`No collected catalogue record matches "${item.name}"`);
+  else ctx.unmatched.set(item.id,{kind:'no-record',detail:product
+   ?`Looked for ${product.brand} · ${product.size}, within your brand and pack rules`
+   :'Your own item — nothing in the collected catalogues to match it to'});
  }
  return filled;
 }

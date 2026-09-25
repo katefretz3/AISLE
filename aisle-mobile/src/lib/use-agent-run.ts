@@ -66,7 +66,7 @@ export function useAgentRun(state:UserState,ready:boolean):AgentSession{
    sources:run.sources.map(s=>({chainId:s.chainId,origin:s.origin,name:s.name,status:s.status})),
    offers:run.offers,
    proposals:new Map(run.proposals.map(p=>[`${p.itemId}::${p.sourceId}`,p])),
-   unmatched:new Map(run.unmatched.map(u=>[u.itemId,u.reason])),
+   unmatched:new Map(run.unmatched.map(u=>[u.itemId,{kind:u.kind,detail:u.reason}])),
   });
  },[run,state,perShopBudget]);
 

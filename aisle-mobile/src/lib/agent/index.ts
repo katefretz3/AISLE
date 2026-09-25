@@ -8,7 +8,7 @@
 export {runAgent,type AgentRun,type RunOptions,type TraceStep,type Phase} from './orchestrator';
 export {buildShopperModel,brandNudge,cadenceDays,perShopBudget,type ShopperModel,type Replenishment,type Affinity} from './memory';
 export {EvidenceLedger,faultsOf,isTrustworthy,verifiedOffers,sha256,type Evidence,type SourcedOffer,type OfferFault} from './provenance';
-export {TOOLS,toolByName,toolSchemasForModel,computeBaskets,basketsFrom,type Tool,type ToolContext,type Basket,type BasketLine,type BasketInput,type Proposal,type Budget} from './tools';
+export {TOOLS,toolByName,toolSchemasForModel,computeBaskets,basketsFrom,type Tool,type ToolContext,type Basket,type BasketLine,type BasketInput,type Proposal,type Budget,type UnmatchedKind,type UnmatchedReason} from './tools';
 export {AGENT_SYSTEM_PROMPT,reviewNarrative,reviewRationale,allowedFigures,allowedDistances,type Violation} from './policy';
 export {brokerConfig,runToolLoop,type BrokerConfig,type LoopEvent,type LoopOutcome} from './model';
 export {CHAINS,chainFor,inOntario,SEEDED_ORIGINS,ONTARIO_BOUNDS,type ChainPolicy,type FeedPolicy} from './registry';

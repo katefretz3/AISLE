@@ -22,6 +22,21 @@ import type {CollectOutcome} from './adapters';
 import type {PlaceResult} from './places';
 import {reviewRationale,allowedFigures} from './policy';
 
+/**
+ * Why an item ended up with no price.
+ *
+ * The kind is carried rather than inferred from the prose, so the interface can
+ * state a shared explanation once for a group of items instead of repeating a
+ * near-identical paragraph per row. `detail` stays item-specific and is still
+ * shown; it is the reasoning, not the boilerplate around it.
+ */
+export type UnmatchedKind=
+ |'no-record'   // Nothing in the collected catalogues corresponds to the item.
+ |'discarded'   // A price was found but failed verification, so it was dropped.
+ |'flagged';    // Recorded as genuinely unavailable rather than substituted.
+
+export type UnmatchedReason={kind:UnmatchedKind;detail:string};
+
 export type Proposal={itemId:string;sourceId:string;offerId:string;packs:number;lineTotal:number;confidence:'high'|'medium'|'low';rationale:string;origin:'agent'|'confirmed'};
 export type Budget={maxToolCalls:number;maxProbes:number;maxCollects:number;deadline:number};
 
@@ -39,7 +54,7 @@ export type ToolContext={
  sources:CollectOutcome[];
  offers:SourcedOffer[];
  proposals:Map<string,Proposal>;
- unmatched:Map<string,string>;
+ unmatched:Map<string,UnmatchedReason>;
  counters:{toolCalls:number;probes:number;collects:number};
  log:(label:string,detail:string)=>void;
 };
@@ -228,7 +243,7 @@ export const TOOLS:Tool[]=[
   async run(args:{itemId:string;reason:string},ctx){
    const item=ctx.state.items.find(i=>i.id===args.itemId);
    if(!item)return refuse(`No list item with id ${args.itemId}`);
-   ctx.unmatched.set(item.id,args.reason.slice(0,300));
+   ctx.unmatched.set(item.id,{kind:'flagged',detail:args.reason.slice(0,300)});
    ctx.log('flag_unavailable',`${itemLabel(item)}: ${args.reason.slice(0,120)}`);
    return {ok:true,flagged:item.id};
   },
@@ -255,7 +270,7 @@ export type Basket={sourceId:string;name:string;origin:string;subtotal:number;pr
 export type BasketInput={
  state:UserState;perShopBudget:number;
  sources:{chainId:string|null;origin:string;name:string;status:'ready'|'unavailable'}[];
- offers:SourcedOffer[];proposals:Map<string,Proposal>;unmatched:Map<string,string>;
+ offers:SourcedOffer[];proposals:Map<string,Proposal>;unmatched:Map<string,UnmatchedReason>;
 };
 
 /**
@@ -275,7 +290,7 @@ export function basketsFrom(input:BasketInput):Basket[]{
    return {itemId:item.id,name:item.name,quantity:item.qty,offer,packs,
     lineTotal:offer?offer.price*packs:0,confirmed:!!confirmedOfferId,
     confidence:proposal?.confidence??null,rationale:proposal?.rationale??'',
-    reason:offer?'':unmatched.get(item.id)||'No collected record matched this item'};
+    reason:offer?'':unmatched.get(item.id)?.detail||'No collected record matched this item'};
   });
   const priced=lines.filter(l=>l.offer&&l.packs>0);
   const subtotal=priced.reduce((sum,l)=>sum+l.lineTotal,0);

@@ -5,10 +5,10 @@
 // items it matched to a real catalogue record, what it could not price, and the
 // HTTP response behind every figure. Nothing here is rendered unless it came
 // back from a run — an unpriced item shows as an unpriced item.
-import {useMemo} from 'react';
+import {useMemo,useState} from 'react';
 import {Accordion,AccordionContent,AccordionItem,AccordionTrigger} from '@/components/ui/accordion';
-import {ArrowUpRight,Check,ChevronRight,CircleAlert,FileSearch,Info,LoaderCircle,MapPin,RefreshCw,ShieldCheck,Sparkles,Store,X} from 'lucide-react';
-import type {Basket} from '@/lib/agent';
+import {ArrowUpRight,Check,ChevronDown,ChevronRight,CircleAlert,FileSearch,Info,LoaderCircle,MapPin,RefreshCw,ShieldCheck,Sparkles,Store,X} from 'lucide-react';
+import type {AgentRun,Basket,UnmatchedKind} from '@/lib/agent';
 import type {AgentSession} from '@/lib/use-agent-run';
 import {money,productById,productImagePath,type UserState} from '@/lib/catalog';
 import {withUnitPrices} from '@/lib/unit-price';
@@ -28,6 +28,9 @@ const PHASES=[
 export default function AgentWorkspace({state,agent,commit,onList,onPreferences,onSetup,onCompare}:Props){
  const {run,busy,error,baskets,best,perShopBudget:budget,readable,start}=agent;
  const phase=busy?'discover':'';
+ // Items with a collected price, counted once across every basket.
+ const matchedCount=useMemo(()=>
+  new Set(baskets.flatMap(b=>b.lines.filter(l=>l.offer).map(l=>l.itemId))).size,[baskets]);
 
  function decide(itemId:string,sourceId:string,offerId:string,brand:string,accept:boolean){
   commit(s=>{
@@ -82,7 +85,11 @@ export default function AgentWorkspace({state,agent,commit,onList,onPreferences,
    <section className="agent-block">
     <div className="agent-block-head">
      <div><h2>Your list, matched</h2>
-      <p>Aisle proposes; you confirm. A match only counts towards a total once you accept it.</p></div>
+      <p>{matchedCount>0
+       ?<>{matchedCount} of {state.items.length} {state.items.length===1?'item':'items'} {matchedCount===1?'has':'have'} a
+         collected price{matchedCount<state.items.length&&<>; the rest are grouped below with the reason</>}. Aisle
+         proposes, you confirm — a match only counts towards a total once you accept it.</>
+       :<>Aisle proposes; you confirm. A match only counts towards a total once you accept it.</>}</p></div>
      <button className="text-button" onClick={onPreferences}>Preferences <ArrowUpRight size={15}/></button>
     </div>
     {readable===0
@@ -104,12 +111,15 @@ export default function AgentWorkspace({state,agent,commit,onList,onPreferences,
        </div>
      : <div className="agent-lines">
 
-      {state.items.map(item=>{
+      {/* Priced items first: they are the output. Items with no price follow in
+          one grouped block, so the explanation is stated once instead of once
+          per row — eight near-identical paragraphs read as an apology and train
+          people to stop reading them. */}
+      {state.items.filter(item=>baskets.some(b=>b.lines.some(l=>l.itemId===item.id&&l.offer))).map(item=>{
       const candidates=baskets.map(b=>({basket:b,line:b.lines.find(l=>l.itemId===item.id)}))
        .filter((c):c is {basket:Basket;line:NonNullable<typeof c.line>}=>!!c.line?.offer);
       const {priced:unitRows}=withUnitPrices(candidates,c=>({price:c.line.offer!.price,pack:c.line.offer!.pack}));
       const unitFor=(sourceId:string)=>unitRows.find(u=>u.row.basket.sourceId===sourceId);
-      const gap=run.unmatched.find(u=>u.itemId===item.id);
       const product=item.productId?productById[item.productId]:undefined;
       return <article className={`agent-line${candidates.length?'':' is-gap'}`} key={item.id}>
        <img src={productImagePath(item.productId)} alt="" loading="lazy" decoding="async"/>
@@ -140,9 +150,10 @@ export default function AgentWorkspace({state,agent,commit,onList,onPreferences,
               <X size={13}/> Not this</button>
             </span>}
          </div>)
-        :<p className="agent-gap"><CircleAlert size={15}/> {(gap?.reason??'No collected record matched this item').replace(/\.?$/,'.')} Aisle leaves it unpriced rather than guessing.</p>}
+        :null}
        </div>
       </article>;})}
+      <UnpricedGroups state={state} run={run} baskets={baskets} onList={onList} onPreferences={onPreferences} onRecheck={start}/>
        </div>}
    </section>
 
@@ -218,4 +229,76 @@ export default function AgentWorkspace({state,agent,commit,onList,onPreferences,
    </Accordion>
   </>}
  </div>;
+}
+
+/** The shared explanation for each kind of gap, said once. */
+const GAP_COPY:Record<UnmatchedKind,{title:(n:number)=>string;body:string}>={
+ 'no-record':{
+  title:n=>`${n} ${n===1?'item has':'items have'} no matching catalogue record`,
+  body:'Nothing in the catalogues Aisle could read corresponds to these, so they are left blank. '
+   +'That is a gap in what retailers publish, not a sign the items are unavailable in the shop.',
+ },
+ discarded:{
+  title:n=>`${n} ${n===1?'price was':'prices were'} found but could not be trusted`,
+  body:'A figure was collected for these and then failed verification — wrong currency, stale, or with no '
+   +'usable evidence behind it. Aisle discards a price it cannot stand behind rather than showing it.',
+ },
+ flagged:{
+  title:n=>`${n} ${n===1?'item was':'items were'} recorded as unavailable`,
+  body:'Aisle looked and found nothing genuinely equivalent, so it reported that instead of proposing an '
+   +'approximate substitute.',
+ },
+};
+
+/**
+ * Every unpriced item, grouped by why.
+ *
+ * The per-item reasoning is kept — it is behind a disclosure rather than
+ * deleted — but the sentence that is identical on every row is printed once.
+ */
+function UnpricedGroups({state,run,baskets,onList,onPreferences,onRecheck}:{
+ state:UserState;run:AgentRun;baskets:Basket[];
+ onList:()=>void;onPreferences:()=>void;onRecheck:()=>void;
+}){
+ const [open,setOpen]=useState<UnmatchedKind|null>(null);
+ const groups=useMemo(()=>{
+  const priced=new Set(baskets.flatMap(b=>b.lines.filter(l=>l.offer).map(l=>l.itemId)));
+  const rows=run.unmatched.filter(u=>!priced.has(u.itemId)&&state.items.some(i=>i.id===u.itemId));
+  const by=new Map<UnmatchedKind,typeof rows>();
+  for(const row of rows)by.set(row.kind,[...(by.get(row.kind)??[]),row]);
+  return [...by.entries()];
+ },[run,baskets,state.items]);
+
+ if(!groups.length)return null;
+
+ return <>{groups.map(([kind,rows])=>{
+  const copy=GAP_COPY[kind];
+  const expanded=open===kind;
+  return <section className={`agent-gap-group is-${kind}`} key={kind}>
+   <div className="agent-gap-head">
+    <CircleAlert size={18}/>
+    <div>
+     <strong>{copy.title(rows.length)}</strong>
+     <p>{copy.body}</p>
+    </div>
+   </div>
+   <ul className="agent-gap-items">
+    {rows.map(row=><li key={row.itemId}>{row.name}</li>)}
+   </ul>
+   <div className="agent-gap-actions">
+    <button type="button" className="text-button" onClick={()=>setOpen(expanded?null:kind)}>
+     {expanded?'Hide the detail':`Why these ${rows.length===1?'one':rows.length}`} <ChevronDown size={14}/>
+    </button>
+    {kind==='no-record'
+     ?<><button type="button" className="text-button" onClick={onList}>Edit my list <ArrowUpRight size={14}/></button>
+       <button type="button" className="text-button" onClick={onPreferences}>Loosen brand rules <ArrowUpRight size={14}/></button></>
+     :kind==='discarded'
+      ?<button type="button" className="text-button" onClick={onRecheck}>Check again <ArrowUpRight size={14}/></button>
+      :<button type="button" className="text-button" onClick={onList}>Edit my list <ArrowUpRight size={14}/></button>}
+   </div>
+   {expanded&&<dl className="agent-gap-detail">
+    {rows.map(row=><div key={row.itemId}><dt>{row.name}</dt><dd>{row.reason}</dd></div>)}
+   </dl>}
+  </section>;
+ })}</>;
 }

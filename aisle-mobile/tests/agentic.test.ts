@@ -382,3 +382,23 @@ test('a complete basket outranks a cheaper incomplete one', async()=>{
  assert.ok(baskets[1].subtotal<baskets[0].subtotal,'and it really is cheaper');
  assert.ok(ledger.has(baskets[0].lines.find(l=>l.offer)!.offer!.evidenceId));
 });
+
+test('an unpriced item carries a kind, so the interface can group the reasons', async()=>{
+ // The screen used to print a near-identical paragraph per unpriced item —
+ // eight in a column on a twelve-item list. The kind lets the shared sentence
+ // be said once, so the per-item text must hold only what actually varies.
+ const run=await runAgent({state:fixtureState(),now:NOW,forceDeterministic:true,
+  fetchPlaces:async()=>fixturePlaces(),reader:fixtureReader()});
+ const gaps=run.unmatched;
+ assert.ok(gaps.length>0,'this fixture leaves something unmatched');
+ for(const gap of gaps){
+  assert.ok(['no-record','discarded','flagged'].includes(gap.kind),`unknown kind ${gap.kind}`);
+  assert.doesNotMatch(gap.reason,/rather than guessing/i,
+   'the boilerplate belongs to the group, not to every row');
+  assert.doesNotMatch(gap.reason,/No collected catalogue record matches/i,
+   'the shared explanation is the group heading now');
+ }
+ // Items sharing a kind collapse to one group.
+ const kinds=new Set(gaps.map(g=>g.kind));
+ assert.ok(kinds.size<=gaps.length,'grouping can only reduce the count');
+});
