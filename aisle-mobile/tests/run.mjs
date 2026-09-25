@@ -25,12 +25,13 @@ await build({
     catalogue:fileURLToPath(new URL('./catalogue.test.ts',import.meta.url)),
     pages:fileURLToPath(new URL('./pages.test.ts',import.meta.url)),
     history:fileURLToPath(new URL('./history.test.ts',import.meta.url)),
+    shelf:fileURLToPath(new URL('./shelf.test.ts',import.meta.url)),
    },
    output:{entryFileNames:'[name].test.mjs',format:'es'},
   },
  },
 });
 
-const result=spawnSync(process.execPath,['--test',join(out,'agentic.test.mjs'),join(out,'catalogue.test.mjs'),join(out,'pages.test.mjs'),join(out,'history.test.mjs')],{stdio:'inherit',cwd:root});
+const result=spawnSync(process.execPath,['--test',join(out,'agentic.test.mjs'),join(out,'catalogue.test.mjs'),join(out,'pages.test.mjs'),join(out,'history.test.mjs'),join(out,'shelf.test.mjs')],{stdio:'inherit',cwd:root});
 rmSync(out,{recursive:true,force:true});
 process.exit(result.status??1);

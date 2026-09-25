@@ -12,10 +12,11 @@
 // actually been ticked, and says plainly when some of that has no price, so a
 // small number is never mistaken for a complete one.
 import {useMemo} from 'react';
-import {Check,CircleAlert,ListOrdered,Store} from 'lucide-react';
+import {Check,CircleAlert,ListOrdered,Store,Tag} from 'lucide-react';
 import {Progress} from '@/components/ui/progress';
 import {groupForWalk,groupAsWritten,tallyBasket,type ChecklistGroup} from '@/lib/shopping-order';
 import {money,type ListItem} from '@/lib/catalog';
+import type {ShelfTally} from '@/lib/shelf-prices';
 import './shop-checklist.css';
 
 export type ChecklistOrder='aisle'|'list';
@@ -26,12 +27,16 @@ type Props={
  onOrderChange:(order:ChecklistOrder)=>void;
  /** Whole-line cost of an item, or null when nothing priced it. */
  lineTotal:(itemId:string)=>number|null;
+ /** Where those costs came from. The running total can mix prices Aisle
+  *  collected with prices the household typed off a shelf, and a number made of
+  *  both must say so rather than borrowing the authority of the stronger one. */
+ provenance:ShelfTally;
  budget:number;
  shopName:string;
  renderItem:(item:ListItem)=>React.ReactNode;
 };
 
-export default function ShopChecklist({items,order,onOrderChange,lineTotal,budget,shopName,renderItem}:Props){
+export default function ShopChecklist({items,order,onOrderChange,lineTotal,provenance,budget,shopName,renderItem}:Props){
  const groups=useMemo<ChecklistGroup[]>(()=>
   order==='aisle'?groupForWalk(items):groupAsWritten(items),[items,order]);
 
@@ -60,6 +65,9 @@ export default function ShopChecklist({items,order,onOrderChange,lineTotal,budge
     <span>{tally.checked} of {items.length} picked up · {pct}%</span>
     {tally.unpriced>0&&<span className="checklist-unpriced">
      <CircleAlert size={13}/> {tally.unpriced} with no price, not counted
+    </span>}
+    {provenance.observed>0&&<span className="checklist-observed">
+     <Tag size={13}/> {provenance.observed} {provenance.observed===1?'price':'prices'} you entered yourself
     </span>}
    </p>
   </div>

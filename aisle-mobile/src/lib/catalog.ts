@@ -26,6 +26,39 @@ export type TripLine = {
  predicted: number | null;
 };
 
+/**
+ * A price somebody read off a shelf and typed in.
+ *
+ * This is deliberately NOT a SourcedOffer. Everything in src/lib/agent carries
+ * an evidence row tying it to an HTTP response, and `faultsOf` discards
+ * anything that cannot be traced back to one. A shelf price has no such
+ * backing — it is a person's word — so it lives in its own channel, is labelled
+ * as self-reported wherever it appears, and never enters a basket subtotal that
+ * claims to be evidence-backed.
+ *
+ * It is still the most valuable price in the app for most households: 17 of 19
+ * Ontario chains publish nothing Aisle can read, so for the shop they actually
+ * use, this is the only price that will ever exist.
+ */
+export type ShelfPrice = {
+ id: string;
+ /** Null for an item that was never matched to the catalogue. */
+ productId: string | null;
+ /** What it was captured against, kept so the row still reads if the item goes. */
+ itemName: string;
+ storeId: string;
+ storeName: string;
+ /** What the label said, in cents, for ONE pack of `pack`. Never a line total:
+  *  the quantity is applied when the price is used, not when it is recorded. */
+ priceCents: number;
+ /** The pack the price was for. A price with no pack cannot be compared per
+  *  unit, so it is recorded as unknown rather than assumed to match the list. */
+ pack: {amount: number; unit: 'g' | 'ml' | 'each'} | null;
+ packLabel: string;
+ observedAt: string;
+ note?: string;
+};
+
 /** Superseded by `TripLine`. Kept so trips saved before the change still load. */
 export type LegacyTripPrice = {name: string; quantity: number; actual: number; predicted: number};
 
@@ -56,7 +89,9 @@ export type UserState = { onboarded: boolean; listName: string; items: ListItem[
  /** Products the household waved off on the home screen, with the date they did
   *  it. A snooze, not an exclusion: saying "not this week" about milk should not
   *  quietly drop milk from your staples forever. */
- dueSnoozed?:Record<string,string>; events: {category: string; action: string; date: string; productId?:string; storeId?:string;brand?:string;offerId?:string}[]; activeShop: string | null };
+ dueSnoozed?:Record<string,string>;
+ /** Prices read off shelves by the household. Self-reported, never evidence. */
+ shelfPrices?:ShelfPrice[]; events: {category: string; action: string; date: string; productId?:string; storeId?:string;brand?:string;offerId?:string}[]; activeShop: string | null };
 export const stores: Store[] = [
  {id:"food-basics",name:"Food Basics",short:"fb",color:"#e9f1d5",text:"#416324",url:"https://www.foodbasics.ca"},
  {id:"no-frills",name:"No Frills",short:"nf",color:"#ffed42",text:"#20251a",url:"https://www.nofrills.ca"},
@@ -115,6 +150,22 @@ export const profileDefaults={city:"Burlington",neighbourhood:"Burlington",prior
  */
 /** A snooze only means anything for a shopping cycle or two, so old ones are
  *  dropped rather than accumulating one entry per product for ever. */
+/**
+ * Keep shelf prices bounded and current.
+ *
+ * A price over a year old says nothing about today's shelf, and an unbounded
+ * list would grow with every shop. Newest first so lookups hit early.
+ */
+export function pruneShelfPrices(prices:ShelfPrice[]|undefined,now=Date.now()):ShelfPrice[]{
+ return (prices??[])
+  .filter(row=>{
+   const at=Date.parse(row.observedAt);
+   return Number.isFinite(at)&&now-at<365*86400000&&row.priceCents>0;
+  })
+  .sort((a,b)=>b.observedAt.localeCompare(a.observedAt))
+  .slice(0,500);
+}
+
 function pruneSnoozes(snoozed:Record<string,string>|undefined,now=Date.now()):Record<string,string>{
  const keep:Record<string,string>={};
  for(const [productId,at] of Object.entries(snoozed??{})){
@@ -134,7 +185,7 @@ function migrateTrip(trip:Trip):Trip{
  return {...trip,lines};
 }
 
-export function normalizeState(s:UserState):UserState{const city=ontarioCities.find(c=>c.name===(s.prefs.city??s.prefs.area))?.name??"Burlington";const point=s.prefs.searchLocation;const valid=point&&point.city===city&&Number.isFinite(point.lat)&&Math.abs(point.lat)<=85&&Number.isFinite(point.lng)&&Math.abs(point.lng)<=180;const prefs={...profileDefaults,...s.prefs,city,searchLocation:valid?point:cityLocation(city)};return {...s,prefs,events:s.events??[],savedLists:s.savedLists??[],dueSnoozed:pruneSnoozes(s.dueSnoozed),trips:(s.trips??[]).map(migrateTrip)};}
+export function normalizeState(s:UserState):UserState{const city=ontarioCities.find(c=>c.name===(s.prefs.city??s.prefs.area))?.name??"Burlington";const point=s.prefs.searchLocation;const valid=point&&point.city===city&&Number.isFinite(point.lat)&&Math.abs(point.lat)<=85&&Number.isFinite(point.lng)&&Math.abs(point.lng)<=180;const prefs={...profileDefaults,...s.prefs,city,searchLocation:valid?point:cityLocation(city)};return {...s,prefs,events:s.events??[],savedLists:s.savedLists??[],dueSnoozed:pruneSnoozes(s.dueSnoozed),shelfPrices:pruneShelfPrices(s.shelfPrices),trips:(s.trips??[]).map(migrateTrip)};}
 export const initialState = ():UserState => ({onboarded:false,listName:"The weekly shop",savedLists:[],items:["strawberries","avocados","bananas","milk","eggs","bread","chicken","pasta","yogurt","broccoli","coffee","tomatoes"].map((id,i)=>({id:`starter-${i}`,productId:id,name:productById[id].name,qty:1,checked:false,locked:id==="coffee"})),prefs:{name:"",area:"Burlington",budget:120,household:2,transport:"drive",radius:10,usualStore:"fortinos",substitutions:true,learning:false,categoryLocks:[],...profileDefaults},trips:[],events:[],activeShop:null});
 // There is deliberately no price function here.
 //

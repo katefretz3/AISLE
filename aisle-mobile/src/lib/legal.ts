@@ -145,6 +145,7 @@ export const PRIVACY:LegalDocument={
     `your preferences: name, household size, budget, cadence, city, radius, transport, preferred chains`,
     `your dietary preferences, allergen settings, excluded products and protected brands`,
     `receipt photographs you add, and the totals you enter`,
+    `prices you read off a shelf and typed in: the amount, the size on the label, the shop and the date. These are your own readings, kept separate from prices Aisle collected itself, never presented as verified, and deleted automatically after a year`,
     `for each shop you save: which items were in it, their quantities, and any per-item prices you typed. This is how the app can tell you what you usually buy and what you last paid, and it is kept whether or not learning is on — it is a record of a receipt you chose to save, not an inference about you. Deleting the trip deletes it.`,
     `your shopping history and, if you turn learning on, the choices it records`,
     `cached retailer prices, which expire after 24 hours`]},

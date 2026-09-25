@@ -11,7 +11,7 @@
 // confirmation, because erasing a year of shopping history by mis-tap is not a
 // recoverable mistake — there is no account and no server copy.
 import {useMemo,useState} from 'react';
-import {AlertTriangle,ArrowRight,Bus,Car,Check,CheckCheck,ChevronRight,Footprints,Heart,LockKeyhole,MapPin,Pin,ReceiptText,RotateCcw,Scale,ShieldCheck,Sparkles,Trash2,User,Users,Wallet,X} from 'lucide-react';
+import {AlertTriangle,ArrowRight,Bus,Car,Check,CheckCheck,ChevronRight,Footprints,Heart,LockKeyhole,MapPin,Pin,ReceiptText,RotateCcw,Scale,ShieldCheck,Sparkles,Tag,Trash2,User,Users,Wallet,X} from 'lucide-react';
 import {AlertDialog,AlertDialogContent,AlertDialogTitle,AlertDialogDescription,AlertDialogAction,AlertDialogCancel,AlertDialogFooter} from '@/components/ui/alert-dialog';
 import {Switch} from '@/components/ui/switch';
 import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from '@/components/ui/select';
@@ -70,6 +70,7 @@ export default function Account({state,saveStatus,onPrefs,onCommit,onEditFood,on
  const period=cadenceDays(p.frequency);
  const learnedCount=state.events.length;
  const boughtItems=state.trips.reduce((n,t)=>n+(t.lines?.length??0),0);
+ const shelfCount=(state.shelfPrices??[]).length;
  const hasLearned=learnedCount>0||p.categoryLocks.length>0||p.excludedProducts.length>0;
 
  function commitBudget(next:string){
@@ -328,11 +329,16 @@ export default function Account({state,saveStatus,onPrefs,onCommit,onEditFood,on
      <li><Sparkles size={16}/><span>{p.learning?`${plural(learnedCount,'recorded choice')} in use`:'Learning is off — explicit settings only'}</span></li>
      <li><CheckCheck size={16}/><span>{plural(state.trips.length,'shopping trip')} recorded</span></li>
      <li><ReceiptText size={16}/><span>{plural(boughtItems,'item')} on those receipts, with any prices you entered</span></li>
+     <li><Tag size={16}/><span>{plural(shelfCount,'shelf price')} you read off a label</span></li>
     </ul>
     <p className="account-memory-note">A saved receipt records which items were in that
      shop, so Aisle can tell you what you usually buy and what you last paid. It stays on
      this device and is deleted with the receipt. Learning, above, is separate: it governs
      whether Aisle draws conclusions from your choices, not whether your receipts are kept.</p>
+    <p className="account-memory-note">Prices you type off a shelf are kept apart from prices
+     Aisle collected itself. They are shown as yours wherever they appear, are never counted
+     towards a verified saving, and are dropped after a year because a shelf does not stay
+     still that long.</p>
    </div>
 
    <div className="account-danger">

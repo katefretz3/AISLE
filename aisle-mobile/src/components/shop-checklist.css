@@ -81,3 +81,8 @@
    so it fills the gap rather than competing with a live figure. */
 .checklist-rows .item-paid{display:block;margin-top:2px;font-size:.72rem;font-weight:500;
  font-variant-numeric:tabular-nums;color:var(--primary)}
+
+/* Prices the household typed off a shelf. Marked wherever they appear, so a
+   total made of both kinds never reads as one Aisle can evidence. */
+.checklist-observed{display:inline-flex;align-items:center;gap:5px;font-size:.75rem;color:var(--primary)}
+.checklist-rows .item-observed{display:block;margin-top:2px;font-size:.72rem;font-weight:500;color:var(--primary)}
