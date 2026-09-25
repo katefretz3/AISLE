@@ -145,9 +145,9 @@ function EmptyCompare({busy,readable,run,onList,onSetup,onDemo}:{
  return <section className="compare-empty">
   <span className="compare-empty-icon"><Store size={26}/></span>
   <h2>{busy?'Reading retailer catalogues…'
-   :!run?'No price check has run yet.'
-   :readable===0?'No retailer near you publishes a catalogue Aisle can read.'
-   :'Nothing on your list matched a collected price.'}</h2>
+   :!run?'No price check has run yet'
+   :readable===0?'No shop near you publishes prices Aisle can read'
+   :'Nothing on your list matched a collected price'}</h2>
   <p>{busy?'This takes a few seconds. Aisle is finding shops near you and reading the catalogues it is allowed to read.'
    :readable===0?'Aisle only shows prices it has actually collected, so rather than estimating, it shows nothing. Widening your search area may reach a retailer that publishes one.'
    :'The catalogues Aisle could read do not stock your items, or the matches did not meet your brand and pack rules.'}</p>

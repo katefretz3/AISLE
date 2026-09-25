@@ -156,3 +156,9 @@
 .agent-blocked ul{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 0;padding:0;list-style:none}
 .agent-blocked li{padding:5px 11px;border-radius:999px;background:var(--card);border:1px solid var(--border);
  font-size:.78rem;color:var(--muted-foreground)}
+
+/* Unit price. The number a shopper actually compares, so it sits directly under
+   the pack size it was derived from. */
+.agent-unit{font-size:.78rem;font-variant-numeric:tabular-nums;color:var(--muted-foreground)}
+.agent-unit.is-best{color:var(--primary);font-weight:650}
+.agent-unit.is-unknown{font-style:italic;opacity:.85}

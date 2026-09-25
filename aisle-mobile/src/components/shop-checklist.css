@@ -72,3 +72,7 @@
   transform:translate(-50%,-50%);width:48px;height:48px;border-radius:12px}
  .checklist-rows .item-row{min-height:60px}
 }
+
+/* Unit price under the line total: what to check against the shelf label. */
+.checklist-rows .item-unit{display:block;margin-top:2px;font-size:.72rem;font-weight:500;
+ font-variant-numeric:tabular-nums;color:var(--muted-foreground)}

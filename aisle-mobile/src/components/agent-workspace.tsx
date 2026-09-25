@@ -11,6 +11,7 @@ import {ArrowUpRight,Check,ChevronRight,CircleAlert,FileSearch,Info,LoaderCircle
 import type {Basket} from '@/lib/agent';
 import type {AgentSession} from '@/lib/use-agent-run';
 import {money,productById,productImagePath,type UserState} from '@/lib/catalog';
+import {withUnitPrices} from '@/lib/unit-price';
 import './agent-workspace.css';
 
 type Props={state:UserState;agent:AgentSession;commit:(update:(state:UserState)=>UserState)=>void;onAdd:(id:string)=>void;
@@ -88,12 +89,17 @@ export default function AgentWorkspace({state,agent,commit,onList,onPreferences,
      ? <div className="agent-blocked">
         <CircleAlert size={20}/>
         <div>
-         <strong>No prices were collected, so nothing on your list is priced.</strong>
-         <p>All {state.items.length} items are showing as unpriced because no retailer catalogue could be read
-          on this run — not because the items are unavailable. Aisle leaves them blank rather than filling in
-          a plausible number.</p>
-         <ul>{state.items.slice(0,12).map(i=><li key={i.id}>{i.qty} × {i.name}</li>)}
-          {state.items.length>12&&<li>and {state.items.length-12} more</li>}</ul>
+         <strong>{state.items.length
+          ?'No prices were collected, so nothing on your list is priced.'
+          :'No prices were collected, and your list is empty.'}</strong>
+         <p>{state.items.length
+          ? <>All {state.items.length} items are showing as unpriced because no retailer catalogue could be read
+            on this run — not because the items are unavailable. Aisle leaves them blank rather than filling in
+            a plausible number.</>
+          : <>No retailer catalogue could be read on this run. Add groceries to your list and check again — Aisle
+            will price whatever it can actually read, and leave the rest blank.</>}</p>
+         {state.items.length>0&&<ul>{state.items.slice(0,12).map(i=><li key={i.id}>{i.qty} × {i.name}</li>)}
+          {state.items.length>12&&<li>and {state.items.length-12} more</li>}</ul>}
         </div>
        </div>
      : <div className="agent-lines">
@@ -101,6 +107,8 @@ export default function AgentWorkspace({state,agent,commit,onList,onPreferences,
       {state.items.map(item=>{
       const candidates=baskets.map(b=>({basket:b,line:b.lines.find(l=>l.itemId===item.id)}))
        .filter((c):c is {basket:Basket;line:NonNullable<typeof c.line>}=>!!c.line?.offer);
+      const {priced:unitRows}=withUnitPrices(candidates,c=>({price:c.line.offer!.price,pack:c.line.offer!.pack}));
+      const unitFor=(sourceId:string)=>unitRows.find(u=>u.row.basket.sourceId===sourceId);
       const gap=run.unmatched.find(u=>u.itemId===item.id);
       const product=item.productId?productById[item.productId]:undefined;
       return <article className={`agent-line${candidates.length?'':' is-gap'}`} key={item.id}>
@@ -115,6 +123,10 @@ export default function AgentWorkspace({state,agent,commit,onList,onPreferences,
           <div className="agent-offer-copy">
            <strong>{money(line.lineTotal)}</strong>
            <span>{basket.name} · {line.packs}× {line.offer!.pack?`${line.offer!.pack.amount} ${line.offer!.pack.unit}`:'pack size not stated'}</span>
+           {(()=>{const unit=unitFor(basket.sourceId);
+            return unit?.text
+             ?<span className={`agent-unit${unit.best?' is-best':''}`}>{unit.text}{unit.best&&' · best value'}</span>
+             :<span className="agent-unit is-unknown">No unit price — pack size not stated</span>;})()}
            <a href={line.offer!.url} target="_blank" rel="noreferrer noopener">{line.offer!.title} <ArrowUpRight size={12}/></a>
            {line.rationale&&<em>{line.rationale}</em>}
           </div>
@@ -150,7 +162,7 @@ export default function AgentWorkspace({state,agent,commit,onList,onPreferences,
       {b.complete&&b.overBudget>0&&<p className="agent-card-over">{money(b.overBudget)} over your budget</p>}
       {b.complete&&b.overBudget===0&&<p className="agent-card-under">{money(budget-b.subtotal)} left in budget</p>}
      </article>)}
-    </div>:<p className="agent-empty">No retailer catalogue could be read, so there is nothing to total.</p>}
+    </div>:<p className="agent-empty">No retailer catalogue could be read on this run, so there is nothing to total. Widening your search area in Account settings may reach a shop that publishes one.</p>}
    </section>
 
    <section className="agent-block">
@@ -164,7 +176,7 @@ export default function AgentWorkspace({state,agent,commit,onList,onPreferences,
       <span className="agent-km">{s.km.toFixed(1)} km</span>
       <span className={`agent-feed ${s.feed}`}>{s.feed==='connected'?'Prices read':s.feed==='no-public-feed'?'No price feed':'Not checked'}</span>
      </li>)}
-    </ul>:<p className="agent-empty">The store directory returned nothing for your area.</p>}
+    </ul>:<p className="agent-empty">The map directory returned no shops for your area. That is a gap in the map data, not a sign there are none — your saved location is unchanged, and a price check will still try the retailers Aisle knows.</p>}
 
     {run.coverageGaps.length>0&&<div className="agent-note">
      <ShieldCheck size={18}/>

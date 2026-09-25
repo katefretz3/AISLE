@@ -10,6 +10,8 @@ import assert from 'node:assert/strict';
 import {DOCUMENTS,OPERATOR,PLACEHOLDER_FIELDS,PRIVACY,SOURCES,TERMS,documentById,hasPlaceholders} from '@/lib/legal';
 import {initialState,stores,productById,reopenList,pruneSavedLists,type Trip,type ListItem,type SavedList} from '@/lib/catalog';
 import {groupForWalk,tallyBasket} from '@/lib/shopping-order';
+import {chooseBasis,unitPriceCents,formatUnitPrice,withUnitPrices} from '@/lib/unit-price';
+import type {Pack} from '@/lib/agent/types';
 import {perShopBudget,cadenceDays} from '@/lib/agent';
 import ErrorBoundary from '@/components/error-boundary';
 
@@ -228,4 +230,80 @@ test('automatic snapshots never crowd out a list somebody named', ()=>{
  assert.equal(pruned.filter(l=>!l.auto).length,2,'both named lists survive');
  assert.equal(pruned.filter(l=>l.auto).length,5,'only the newest automatic snapshots are kept');
  assert.ok(pruned.filter(l=>l.auto).every(l=>Number(l.savedAt.slice(8,10))>=5),'and they are the newest');
+});
+
+// ---- unit prices -----------------------------------------------------------
+
+const pack=(amount:number,unit:'g'|'ml'|'each'):Pack=>({amount,unit,label:`${amount} ${unit}`});
+
+test('unit price divides the price by the pack, on the chosen basis', ()=>{
+ const basis=chooseBasis([pack(675,'g')])!;
+ assert.equal(basis.label,'100 g','a 675 g pack reads better per 100 g than per kg');
+ // $3.79 for 675 g = 0.5614 cents per gram = 56.15 cents per 100 g.
+ const cents=unitPriceCents(379,pack(675,'g'),basis)!;
+ assert.ok(Math.abs(cents-56.148)<0.01,`got ${cents}`);
+ assert.equal(formatUnitPrice(cents,basis),'$0.56 / 100 g');
+});
+
+test('a large pack switches to the bigger basis so the number stays readable', ()=>{
+ const basis=chooseBasis([pack(2000,'g')])!;
+ assert.equal(basis.label,'kg');
+ assert.equal(formatUnitPrice(unitPriceCents(899,pack(2000,'g'),basis),basis),'$4.50 / kg');
+ const litres=chooseBasis([pack(1750,'ml')])!;
+ assert.equal(litres.label,'L');
+ assert.equal(formatUnitPrice(unitPriceCents(449,pack(1750,'ml'),litres),litres),'$2.57 / L');
+});
+
+test('everything in one comparison shares a basis', ()=>{
+ // A 500 g pack and a 2 kg pack must not be shown as $/100 g against $/kg:
+ // the two numbers would look comparable and differ by a factor of ten.
+ const {basis,priced}=withUnitPrices(
+  [{price:299,pack:pack(500,'g')},{price:899,pack:pack(2000,'g')}],
+  row=>row);
+ assert.equal(basis!.label,'kg','the largest pack sets the basis for the set');
+ assert.ok(priced.every(p=>p.text?.endsWith('/ kg')),'both rows use it');
+ assert.equal(priced[0].text,'$5.98 / kg');
+ assert.equal(priced[1].text,'$4.50 / kg');
+ assert.equal(priced[1].best,true,'the genuinely cheaper one per kilo wins');
+ assert.equal(priced[0].best,false);
+});
+
+test('an unknown pack gets no unit price rather than a guessed one', ()=>{
+ assert.equal(unitPriceCents(399,null,chooseBasis([pack(100,'g')])),null);
+ assert.equal(unitPriceCents(399,pack(0,'g'),chooseBasis([pack(100,'g')])),null);
+ assert.equal(chooseBasis([null,undefined]),null);
+ assert.equal(formatUnitPrice(null,null),null);
+ // Mixed units cannot share a basis, so the odd one out is left unpriced.
+ const {priced}=withUnitPrices([{price:299,pack:pack(500,'g')},{price:199,pack:pack(1,'each')}],r=>r);
+ assert.ok(priced[0].text,'the majority unit is priced');
+ assert.equal(priced[1].text,null,'the other is not converted');
+});
+
+test('a per-item price that only restates the ticket price is not shown', ()=>{
+ // "$1.99 / item" for a single jar is the price with a suffix, not a second
+ // fact, and the app does not pad the screen with figures that say nothing.
+ const single=chooseBasis([pack(1,'each')])!;
+ assert.equal(unitPriceCents(199,pack(1,'each'),single),null);
+ // A multi-pack is a real division, so it stays.
+ const dozen=chooseBasis([pack(12,'each')])!;
+ assert.equal(formatUnitPrice(unitPriceCents(504,pack(12,'each'),dozen),dozen),'$0.42 / item');
+});
+
+test('a tie between units is settled by which one informs the shopper', ()=>{
+ // One weight and one count: spelling must not decide it. Weight wins, so the
+ // gram pack gets a comparable figure and the count pack is left alone.
+ const {basis,priced}=withUnitPrices(
+  [{price:299,pack:pack(500,'g')},{price:199,pack:pack(1,'each')}],r=>r);
+ assert.equal(basis!.unit,'g');
+ assert.equal(priced[0].text,'$0.60 / 100 g');
+ assert.equal(priced[1].text,null);
+});
+
+test('a lone offer is never crowned best value', ()=>{
+ // There is nothing for it to have beaten.
+ const {priced}=withUnitPrices([{price:299,pack:pack(500,'g')}],r=>r);
+ assert.equal(priced[0].best,false);
+ // Nor is a tie, where there is nothing to choose between them.
+ const tied=withUnitPrices([{price:200,pack:pack(100,'g')},{price:400,pack:pack(200,'g')}],r=>r);
+ assert.ok(tied.priced.every(p=>!p.best));
 });
