@@ -22,8 +22,10 @@ export function brokerConfig(): BrokerConfig | null {
   if (!endpoint || !/^https:\/\//.test(endpoint)) return null;
   return {
     endpoint,
-    model: env.VITE_AISLE_AGENT_MODEL || 'claude-sonnet-5',
-    maxTokens: Number(env.VITE_AISLE_AGENT_MAX_TOKENS || 2048),
+    model: env.VITE_AISLE_AGENT_MODEL || 'claude-opus-5-5',
+    // Thinking is always on for this model and counts towards the limit, so it
+    // is sized for the reasoning as well as the reply. The broker caps it too.
+    maxTokens: Number(env.VITE_AISLE_AGENT_MAX_TOKENS || 16000),
     headers: {'Content-Type': 'application/json'},
   };
 }
@@ -32,7 +34,11 @@ type TextBlock = {type: 'text'; text: string};
 type ToolUseBlock = {type: 'tool_use'; id: string; name: string; input: unknown};
 type ContentBlock = TextBlock | ToolUseBlock;
 type Message = {role: 'user' | 'assistant'; content: string | unknown[]};
-type BrokerReply = {content: ContentBlock[]; stop_reason: string};
+type BrokerReply = {
+  content: ContentBlock[];
+  stop_reason: string;
+  stop_details?: {category?: string | null} | null;
+};
 
 export type LoopEvent =
   | {type: 'thinking'; text: string}
@@ -58,8 +64,11 @@ async function callBroker(
     body: JSON.stringify(body),
     signal,
   });
-  if (!response.ok) throw new Error(`Reasoning service returned HTTP ${response.status}`);
-  const payload = (await response.json()) as Partial<BrokerReply> & {error?: {message?: string}};
+  const payload = (await response.json().catch(() => ({}))) as Partial<BrokerReply> & {
+    error?: {message?: string};
+  };
+  if (!response.ok)
+    throw new Error(payload.error?.message || `Reasoning service returned HTTP ${response.status}`);
   if (payload.error)
     throw new Error(payload.error.message || 'Reasoning service reported an error');
   if (!Array.isArray(payload.content))
@@ -67,6 +76,7 @@ async function callBroker(
   return {
     content: payload.content as ContentBlock[],
     stop_reason: payload.stop_reason ?? 'end_turn',
+    stop_details: payload.stop_details ?? null,
   };
 }
 
@@ -107,6 +117,16 @@ export async function runToolLoop(input: {
       onEvent?.({type: 'error', message});
       return {narrative, steps, toolCalls, stopped: 'error', error: message};
     }
+    // Branch on stop_reason before trusting the content. A refusal arrives as a
+    // normal reply, possibly with partial text; treating it as a finished answer
+    // would put a declined response in front of the household as if it were one.
+    if (reply.stop_reason === 'refusal') {
+      const message =
+        'The reasoning service declined this request, so Aisle used its rule-based planner instead.';
+      onEvent?.({type: 'error', message});
+      return {narrative, steps: steps + 1, toolCalls, stopped: 'error', error: message};
+    }
+    const cutOff = reply.stop_reason === 'max_tokens';
     const text = reply.content
       .filter((b): b is TextBlock => b.type === 'text')
       .map(b => b.text)
@@ -117,7 +137,17 @@ export async function runToolLoop(input: {
       onEvent?.({type: 'thinking', text});
     }
     const requests = reply.content.filter((b): b is ToolUseBlock => b.type === 'tool_use');
-    if (!requests.length) return {narrative, steps: steps + 1, toolCalls, stopped: 'complete'};
+    if (!requests.length) {
+      if (cutOff) {
+        const message = 'The reasoning service ran out of room before finishing its answer.';
+        onEvent?.({type: 'error', message});
+        return {narrative, steps: steps + 1, toolCalls, stopped: 'error', error: message};
+      }
+      return {narrative, steps: steps + 1, toolCalls, stopped: 'complete'};
+    }
+    // Every block goes back unchanged, thinking blocks included: the model's
+    // reasoning is bound to this exact conversation, and altering or dropping a
+    // block invalidates it on the next turn.
     messages.push({role: 'assistant', content: reply.content});
     const results: unknown[] = [];
     for (const request of requests) {

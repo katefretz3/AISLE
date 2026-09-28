@@ -27,9 +27,16 @@ jobs:
         with:
           node-version-file: aisle-mobile/.nvmrc
           cache: npm
-          cache-dependency-path: aisle-mobile/package-lock.json
+          cache-dependency-path: |
+            aisle-mobile/package-lock.json
+            server/package-lock.json
 
       - run: npm ci
+
+      # The broker's SDK lives in ../server. The typecheck and the broker tests
+      # resolve it from there.
+      - name: Install broker dependencies
+        run: npm ci --prefix ../server
 
       # Covers src, tests, tools and ../server/agent-broker.ts.
       - name: Typecheck
@@ -56,4 +63,6 @@ jobs:
           fi
 
       - name: Dependency audit
-        run: npm audit --audit-level=moderate
+        run: |
+          npm audit --audit-level=moderate
+          npm audit --audit-level=moderate --prefix ../server

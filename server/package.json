@@ -1,0 +1,13 @@
+{
+  "name": "aisle-agent-broker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Holds the Anthropic API key server-side and forwards the Aisle agent's Messages API calls.",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.129.0"
+  }
+}
