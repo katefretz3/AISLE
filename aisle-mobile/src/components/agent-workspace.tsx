@@ -18,6 +18,7 @@ import {
   ChevronDown,
   ChevronRight,
   CircleAlert,
+  Clock,
   FileSearch,
   Info,
   LoaderCircle,
@@ -189,6 +190,9 @@ export default function AgentWorkspace({
             <span className={`agent-mode ${run.mode}`}>
               {run.mode === 'assisted' ? 'AI-assisted matching' : 'Rule-based matching'}
             </span>
+            <p className="agent-checked">
+              <Clock size={14} /> Prices checked {checkedWhen(run.finishedAt)}
+            </p>
             <p>{run.narrative}</p>
             {run.warnings.map(w => (
               <p className="agent-warning" key={w}>
@@ -724,4 +728,16 @@ function UnpricedGroups({
       })}
     </>
   );
+}
+
+/** "today at 3:14 p.m.", "yesterday at 9:02 a.m." or a date. A saved check
+ *  can be up to a day old, so the time is always shown, never implied. */
+function checkedWhen(iso: string, now = new Date()): string {
+  const at = new Date(iso);
+  const time = at.toLocaleTimeString('en-CA', {hour: 'numeric', minute: '2-digit'});
+  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const diff = Math.round((day(now) - day(at)) / 86_400_000);
+  if (diff === 0) return `today at ${time}`;
+  if (diff === 1) return `yesterday at ${time}`;
+  return `on ${at.toLocaleDateString('en-CA', {month: 'short', day: 'numeric'})} at ${time}`;
 }

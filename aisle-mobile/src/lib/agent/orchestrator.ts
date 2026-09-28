@@ -234,7 +234,9 @@ export async function runAgent(options: RunOptions): Promise<AgentRun> {
     runId: newRunId(),
     mode,
     startedAt,
-    finishedAt: new Date(finished).toISOString(),
+    // On the run's own clock, like startedAt and every offer's timestamps, so
+    // the 24-hour lifetime of a saved run lines up with its offers' expiry.
+    finishedAt: new Date(now + (finished - started)).toISOString(),
     durationMs: finished - started,
     stores: ctx.stores,
     coverageGaps: coverageGaps(ctx.stores),

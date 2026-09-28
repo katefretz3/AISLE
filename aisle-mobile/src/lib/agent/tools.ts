@@ -581,9 +581,14 @@ export function basketsFrom(input: BasketInput): Basket[] {
           confirmed: !!confirmedOfferId,
           confidence: proposal?.confidence ?? null,
           rationale: proposal?.rationale ?? '',
+          // A match whose offer is no longer in the pool expired, or failed the
+          // gate when a saved run was read back. Say so rather than implying
+          // nothing was ever found.
           reason: offer
             ? ''
-            : unmatched.get(item.id)?.detail || 'No collected record matched this item',
+            : offerId
+              ? 'The price Aisle had for this has expired. Check prices again.'
+              : unmatched.get(item.id)?.detail || 'No collected record matched this item',
         };
       });
       const priced = lines.filter(l => l.offer && l.packs > 0);

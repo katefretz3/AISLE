@@ -247,17 +247,84 @@ export async function deleteShelfPhoto(photoId: string): Promise<void> {
  * hand, aged out after a year, pushed past the cap — and hooking each one would
  * eventually miss a path. Reconciling against what is actually referenced cannot.
  */
-export async function sweepShelfPhotos(keepIds: Iterable<string>): Promise<number> {
+export const sweepShelfPhotos = (keepIds: Iterable<string>, graceMs?: number) =>
+  sweepFolder(SHELF_DIR, keepIds, graceMs);
+
+/** Receipt images no saved trip points at: the trip was deleted, or everything
+ *  was erased. The same reconciliation as shelf photos. */
+export const sweepReceipts = (keepIds: Iterable<string>, graceMs?: number) =>
+  sweepFolder('aisle/receipts', keepIds, graceMs);
+
+/**
+ * Delete `<id>.json` files in `folder` that nothing references. Files written in
+ * the last `graceMs` are left alone, so a photo saved a moment before the
+ * record that points at it is not swept in between.
+ */
+async function sweepFolder(
+  folder: string,
+  keepIds: Iterable<string>,
+  graceMs = 10 * 60_000,
+): Promise<number> {
   try {
     await ensureFolder();
-    const {files} = await Filesystem.readdir({path: SHELF_DIR, directory});
-    const names = files.map(f => (typeof f === 'string' ? f : f.name));
-    const orphans = orphanPhotoIds(names, keepIds);
-    for (const photoId of orphans) await deleteShelfPhoto(photoId);
+    const {files} = await Filesystem.readdir({path: folder, directory});
+    const cutoff = Date.now() - graceMs;
+    const settled = files
+      .filter(f => typeof f === 'string' || !(Number(f.mtime) > cutoff))
+      .map(f => (typeof f === 'string' ? f : f.name));
+    const orphans = orphanPhotoIds(settled, keepIds);
+    for (const fileId of orphans)
+      try {
+        await Filesystem.deleteFile({path: `${folder}/${fileId}.json`, directory});
+      } catch {
+        /* already gone */
+      }
     return orphans.length;
   } catch {
     return 0;
   }
+}
+
+// ---- the last price check ----------------------------------------------------
+//
+// See lib/agent/saved-run.ts for the rules. This is only the file.
+
+const LAST_RUN = 'aisle/last-run.json';
+
+export async function saveLastRun(text: string): Promise<void> {
+  try {
+    await Filesystem.writeFile({
+      path: LAST_RUN,
+      directory,
+      data: text,
+      encoding: Encoding.UTF8,
+      recursive: true,
+    });
+  } catch {
+    /* A run that is not saved is simply collected again next launch. */
+  }
+}
+
+export async function loadLastRun(): Promise<string | null> {
+  try {
+    const r = await Filesystem.readFile({path: LAST_RUN, directory, encoding: Encoding.UTF8});
+    return typeof r.data === 'string' ? r.data : await r.data.text();
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteLastRun(): Promise<void> {
+  try {
+    await Filesystem.deleteFile({path: LAST_RUN, directory});
+  } catch {
+    /* already gone */
+  }
+}
+
+/** Everything "Erase everything" promises beyond the saved state itself. */
+export async function eraseStoredFiles(): Promise<void> {
+  await Promise.all([sweepReceipts([], 0), sweepShelfPhotos([], 0), deleteLastRun()]);
 }
 
 /** Take a photo of a shelf label. Returns null when the person backs out. */

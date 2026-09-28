@@ -78,6 +78,9 @@ type Props = {
   onEditFood: () => void;
   onReplaySetup: () => void;
   onLegal: (docId: string) => void;
+  /** Delete what lives outside the saved state: receipt and label images and
+   *  the last price check. */
+  onErase: () => void;
   appVersion: string;
 };
 
@@ -104,6 +107,7 @@ export default function Account({
   onEditFood,
   onReplaySetup,
   onLegal,
+  onErase,
   appVersion,
 }: Props) {
   const p = state.prefs;
@@ -723,6 +727,7 @@ export default function Account({
               className="is-destructive"
               onClick={() => {
                 onCommit(() => ({...JSON.parse(JSON.stringify(EMPTY_STATE))}));
+                onErase();
                 setEraseOpen(false);
               }}
             >

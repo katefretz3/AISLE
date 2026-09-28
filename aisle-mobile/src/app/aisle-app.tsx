@@ -106,6 +106,8 @@ import {
   shareList,
   isDevice,
   sweepShelfPhotos,
+  sweepReceipts,
+  eraseStoredFiles,
   deleteShelfPhoto,
   tapFeedback,
 } from '@/lib/persistence';
@@ -199,7 +201,7 @@ export default function AisleApp() {
     revision = useRef(0),
     saveChain = useRef(Promise.resolve());
   // The MCP tool reads the latest run without re-subscribing on every change.
-  const agentRef = useRef<typeof agent.run>(null);
+  const agentRef = useRef<{run: typeof agent.run; baskets: typeof agent.baskets}>(null);
   const [ready, setReady] = useState(false),
     [loadError, setLoadError] = useState(false),
     [saveStatus, setSaveStatus] = useState('Saved'),
@@ -248,7 +250,26 @@ export default function AisleApp() {
   // cannot read, this is the only price any of their items will ever carry.
   const paidHistory = useMemo(() => priceHistory(state.trips), [state.trips]);
 
-  agentRef.current = agent.run;
+  // Photos and receipts are dropped by several routes — a price removed by hand
+  // or aged out, a trip deleted, everything erased — and each would otherwise
+  // leave its image behind. Reconcile whenever the set of referenced ids changes.
+  const photoKeep = useMemo(() => [...referencedPhotoIds(state)].sort().join(','), [state]);
+  const receiptKeep = useMemo(
+    () =>
+      state.trips
+        .map(t => t.receiptId)
+        .filter(Boolean)
+        .sort()
+        .join(','),
+    [state.trips],
+  );
+  useEffect(() => {
+    if (!ready) return;
+    void sweepShelfPhotos(photoKeep.split(',').filter(Boolean));
+    void sweepReceipts(receiptKeep.split(',').filter(Boolean));
+  }, [ready, photoKeep, receiptKeep]);
+
+  agentRef.current = {run: agent.run, baskets: agent.baskets};
   const best = agent.best
     ? {id: agent.best.sourceId, name: agent.best.name, subtotal: agent.best.subtotal}
     : undefined;
@@ -335,9 +356,6 @@ export default function AisleApp() {
       setSavingError('');
       setSaveStatus('Saved');
       setReady(true);
-      // Prices are dropped by several routes — removed by hand, aged out, pushed
-      // past the cap — and each would otherwise leave its photo behind.
-      void sweepShelfPhotos(referencedPhotoIds(data.state));
     } catch {
       setLoadError(true);
     }
@@ -752,8 +770,9 @@ export default function AisleApp() {
               throw new Error('No arguments expected');
             return {
               dataMode: 'observed',
-              collectedAt: agentRef.current?.finishedAt ?? null,
-              stores: (agentRef.current?.baskets ?? []).map(b => ({
+              collectedAt: agentRef.current?.run?.finishedAt ?? null,
+              // The live baskets: re-gated, and re-totalled after confirmations.
+              stores: (agentRef.current?.run ? agentRef.current.baskets : []).map(b => ({
                 name: b.name,
                 subtotalCents: b.subtotal,
                 itemsPriced: b.priced,
@@ -1643,6 +1662,10 @@ export default function AisleApp() {
               onEditFood={() => setOnboard(true)}
               onReplaySetup={() => setOnboard(true)}
               onLegal={goLegal}
+              onErase={() => {
+                agent.forget();
+                void eraseStoredFiles();
+              }}
               appVersion={APP_VERSION}
             />
           )}
@@ -2227,6 +2250,7 @@ export default function AisleApp() {
                 void (async () => {
                   try {
                     const blank = initialState();
+                    await eraseStoredFiles();
                     await saveState({...blank, onboarded: true}, 0).catch(async () => {
                       await saveState({...blank, onboarded: true}, (await loadState()).revision);
                     });

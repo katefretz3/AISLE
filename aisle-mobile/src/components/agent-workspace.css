@@ -165,6 +165,13 @@
   line-height: 1.62;
   color: var(--foreground);
 }
+.agent-summary .agent-checked {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+}
 .agent-warning {
   display: flex;
   gap: 9px;

@@ -73,6 +73,43 @@ export class EvidenceLedger {
   all(): Evidence[] {
     return [...this.rows.values()];
   }
+
+  /**
+   * Rebuild a ledger from rows this app recorded on an earlier run and saved
+   * with it. The rows are not re-fetched, so the gate still applies in full:
+   * a row that is malformed is skipped, and any offer pointing at it then fails
+   * as `unknown-evidence`.
+   */
+  static fromRecord(rows: unknown[]): EvidenceLedger {
+    const ledger = new EvidenceLedger();
+    for (const row of rows) {
+      if (!isEvidence(row)) continue;
+      ledger.rows.set(row.id, row);
+      ledger.consumed += row.bytes;
+    }
+    return ledger;
+  }
+}
+
+function isEvidence(row: unknown): row is Evidence {
+  if (!row || typeof row !== 'object') return false;
+  const r = row as Record<string, unknown>;
+  return (
+    typeof r.id === 'string' &&
+    /^[a-f0-9]{64}$/.test(r.id) &&
+    typeof r.bodyHash === 'string' &&
+    /^[a-f0-9]{64}$/.test(r.bodyHash) &&
+    typeof r.url === 'string' &&
+    typeof r.origin === 'string' &&
+    (r.method === 'GET' || r.method === 'POST') &&
+    Number.isInteger(r.status) &&
+    Number.isInteger(r.bytes) &&
+    (r.bytes as number) >= 0 &&
+    typeof r.fetchedAt === 'string' &&
+    Number.isFinite(Date.parse(r.fetchedAt)) &&
+    typeof r.adapter === 'string' &&
+    typeof r.note === 'string'
+  );
 }
 
 export type SourcedOffer = Offer & {evidenceId: string; excerpt: string};

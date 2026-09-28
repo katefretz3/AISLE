@@ -249,7 +249,7 @@ export const PRIVACY: LegalDocument = {
         `prices you read off a shelf and typed in: the amount, the size on the label, the shop and the date, and a photograph of the label if you take one. These are your own readings, kept separate from prices Aisle collected itself, never presented as verified, and deleted automatically after a year. Label photographs stay in the app's private storage on this device, are never uploaded, and are deleted with the price they belong to`,
         `for each shop you save: which items were in it, their quantities, and any per-item prices you typed. This is how the app can tell you what you usually buy and what you last paid, and it is kept whether or not learning is on — it is a record of a receipt you chose to save, not an inference about you. Deleting the trip deletes it.`,
         `your shopping history and, if you turn learning on, the choices it records`,
-        `cached retailer prices, which expire after 24 hours`,
+        `your last price check: the retailer prices Aisle collected, the record of the web response each one came from, and the shops found near you. It is deleted 24 hours after the check, or as soon as you change your search area or radius, and each price stops being shown the moment it expires`,
       ],
     },
 
@@ -313,7 +313,7 @@ export const PRIVACY: LegalDocument = {
       id: 'retention',
       heading: '9. How long things are kept',
       body: [
-        `Your data stays on your device until you delete it or uninstall the app. Cached retailer prices expire after 24 hours. Store directory results are cached for 24 hours. Learning events are capped at the most recent 200 and can be erased at any time from Account settings.`,
+        `Your data stays on your device until you delete it or uninstall the app. The last price check, with the nearby shops found for it, is deleted 24 hours after it was made; the store directory is not kept anywhere else. A receipt photograph is deleted when you delete the shop it belongs to (at the latest the next time you open the app), and every receipt and label photograph is deleted at once when you erase everything. Learning events are capped at the most recent 200 and can be erased at any time from Account settings.`,
         `Uninstalling the app removes its private storage, including your list and receipts. We cannot recover it afterwards.`,
       ],
     },
