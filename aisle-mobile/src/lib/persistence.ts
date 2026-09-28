@@ -47,10 +47,18 @@ export async function loadState(): Promise<{state: UserState; revision: number}>
     return {state, revision: 0};
   }
 }
+/** The stored household is newer than the copy being saved (another window or
+ *  an earlier save that landed first). Nothing was written. */
+export class StaleRevisionError extends Error {
+  constructor() {
+    super('This list has changed. Reopen the app to load the latest copy.');
+    this.name = 'StaleRevisionError';
+  }
+}
+
 export async function saveState(state: UserState, revision: number) {
   const current = await loadState();
-  if (current.revision !== revision)
-    throw new Error('This list has changed. Reopen the app to load the latest copy.');
+  if (current.revision !== revision) throw new StaleRevisionError();
   const next = revision + 1;
   await Filesystem.writeFile({
     path: 'aisle/household.pending.json',

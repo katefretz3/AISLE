@@ -14,6 +14,7 @@ import {
   loadState,
   saveLastRun,
   saveState,
+  StaleRevisionError,
   sweepReceipts,
   sweepShelfPhotos,
 } from '@/lib/persistence';
@@ -47,7 +48,7 @@ test('a saved list reads back, and each save bumps the revision', async () => {
 test('a save from a stale revision is refused rather than overwriting newer data', async () => {
   const {state} = await loadState();
   await saveState({...state, listName: 'Newer'}, 0);
-  await assert.rejects(saveState({...state, listName: 'Older'}, 0), /changed/);
+  await assert.rejects(saveState({...state, listName: 'Older'}, 0), StaleRevisionError);
   assert.equal((await loadState()).state.listName, 'Newer');
 });
 

@@ -31,11 +31,9 @@ import {
   Store as StoreIcon,
   Trash2,
   X,
-  Upload,
   Camera,
   CheckCircle2,
   TriangleAlert,
-  Wallet,
   RefreshCw,
   FileText,
   HeartHandshake,
@@ -65,7 +63,6 @@ import {Tabs, TabsList, TabsTrigger, TabsContent} from '@/components/ui/tabs';
 import {Toaster} from '@/components/ui/sonner';
 import {toast} from 'sonner';
 import Onboarding from './onboarding';
-import {StoreLogo} from '@/components/store-logo';
 import AgentWorkspace from '@/components/agent-workspace';
 import CategoryBrowser from '@/components/category-browser';
 import {useAgentRun} from '@/lib/use-agent-run';
@@ -122,7 +119,10 @@ import {valueSwaps, totalSaving, type ValueSwap} from '@/lib/value-swaps';
 import {version as APP_VERSION} from '../../package.json';
 import {cx, newId, ProductIcon, Pill, Choice, Empty} from './parts';
 import {ItemRow, type ItemRowContext} from './item-row';
-import {AccuracyCard, BudgetCard} from './home-cards';
+import {BudgetCard} from './home-cards';
+import {useHousehold} from './use-household';
+import SpendingView from './views/spending-view';
+import HelpDialog from './help-dialog';
 
 type View = 'home' | 'list' | 'compare' | 'spending' | 'account' | 'legal' | 'shop';
 const nav = [
@@ -132,16 +132,10 @@ const nav = [
   {id: 'spending', label: 'My spending', icon: BarChart3},
 ] as const;
 export default function AisleApp() {
-  const [state, setState] = useState<UserState>(initialState);
-  const ref = useRef(state),
-    revision = useRef(0),
-    saveChain = useRef(Promise.resolve());
+  const household = useHousehold();
+  const {state, ready, loadError, saveStatus, savingError, setSavingError, commit} = household;
   // The MCP tool reads the latest run without re-subscribing on every change.
   const agentRef = useRef<{run: typeof agent.run; baskets: typeof agent.baskets}>(null);
-  const [ready, setReady] = useState(false),
-    [loadError, setLoadError] = useState(false),
-    [saveStatus, setSaveStatus] = useState('Saved'),
-    [savingError, setSavingError] = useState('');
   const [view, setView] = useState<View>('home');
   const [legalDoc, setLegalDoc] = useState<string | null>(null),
     [resetOpen, setResetOpen] = useState(false);
@@ -282,19 +276,8 @@ export default function AisleApp() {
   const missing = state.items.filter(i => !i.productId).length;
 
   async function load() {
-    setLoadError(false);
-    try {
-      const data = await loadState();
-      ref.current = data.state;
-      setState(data.state);
-      revision.current = data.revision;
-      setOnboard(!data.state.onboarded);
-      setSavingError('');
-      setSaveStatus('Saved');
-      setReady(true);
-    } catch {
-      setLoadError(true);
-    }
+    const loaded = await household.load();
+    if (loaded) setOnboard(!loaded.onboarded);
   }
   useEffect(() => {
     void load();
@@ -314,6 +297,9 @@ export default function AisleApp() {
     handle();
     window.addEventListener('hashchange', handle);
     return () => window.removeEventListener('hashchange', handle);
+    // Once, on mount: the household is loaded a single time and later reloads
+    // are explicit (the Try again and Reload buttons).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   function go(v: View) {
     if (v !== 'legal') setLegalDoc(null);
@@ -326,30 +312,6 @@ export default function AisleApp() {
     setView('legal');
     window.history.replaceState(null, '', docId ? `#legal/${docId}` : '#legal');
     window.scrollTo({top: 0, behavior: 'smooth'});
-  }
-  function persist(next: UserState) {
-    setSaveStatus('Saving…');
-    saveChain.current = saveChain.current.then(async () => {
-      try {
-        const data = await saveState(next, revision.current);
-        revision.current = data.revision;
-        setSaveStatus('Saved');
-        setSavingError('');
-      } catch (e) {
-        setSaveStatus('Not saved');
-        setSavingError(e instanceof Error ? e.message : 'Unable to save changes');
-      }
-    });
-  }
-  function commit(update: UserState | ((s: UserState) => UserState)) {
-    if (!ready) {
-      toast.error('Your saved list is not ready. Please retry loading.');
-      return;
-    }
-    const next = typeof update === 'function' ? update(ref.current) : update;
-    ref.current = next;
-    setState(next);
-    persist(next);
   }
   function prefs(p: Partial<Preferences>) {
     commit(s => ({...s, prefs: {...s.prefs, ...p}}));
@@ -647,44 +609,20 @@ export default function AisleApp() {
       .catch(() => toast.error('Could not share the list.'));
   }
   async function finishOnboarding(profile: Preferences, buildList: boolean) {
-    await saveChain.current;
-    const build = (source: UserState): UserState => ({
+    const {merged} = await household.saveNow(source => ({
       ...source,
       prefs: profile,
       onboarded: true,
       items: buildList ? starterList(profile) : source.items,
       activeShop: buildList ? null : source.activeShop,
-    });
-    setSaveStatus('Saving…');
-    try {
-      const next = build(ref.current);
-      const result = await saveState(next, revision.current);
-      revision.current = result.revision;
-      ref.current = next;
-      setState(next);
-      setSaveStatus('Saved');
-      setSavingError('');
-      setOnboard(false);
-      go('home');
-      toast.success('Your Aisle is ready. Your preferences are saved.');
-    } catch (error) {
-      if (error instanceof Error && /another window/i.test(error.message)) {
-        const latest = await loadState();
-        const next = build(latest.state);
-        const result = await saveState(next, latest.revision);
-        revision.current = result.revision;
-        ref.current = next;
-        setState(next);
-        setSaveStatus('Saved');
-        setSavingError('');
-        setOnboard(false);
-        go('home');
-        toast.success('Your Aisle is ready. I merged it with your latest list.');
-        return;
-      }
-      setSaveStatus('Not saved');
-      throw error;
-    }
+    }));
+    setOnboard(false);
+    go('home');
+    toast.success(
+      merged
+        ? 'Your Aisle is ready. It was merged with a newer copy of your list saved elsewhere.'
+        : 'Your Aisle is ready. Your preferences are saved.',
+    );
   }
   useEffect(() => {
     const mc = (
@@ -906,7 +844,7 @@ export default function AisleApp() {
           <div className="system-message error">
             <TriangleAlert size={17} />
             {savingError}
-            <button onClick={() => persist(ref.current)}>Retry save</button>
+            <button onClick={household.retrySave}>Retry save</button>
             <button onClick={() => void load()}>Reload saved list</button>
           </div>
         )}
@@ -1191,124 +1129,13 @@ export default function AisleApp() {
             />
           )}
           {view === 'spending' && (
-            <>
-              <div className="page-heading">
-                <div>
-                  <span className="eyebrow">A LITTLE MORE CLARITY</span>
-                  <h1>Your grocery spending</h1>
-                  <p>Make sense of your shops, one receipt at a time.</p>
-                </div>
-                <button className="button primary" onClick={openReceipt}>
-                  <Plus size={17} /> Add a receipt
-                </button>
-              </div>
-              {state.trips.length > 0 && (
-                <div className="spending-stats">
-                  <div className="card metric">
-                    <span>
-                      <Wallet size={18} /> Recorded spending
-                    </span>
-                    <strong>{money(state.trips.reduce((sum, t) => sum + t.total, 0))}</strong>
-                    <p>
-                      Across {state.trips.length} saved{' '}
-                      {state.trips.length === 1 ? 'trip' : 'trips'}
-                    </p>
-                  </div>
-                  <div className="card metric">
-                    <span>
-                      <ShoppingBag size={18} /> Average shop
-                    </span>
-                    <strong>
-                      {money(
-                        Math.round(
-                          state.trips.reduce((sum, t) => sum + t.total, 0) / state.trips.length,
-                        ),
-                      )}
-                    </strong>
-                    <p>From the totals you entered</p>
-                  </div>
-                  <div className="card metric">
-                    <span>
-                      <Wallet size={18} /> Against your budget
-                    </span>
-                    <strong>
-                      {(() => {
-                        const avg = Math.round(
-                          state.trips.reduce((sum, t) => sum + t.total, 0) / state.trips.length,
-                        );
-                        const diff = avg - agent.perShopBudget;
-                        return diff === 0
-                          ? 'On budget'
-                          : `${money(Math.abs(diff))} ${diff > 0 ? 'over' : 'under'}`;
-                      })()}
-                    </strong>
-                    <p>Average shop vs your {money(agent.perShopBudget)} per-shop budget</p>
-                  </div>
-                </div>
-              )}
-              <AccuracyCard
-                trips={state.trips}
-                shopName={trip => shopIdentity(trip.storeId, trip.storeName).name}
-              />
-              <section className="card history-card">
-                <div className="section-top">
-                  <h3>Your shopping history</h3>
-                  <Pill kind="neutral">{state.trips.length} receipts</Pill>
-                </div>
-                {state.trips.length ? (
-                  <div>
-                    {state.trips.map(t => {
-                      const s = shopIdentity(t.storeId, t.storeName);
-                      return (
-                        <button
-                          className="history-row"
-                          key={t.id}
-                          onClick={() => setHistoryDetail(t)}
-                        >
-                          <StoreLogo store={s} />
-                          <div>
-                            <strong>{s.name}</strong>
-                            <span>
-                              {new Date(t.date + 'T12:00:00').toLocaleDateString('en-CA', {
-                                day: 'numeric',
-                                month: 'long',
-                                year: 'numeric',
-                              })}{' '}
-                              · {t.receiptId ? 'Receipt attached' : 'Manual entry'}
-                            </span>
-                          </div>
-                          <strong>{money(t.total)}</strong>
-                          <ChevronRight size={17} />
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <Empty
-                    icon={ReceiptText}
-                    title="No shops recorded yet"
-                    action={
-                      <button className="button secondary" onClick={openReceipt}>
-                        <Upload size={16} /> Record a shop
-                      </button>
-                    }
-                  >
-                    After a shop, enter what you actually paid. Aisle compares that against your
-                    budget — it is the only figure here it does not have to guess at.
-                  </Empty>
-                )}
-              </section>
-              <div className="transparency-note">
-                <ShieldCheck size={21} />
-                <div>
-                  <strong>A receipt proves what you paid.</strong>
-                  <p>
-                    It doesn’t prove what another store would have charged. We’ll only call savings
-                    verified when both sides have reliable, same-day prices for the same products.
-                  </p>
-                </div>
-              </div>
-            </>
+            <SpendingView
+              trips={state.trips}
+              perShopBudget={agent.perShopBudget}
+              shopIdentity={shopIdentity}
+              onAddReceipt={openReceipt}
+              onOpenTrip={setHistoryDetail}
+            />
           )}
           {view === 'account' && (
             <Account
@@ -1700,8 +1527,9 @@ export default function AisleApp() {
           <div className="receipt-honesty">
             <Info size={15} />
             <p>
-              Photos are stored for your reference. Enter totals manually; automatic receipt reading
-              isn’t connected yet. Sample comparisons cannot verify real savings.
+              Photos are stored on this device for your reference. Enter totals yourself; Aisle does
+              not read receipts automatically, and a receipt cannot show what another shop would
+              have charged.
             </p>
           </div>
           <button
@@ -1758,97 +1586,15 @@ export default function AisleApp() {
                 </div>
               )}
               <p className="field-help">
-                Only your entered amounts are recorded as actual spending. No savings are claimed
-                against the illustrative catalogue.
+                Only the amounts you entered are recorded as what you spent. Aisle does not work out
+                savings from them.
               </p>
             </>
           )}
         </DialogContent>
       </Dialog>
 
-      <Dialog open={help} onOpenChange={setHelp}>
-        <DialogContent className="help-modal">
-          <div className="modal-icon">
-            <ShoppingBasket size={26} />
-          </div>
-          <DialogTitle>A clearer way to shop.</DialogTitle>
-          <DialogDescription>
-            Aisle helps you compare your whole grocery list and keep control of every choice.
-          </DialogDescription>
-          <div className="how-steps">
-            {[
-              {
-                n: '01',
-                t: 'Make your list',
-                d: 'Add products, choose sizes, and lock the favourites you don’t want to change.',
-              },
-              {
-                n: '02',
-                t: 'Compare complete baskets',
-                d: 'Review retailer products and pack sizes. Only complete, confirmed online baskets can be compared. Missing prices remain visible.',
-              },
-              {
-                n: '03',
-                t: 'Shop, then reflect',
-                d: 'Check off your list and save your receipt. Your spending stays separate from estimated savings.',
-              },
-            ].map(x => (
-              <div key={x.n}>
-                <span>{x.n}</span>
-                <div>
-                  <strong>{x.t}</strong>
-                  <p>{x.d}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="help-data">
-            <strong>This is a working product preview.</strong>
-            <p>
-              The default plan collects limited public online catalogues with source links and
-              expiry times. Check each connection status. Branch prices, branch stock, live routing,
-              automated receipt extraction and LLM services are not connected. The separate sample
-              demo uses illustrative prices and travel estimates.{' '}
-              {isDevice
-                ? 'Your lists, preferences and receipts are stored on this device and work offline. Cloud sync is not connected.'
-                : 'Your lists, preferences and recorded receipts are saved to your account.'}{' '}
-              Personalization uses explicit preferences and a small adaptive ranking model, not a
-              continuously running chatbot.
-            </p>
-          </div>
-          <button className="button primary full" onClick={() => setHelp(false)}>
-            Got it <Check size={17} />
-          </button>
-          <p className="help-legal-links">
-            <button
-              onClick={() => {
-                setHelp(false);
-                goLegal('privacy');
-              }}
-            >
-              Privacy Policy
-            </button>
-            <span aria-hidden="true"> · </span>
-            <button
-              onClick={() => {
-                setHelp(false);
-                goLegal('terms');
-              }}
-            >
-              Terms of Use
-            </button>
-            <span aria-hidden="true"> · </span>
-            <button
-              onClick={() => {
-                setHelp(false);
-                goLegal('sources');
-              }}
-            >
-              Data sources
-            </button>
-          </p>
-        </DialogContent>
-      </Dialog>
+      <HelpDialog open={help} onOpenChange={setHelp} onLegal={goLegal} onDevice={isDevice} />
       <ShelfPriceCapture
         open={!!captureItem}
         onOpenChange={v => {
