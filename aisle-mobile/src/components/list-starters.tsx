@@ -7,7 +7,7 @@
 // without anyone deciding to save), any list somebody named, and the household's
 // usuals — favourites plus whatever the shopper model says is due again.
 import {useMemo,useState} from 'react';
-import {Check,Clock,History,Plus,Repeat,Sparkles,X} from 'lucide-react';
+import {Check,Clock,History,Plus,Repeat,Sparkles} from 'lucide-react';
 import {Dialog,DialogContent,DialogTitle,DialogDescription} from '@/components/ui/dialog';
 import {buildShopperModel} from '@/lib/agent';
 import {money,productById,productImagePath,type SavedList,type UserState} from '@/lib/catalog';
@@ -50,14 +50,14 @@ export default function ListStarters({open,onOpenChange,state,onUse}:Props){
 
  const [picked,setPicked]=useState<Set<string>>(new Set());
  const toggle=(id:string)=>setPicked(prev=>{
-  const next=new Set(prev);next.has(id)?next.delete(id):next.add(id);return next;
+  const next=new Set(prev);if(next.has(id))next.delete(id);else next.add(id);return next;
  });
 
- function useList(list:SavedList){
+ function applyList(list:SavedList){
   onUse(list.items.map(i=>({productId:i.productId,name:i.name,qty:i.qty})),replace);
   onOpenChange(false);
  }
- function useUsuals(){
+ function applyUsuals(){
   const rows=usuals.filter(u=>picked.has(u.productId));
   if(!rows.length)return;
   onUse(rows.map(u=>({productId:u.productId,name:u.name,qty:1})),false);
@@ -84,7 +84,7 @@ export default function ListStarters({open,onOpenChange,state,onUse}:Props){
     <section>
      <h3><History size={16}/> Previous lists</h3>
      {saved.length?<div className="starters-lists">
-      {saved.map(list=><button key={list.id} className="starters-list" onClick={()=>useList(list)}>
+      {saved.map(list=><button key={list.id} className="starters-list" onClick={()=>applyList(list)}>
        <span className="starters-list-icon">{list.auto?<Repeat size={17}/>:<Clock size={17}/>}</span>
        <span className="starters-list-copy">
         <strong>{list.name}</strong>
@@ -111,7 +111,7 @@ export default function ListStarters({open,onOpenChange,state,onUse}:Props){
         <span className="starters-check">{picked.has(row.productId)?<Check size={14}/>:<Plus size={15}/>}</span>
        </button>)}
       </div>
-      <button className="button primary full" disabled={!picked.size} onClick={useUsuals}>
+      <button className="button primary full" disabled={!picked.size} onClick={applyUsuals}>
        Add {picked.size||''} {picked.size===1?'item':'items'}
       </button>
      </>:<p className="starters-empty">

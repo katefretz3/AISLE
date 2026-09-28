@@ -65,7 +65,7 @@ export type Tool={
  description:string;
  schema:z.ZodTypeAny;
  json:Record<string,unknown>;
- run(args:any,ctx:ToolContext):Promise<ToolResult>;
+ run(args:unknown,ctx:ToolContext):Promise<ToolResult>;
 };
 
 const refuse=(reason:string):ToolResult=>({ok:false,refused:reason});

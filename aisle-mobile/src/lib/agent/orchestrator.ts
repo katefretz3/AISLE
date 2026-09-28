@@ -12,7 +12,7 @@
 import {buildShopperModel} from './memory';
 import {EvidenceLedger,verifiedOffers,type Evidence,type SourcedOffer} from './provenance';
 import {OriginGuard,createReader,type Reader} from './net';
-import {basketsFrom,computeBaskets,toolByName,type Basket,type Budget,type Proposal,type ToolContext,type UnmatchedKind} from './tools';
+import {computeBaskets,toolByName,type Basket,type Budget,type Proposal,type ToolContext,type UnmatchedKind} from './tools';
 import {matchOffer,requiredPacks} from './engine';
 import {AGENT_SYSTEM_PROMPT,allowedDistances,allowedFigures,reviewNarrative,type Violation} from './policy';
 import {brokerConfig,runToolLoop,type LoopEvent} from './model';

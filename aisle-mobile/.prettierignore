@@ -1,0 +1,12 @@
+dist
+ios
+android
+node_modules
+public
+package-lock.json
+# Generated / data files: one record per line is the readable shape.
+src/lib/taxonomy.ts
+src/lib/photo-manifest.json
+# Vendored upstream code, kept as shipped so it stays diffable against its source.
+src/vendor
+src/components/ui

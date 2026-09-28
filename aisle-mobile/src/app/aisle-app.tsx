@@ -1,7 +1,7 @@
 "use client";
 
 import {useCallback,useEffect,useMemo,useRef,useState,type ReactNode,type CSSProperties} from "react";
-import {ArrowLeft,ArrowRight,ArrowUpRight,BarChart3,Check,CheckCheck,ChevronDown,ChevronRight,ChevronsUpDown,ClipboardList,Download,HelpCircle,Home,Info,Leaf,ListPlus,LoaderCircle,LockKeyhole,MapPin,Minus,Plus,ReceiptText,Settings2,ShieldCheck,ShoppingBasket,ShoppingBag,SlidersHorizontal,Sparkles,Store as StoreIcon,Trash2,X,Apple,Beef,Banana,Carrot,Cherry,Citrus,Coffee,Egg,Fish,Milk,Package,Salad,Sprout,Wheat,Upload,Camera,CheckCircle2,TriangleAlert,Wallet,RefreshCw,FileText,HeartHandshake} from "lucide-react";
+import {ArrowLeft,ArrowRight,ArrowUpRight,BarChart3,Check,CheckCheck,ChevronDown,ChevronRight,ChevronsUpDown,ClipboardList,Download,HelpCircle,Home,Info,Leaf,ListPlus,LoaderCircle,LockKeyhole,MapPin,Minus,Plus,ReceiptText,Settings2,ShieldCheck,ShoppingBasket,ShoppingBag,SlidersHorizontal,Sparkles,Store as StoreIcon,Trash2,X,Upload,Camera,CheckCircle2,TriangleAlert,Wallet,RefreshCw,FileText,HeartHandshake} from "lucide-react";
 import {Scale,History,Bookmark,Target,Tag} from "lucide-react";
 import {Sidebar,SidebarProvider,SidebarContent,SidebarHeader,SidebarFooter,SidebarMenu,SidebarMenuItem,SidebarMenuButton} from "@/components/ui/sidebar";
 import {Dialog,DialogContent,DialogTitle,DialogDescription} from "@/components/ui/dialog";
@@ -14,7 +14,6 @@ import {Toaster} from "@/components/ui/sonner";
 import {toast} from "sonner";
 import Onboarding from "./onboarding";
 import {StoreLogo} from "@/components/store-logo";
-import LocationMap from "@/components/location-map";
 import AgentWorkspace from '@/components/agent-workspace';
 import CategoryBrowser from '@/components/category-browser';
 import {useAgentRun} from '@/lib/use-agent-run';
@@ -28,14 +27,13 @@ import ShelfPriceCapture from '@/components/shelf-price-capture';
 import Account from './account';
 import Legal from './legal';
 import {loadState,saveState,uploadReceipt,openReceiptFile,captureReceipt,shareList,isDevice,sweepShelfPhotos,deleteShelfPhoto,tapFeedback} from "@/lib/persistence";
-import {personalSuggestions,recordChoice,starterList,products,productById,productImagePath,stores,categories,money,initialState,parseList,type Product,type Store,type UserState,type ListItem,type Preferences,type Trip,type TripLine} from "@/lib/catalog";
+import {personalSuggestions,recordChoice,starterList,productById,productImagePath,stores,categories,money,initialState,parseList,type Product,type Store,type UserState,type ListItem,type Preferences,type Trip,type TripLine} from "@/lib/catalog";
 import {priceHistory,accuracy} from '@/lib/shopping-history';
 import {recordShelfPrice,removeShelfPrice,latestShelfPrice,resolveLinePrice,tallyProvenance,shelfPriceAgeDays,isStale,referencedPhotoIds} from '@/lib/shelf-prices';
 import {valueSwaps,totalSaving,type ValueSwap} from "@/lib/value-swaps";
 
 type View="home"|"list"|"compare"|"spending"|"account"|"legal"|"shop";
 const APP_VERSION="1.0.0";
-const icons:Record<string,typeof Apple>={apple:Apple,beef:Beef,banana:Banana,carrot:Carrot,cherry:Cherry,citrus:Citrus,coffee:Coffee,egg:Egg,fish:Fish,milk:Milk,package:Package,salad:Salad,sprout:Sprout,wheat:Wheat,leaf:Leaf};
 const nav=[{id:"home",label:"My week",icon:Home},{id:"list",label:"My grocery list",icon:ClipboardList},{id:"compare",label:"Compare baskets",icon:StoreIcon},{id:"spending",label:"My spending",icon:BarChart3}] as const;
 function newId(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,"0")).join("");}
 const cx=(...v:(string|false|null|undefined)[])=>v.filter(Boolean).join(" ");
@@ -57,11 +55,11 @@ export default function AisleApp(){
  const [checklistOrder,setChecklistOrder]=useState<ChecklistOrder>(()=>{
   try{return (localStorage.getItem('aisle.checklistOrder') as ChecklistOrder)||'aisle';}catch{return 'aisle';}
  });
- function changeChecklistOrder(next:ChecklistOrder){setChecklistOrder(next);try{localStorage.setItem('aisle.checklistOrder',next);}catch{}}
- const [onboard,setOnboard]=useState(false),[step,setStep]=useState(0),[draft,setDraft]=useState<Preferences>(initialState().prefs);
- const [catalogOpen,setCatalogOpen]=useState(false),[query,setQuery]=useState(""),[category,setCategory]=useState("All items"),[paste,setPaste]=useState(""),[importMode,setImportMode]=useState("browse");
+ function changeChecklistOrder(next:ChecklistOrder){setChecklistOrder(next);try{localStorage.setItem('aisle.checklistOrder',next);}catch{/* storage unavailable; the order still applies this session */}}
+ const [onboard,setOnboard]=useState(false);
+ const [catalogOpen,setCatalogOpen]=useState(false),[paste,setPaste]=useState(""),[importMode,setImportMode]=useState("browse");
  const [help,setHelp]=useState(false),[swapsOpen,setSwapsOpen]=useState(false),[clearOpen,setClearOpen]=useState(false),[receiptOpen,setReceiptOpen]=useState(false),[historyDetail,setHistoryDetail]=useState<Trip|null>(null);
- const [comparisonSort,setComparisonSort]=useState("basket"),[listFilter,setListFilter]=useState("All items");
+ const [listFilter,setListFilter]=useState("All items");
  const [receiptStore,setReceiptStore]=useState("food-basics"),[receiptTotal,setReceiptTotal]=useState(""),[receiptDate,setReceiptDate]=useState(""),[receiptId,setReceiptId]=useState<string|undefined>(),[receiptName,setReceiptName]=useState(""),[uploading,setUploading]=useState(false),[actuals,setActuals]=useState<Record<string,string>>({});
  const [matchingItem,setMatchingItem]=useState<string|null>(null);
  const fileRef=useRef<HTMLInputElement>(null);
@@ -98,7 +96,6 @@ export default function AisleApp(){
  const lineFor=useCallback((item:ListItem,shopping:boolean)=>
   resolveLinePrice(item,(shopping?activeBasket:headlineBasket)?.lineTotal(item.id)??null,
    state,shopping?shopStoreId:undefined),
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   [activeBasket,headlineBasket,state,shopStoreId]);
  // Better-value suggestions, drawn from the offers actually collected for the
  // basket in hand. With nothing collected there is nothing to suggest.
@@ -116,7 +113,7 @@ export default function AisleApp(){
  const checked=state.items.filter(i=>i.checked).length;
  const missing=state.items.filter(i=>!i.productId).length;
 
- async function load(){setLoadError(false);try{const data=await loadState();ref.current=data.state;setState(data.state);revision.current=data.revision;setDraft(data.state.prefs);setOnboard(!data.state.onboarded);setSavingError("");setSaveStatus("Saved");setReady(true);
+ async function load(){setLoadError(false);try{const data=await loadState();ref.current=data.state;setState(data.state);revision.current=data.revision;setOnboard(!data.state.onboarded);setSavingError("");setSaveStatus("Saved");setReady(true);
    // Prices are dropped by several routes — removed by hand, aged out, pushed
    // past the cap — and each would otherwise leave its photo behind.
    void sweepShelfPhotos(referencedPhotoIds(data.state));
@@ -129,13 +126,13 @@ export default function AisleApp(){
    const name=head==="account"?"account":head;
    if(["home","list","compare","spending","account","shop"].includes(name))setView(name as View);
   };handle();window.addEventListener("hashchange",handle);return()=>window.removeEventListener("hashchange",handle);},[]);
- function go(v:View){if(v==="compare")setComparisonSort(ref.current.prefs.priority==="saving"?"basket":ref.current.prefs.priority==="convenience"?"distance":"trip");if(v!=="legal")setLegalDoc(null);setView(v);window.history.replaceState(null,"",`#${v}`);window.scrollTo({top:0,behavior:"smooth"});}
+ function go(v:View){if(v!=="legal")setLegalDoc(null);setView(v);window.history.replaceState(null,"",`#${v}`);window.scrollTo({top:0,behavior:"smooth"});}
  function goLegal(docId:string|null){setLegalDoc(docId);setView("legal");window.history.replaceState(null,"",docId?`#legal/${docId}`:"#legal");window.scrollTo({top:0,behavior:"smooth"});}
  function persist(next:UserState){setSaveStatus("Saving…");saveChain.current=saveChain.current.then(async()=>{try{const data=await saveState(next,revision.current);revision.current=data.revision;setSaveStatus("Saved");setSavingError("");}catch(e){setSaveStatus("Not saved");setSavingError(e instanceof Error?e.message:"Unable to save changes");}});}
  function commit(update:UserState|((s:UserState)=>UserState)){if(!ready){toast.error("Your saved list is not ready. Please retry loading.");return;}const next=typeof update==="function"?update(ref.current):update;ref.current=next;setState(next);persist(next);}
  function prefs(p:Partial<Preferences>){commit(s=>({...s,prefs:{...s.prefs,...p}}));}
  function addProduct(id:string){if(matchingItem){commit(s=>({...s,items:s.items.map(i=>i.id===matchingItem?{...i,productId:id,name:productById[id].name}:i)}));setMatchingItem(null);setCatalogOpen(false);toast.success("Product matched. Your baskets are updated.");return;}commit(s=>{const existing=s.items.find(i=>i.productId===id);return {...recordChoice(s,"added",id),items:existing?s.items.map(i=>i.id===existing.id?{...i,qty:Math.min(99,i.qty+1),checked:false}:i):[...s.items,{id:newId(),productId:id,name:productById[id].name,qty:1,checked:false,locked:false}]};});toast.success(`${productById[id].name} added to your list`);}
- function useStarter(rows:{productId:string|null;name:string;qty:number}[],replace:boolean){
+ function applyStarter(rows:{productId:string|null;name:string;qty:number}[],replace:boolean){
   commit(s=>{
    const fresh=rows.map((row,index)=>({id:`${Date.now().toString(36)}-${index}`,productId:row.productId,
     name:row.name,qty:row.qty,checked:false,locked:false}));
@@ -238,7 +235,7 @@ export default function AisleApp(){
    return {...next,trips:[trip,...s.trips].slice(0,200),activeShop:null,savedLists:snapshotList(s,`${shopName}, ${new Date(receiptDate+'T12:00:00').toLocaleDateString('en-CA',{day:'numeric',month:'short'})}`,true)};});setReceiptOpen(false);go("spending");toast.success("Shopping trip saved to your spending history.");}
  function exportList(){const content=`${state.listName}\n\n${state.items.map(i=>`${i.checked?"[x]":"[ ]"} ${i.qty} × ${i.name}${i.productId?` — ${productById[i.productId].brand}, ${productById[i.productId].size}`:" — match needed"}`).join("\n")}\n\nAisle grocery list. Refer to retailer sources for current prices.`;void shareList(content).then(()=>toast.success(isDevice?"List ready to share":"Shopping list downloaded")).catch(()=>toast.error("Could not share the list."));}
  async function finishOnboarding(profile:Preferences,buildList:boolean){await saveChain.current;const build=(source:UserState):UserState=>({...source,prefs:profile,onboarded:true,items:buildList?starterList(profile):source.items,activeShop:buildList?null:source.activeShop});setSaveStatus("Saving…");try{const next=build(ref.current);const result=await saveState(next,revision.current);revision.current=result.revision;ref.current=next;setState(next);setSaveStatus("Saved");setSavingError("");setOnboard(false);go("home");toast.success("Your Aisle is ready. Your preferences are saved.");}catch(error){if(error instanceof Error&&/another window/i.test(error.message)){const latest=await loadState();const next=build(latest.state);const result=await saveState(next,latest.revision);revision.current=result.revision;ref.current=next;setState(next);setSaveStatus("Saved");setSavingError("");setOnboard(false);go("home");toast.success("Your Aisle is ready. I merged it with your latest list.");return;}setSaveStatus("Not saved");throw error;}}
- useEffect(()=>{const mc=(document as unknown as {modelContext?:{registerTool:(t:unknown,o:unknown)=>void}}).modelContext;if(!mc)return;const abort=new AbortController();try{mc.registerTool({name:"compare_grocery_basket",title:"Compare grocery basket",description:"Return the basket totals Aisle has collected from public retailer catalogues. Every figure traces to an HTTP response; items with no collected price are reported as unpriced rather than estimated. Does not purchase groceries.",inputSchema:{type:"object",properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute(input:unknown){if(!input||typeof input!=="object"||Object.keys(input).length)throw new Error("No arguments expected");return {dataMode:"observed",collectedAt:agentRef.current?.finishedAt??null,stores:(agentRef.current?.baskets??[]).map(b=>({name:b.name,subtotalCents:b.subtotal,itemsPriced:b.priced,itemsOnList:b.total,complete:b.complete}))};}},{signal:abort.signal});mc.registerTool({name:"open_grocery_list",title:"Open grocery list",description:"Navigate to the current list without changing its items.",inputSchema:{type:"object",properties:{},additionalProperties:false},annotations:{readOnlyHint:false},execute(input:unknown){if(!input||typeof input!=="object"||Object.keys(input).length)throw new Error("No arguments expected");go("list");return {view:"list"};}},{signal:abort.signal});}catch{}return()=>abort.abort();},[]);
+ useEffect(()=>{const mc=(document as unknown as {modelContext?:{registerTool:(t:unknown,o:unknown)=>void}}).modelContext;if(!mc)return;const abort=new AbortController();try{mc.registerTool({name:"compare_grocery_basket",title:"Compare grocery basket",description:"Return the basket totals Aisle has collected from public retailer catalogues. Every figure traces to an HTTP response; items with no collected price are reported as unpriced rather than estimated. Does not purchase groceries.",inputSchema:{type:"object",properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute(input:unknown){if(!input||typeof input!=="object"||Object.keys(input).length)throw new Error("No arguments expected");return {dataMode:"observed",collectedAt:agentRef.current?.finishedAt??null,stores:(agentRef.current?.baskets??[]).map(b=>({name:b.name,subtotalCents:b.subtotal,itemsPriced:b.priced,itemsOnList:b.total,complete:b.complete}))};}},{signal:abort.signal});mc.registerTool({name:"open_grocery_list",title:"Open grocery list",description:"Navigate to the current list without changing its items.",inputSchema:{type:"object",properties:{},additionalProperties:false},annotations:{readOnlyHint:false},execute(input:unknown){if(!input||typeof input!=="object"||Object.keys(input).length)throw new Error("No arguments expected");go("list");return {view:"list"};}},{signal:abort.signal});}catch{/* WebMCP is optional; the app works without it */}return()=>abort.abort();},[]);
 
  function Empty({icon:Icon=ShoppingBasket,title,children,action}:{icon?:typeof ShoppingBasket;title:string;children:ReactNode;action?:ReactNode}){return <div className="empty-state"><span className="empty-icon"><Icon/></span><h3>{title}</h3><p>{children}</p>{action}</div>;}
  function ItemRow({item,compact=false,shopping=false}:{item:ListItem;compact?:boolean;shopping?:boolean}){const p=item.productId?productById[item.productId]:null;
@@ -269,7 +266,7 @@ export default function AisleApp(){
      onClick={()=>setCaptureItem(item)}>
      {price!=null?money(price):<span className="item-price-add"><Tag size={13}/> price</span>}{secondary}</button>
    :<span className="item-price">{price!=null?money(price):"—"}{secondary}</span>}
-  {!p&&!compact&&<button className="text-button" onClick={()=>{setMatchingItem(item.id);setQuery("");setCategory("All items");setImportMode("browse");setCatalogOpen(true);}}>Match</button>}
+  {!p&&!compact&&<button className="text-button" onClick={()=>{setMatchingItem(item.id);setImportMode("browse");setCatalogOpen(true);}}>Match</button>}
   {!compact&&!shopping&&<button className="icon-button remove" aria-label={`Remove ${item.name}`} onClick={()=>removeItem(item)}><X size={16}/></button>}
  </div>;}
  /**
@@ -281,7 +278,7 @@ export default function AisleApp(){
   * the estimate. Those trips are counted and named instead.
   */
  function AccuracyCard(){
-  const scored=useMemo(()=>accuracy(state.trips),[state.trips]);
+  const scored=accuracy(state.trips);
   const partial=state.trips.length-scored.comparable.length;
   if(!state.trips.length)return null;
   return <section className="card accuracy-card">
@@ -317,7 +314,7 @@ export default function AisleApp(){
  }
 
  function AgentBudgetCard(){
-  const basket=headlineBasket,budget=agent.perShopBudget;
+  const budget=agent.perShopBudget;
   // The checklist counts prices the household read off a shelf, so this has to
   // as well — two screens answering "what will this shop cost" with different
   // numbers is worse than either answer on its own. The split is stated below.
@@ -373,8 +370,6 @@ export default function AisleApp(){
 
 
  const suggestions=personalSuggestions(state);
- const accepted=state.events.filter(e=>e.action==="accepted_swap").length;
- const rejectedCategories=Array.from(new Set(state.events.filter(e=>e.action==="kept_brand").map(e=>e.category))).filter(c=>state.events.filter(e=>e.action==="kept_brand"&&e.category===c).length>=3&&!state.prefs.categoryLocks.includes(c));
  return <SidebarProvider style={{"--sidebar-width":"236px"} as CSSProperties}>
   <Sidebar collapsible="none" className="aisle-sidebar">
    <SidebarHeader className="brand-wrap"><a href="#home" className="brand" onClick={()=>go("home")} aria-label="Aisle home"><span className="brand-symbol"><ShoppingBasket size={25} strokeWidth={1.8}/></span>aisle<span className="brand-dot">.</span></a><span className="brand-caption">A better way to grocery shop</span></SidebarHeader>
@@ -418,7 +413,7 @@ export default function AisleApp(){
     onPrefs={prefs}
     onCommit={commit}
     onEditFood={()=>setOnboard(true)}
-    onReplaySetup={()=>{setDraft(state.prefs);setStep(0);setOnboard(true);}}
+    onReplaySetup={()=>setOnboard(true)}
     onLegal={goLegal}
     appVersion={APP_VERSION}
    />}
@@ -458,7 +453,7 @@ export default function AisleApp(){
    onRemove={id=>{const gone=(state.shelfPrices??[]).find(r=>r.id===id);
     if(gone?.photoId)void deleteShelfPhoto(gone.photoId);
     commit(st=>removeShelfPrice(st,id));toast('Removed that price.');}}/>
-  <ListStarters open={startersOpen} onOpenChange={setStartersOpen} state={state} onUse={useStarter}/>
+  <ListStarters open={startersOpen} onOpenChange={setStartersOpen} state={state} onUse={applyStarter}/>
   <AlertDialog open={resetOpen} onOpenChange={setResetOpen}><AlertDialogContent><AlertDialogTitle>Start fresh?</AlertDialogTitle><AlertDialogDescription>Your saved data cannot be read, so Aisle will replace it with an empty list and default preferences. Anything currently stored on this device is discarded. This cannot be undone.</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={()=>{void (async()=>{try{const blank=initialState();await saveState({...blank,onboarded:true},0).catch(async()=>{await saveState({...blank,onboarded:true},(await loadState()).revision);});setResetOpen(false);window.location.reload();}catch{setResetOpen(false);setSavingError("Aisle could not reset its storage. Reinstalling the app will clear it.");}})();}}>Start fresh</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog><AlertDialog open={clearOpen} onOpenChange={setClearOpen}><AlertDialogContent><AlertDialogTitle>Start with a fresh list?</AlertDialogTitle><AlertDialogDescription>This removes all {state.items.length} products from the current list. Your preferences and past receipts will stay saved.</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel>Keep my list</AlertDialogCancel><AlertDialogAction onClick={()=>{commit(s=>({...s,items:[],activeShop:null}));setListFilter("All items");toast.success("Your list is ready for a fresh start.");}}>Clear list</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   <Toaster position="bottom-right" theme="light" closeButton/>
  </SidebarProvider>;

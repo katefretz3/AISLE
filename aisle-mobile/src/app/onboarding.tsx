@@ -21,6 +21,9 @@ export default function Onboarding({open,initial,onClose,onFinish,onPrivacy,revi
   const [step,setStep]=useState(0),[draft,setDraft]=useState(initial),[error,setError]=useState('');
   const [replaceList,setReplaceList]=useState(!revisit),[saving,setSaving]=useState(false);
   const scroll=useRef<HTMLDivElement>(null),heading=useRef<HTMLHeadingElement>(null),inFlight=useRef(false);
+  // Reset only as the dialog opens. Depending on `initial` would wipe edits in
+  // progress whenever the saved preferences change underneath an open dialog.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(()=>{if(open){setDraft(initial);setStep(0);setError('');setReplaceList(!revisit);setSaving(false);inFlight.current=false;}},[open]);
   useEffect(()=>{scroll.current?.scrollTo({top:0});if(step>0)heading.current?.focus();},[step]);
   const patch=(value:Partial<Preferences>)=>setDraft(previous=>({...previous,...value}));

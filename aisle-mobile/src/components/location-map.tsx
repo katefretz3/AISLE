@@ -48,6 +48,9 @@ export default function LocationMap({city,location,radius,onLocation,onRadius}:P
     controller.marker.setLatLng(location);controller.circle.setLatLng(location).setRadius(radius*1000);
     // A new city must move the viewport; selecting a point keeps the user's zoom.
     if(!location.custom)controller.map.setView(location,controller.map.getZoom(),{animate:false});
+  // Keyed on the coordinates, not the object: a new object with the same point
+  // arrives on every render and would snap the map back while someone pans it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[ready,location.lat,location.lng,location.custom,radius]);
   const reset=()=>{const centre=cityLocation(city);onLocation(centre);instance.current?.map.setView(centre,11,{animate:false});};
   const useCentre=()=>{const point=instance.current?.map.getCenter();if(point)onLocation(selectedPoint(point.lat,point.lng,city));};

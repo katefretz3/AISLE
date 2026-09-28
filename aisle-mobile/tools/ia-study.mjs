@@ -39,9 +39,9 @@ export function loadTaxonomy(sourcePath){
  for(const line of src.split('\n')){
   const d=line.match(/^ \{id:'([^']+)',name:'((?:[^'\\]|\\.)*)',edible:(true|false)/);
   if(d){dept={id:d[1],name:unq(d[2]),edible:d[3]==='true',aisles:[]};departments.push(dept);continue;}
-  const a=line.match(/^  \{id:'([^']+)',name:'((?:[^'\\]|\\.)*)',departmentId:'([^']+)'/);
+  const a=line.match(/^ {2}\{id:'([^']+)',name:'((?:[^'\\]|\\.)*)',departmentId:'([^']+)'/);
   if(a){aisle={id:a[1],name:unq(a[2]),items:[]};dept.aisles.push(aisle);continue;}
-  const i=line.match(/^   \{id:'([^']+)',name:'((?:[^'\\]|\\.)*)',brand:'((?:[^'\\]|\\.)*)'/);
+  const i=line.match(/^ {3}\{id:'([^']+)',name:'((?:[^'\\]|\\.)*)',brand:'((?:[^'\\]|\\.)*)'/);
   if(i){
    const keywords=line.match(/keywords:'((?:[^'\\]|\\.)*)'/);
    const also=line.match(/alsoIn:\[([^\]]*)\]/);

@@ -30,7 +30,7 @@
 // `--verify` re-checks all three against the files actually on disk and exits
 // non-zero on any failure, so "done" is something that can be demonstrated
 // rather than asserted.
-import {readFileSync,writeFileSync,mkdirSync,existsSync,readdirSync} from 'node:fs';
+import {readFileSync,writeFileSync,mkdirSync,existsSync} from 'node:fs';
 import {fileURLToPath,URL} from 'node:url';
 import {join} from 'node:path';
 import sharp from 'sharp';

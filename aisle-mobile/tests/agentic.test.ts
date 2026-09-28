@@ -14,7 +14,11 @@ import {toolByName,computeBaskets,basketsFrom,type ToolContext} from '@/lib/agen
 import {feedCandidates,coverageGaps,discoverStores} from '@/lib/agent/discovery';
 import {runAgent} from '@/lib/agent/orchestrator';
 import {chainFor,inOntario} from '@/lib/agent/registry';
-import {CATALOGUE,FIXTURE_ORIGIN,fixturePlaces,fixtureReader,fixtureState} from './fixtures';
+import {FIXTURE_ORIGIN,fixturePlaces,fixtureReader,fixtureState} from './fixtures';
+
+/** The fields the tool tests read back from a tool's reply. */
+type ToolReply={ok:boolean;refused:string;note:string;perShopBudgetCents:number;
+ results:{evidenceId:string}[]};
 
 const NOW=Date.parse('2026-09-20T12:00:00.000Z');
 
@@ -194,11 +198,11 @@ async function fixtureContext(state=fixtureState()){
 
 test('search_offers only ever returns collected records', async()=>{
  const ctx=await fixtureContext();
- const result=await toolByName('search_offers')!.run({query:'whole wheat bread',itemId:'item-bread'},ctx) as any;
+ const result=await toolByName('search_offers')!.run({query:'whole wheat bread',itemId:'item-bread'},ctx) as ToolReply;
  assert.equal(result.ok,true);
  assert.ok(result.results.length>0);
  for(const row of result.results)assert.ok(ctx.ledger.has(row.evidenceId));
- const empty=await toolByName('search_offers')!.run({query:'dragonfruit sorbet'},ctx) as any;
+ const empty=await toolByName('search_offers')!.run({query:'dragonfruit sorbet'},ctx) as ToolReply;
  assert.equal(empty.results.length,0);
  assert.match(empty.note,/rather than substituting/);
 });
@@ -206,7 +210,7 @@ test('search_offers only ever returns collected records', async()=>{
 test('propose_match refuses an offer id that was never collected', async()=>{
  const ctx=await fixtureContext();
  const result=await toolByName('propose_match')!.run(
-  {itemId:'item-bread',offerId:'fixture:not-real',confidence:'high',rationale:'looks right'},ctx) as any;
+  {itemId:'item-bread',offerId:'fixture:not-real',confidence:'high',rationale:'looks right'},ctx) as ToolReply;
  assert.equal(result.ok,false);
  assert.match(result.refused,/not in the collected results/);
  assert.equal(ctx.proposals.size,0);
@@ -218,7 +222,7 @@ test('propose_match refuses to break a lock the household set', async()=>{
  const ctx=await fixtureContext(state);
  const apples=ctx.offers.find(o=>/Gala Apples/.test(o.title))!;
  const result=await toolByName('propose_match')!.run(
-  {itemId:'item-bread',offerId:apples.id,confidence:'high',rationale:'close enough'},ctx) as any;
+  {itemId:'item-bread',offerId:apples.id,confidence:'high',rationale:'close enough'},ctx) as ToolReply;
  assert.equal(result.ok,false);
  assert.equal(ctx.proposals.size,0);
 });
@@ -228,7 +232,7 @@ test('propose_match refuses an excluded product however cheap it is', async()=>{
  const ctx=await fixtureContext({...base,prefs:{...base.prefs,excludedProducts:['bread']}});
  const bread=ctx.offers.find(o=>/Whole Wheat Bread/.test(o.title))!;
  const result=await toolByName('propose_match')!.run(
-  {itemId:'item-bread',offerId:bread.id,confidence:'high',rationale:'cheapest loaf'},ctx) as any;
+  {itemId:'item-bread',offerId:bread.id,confidence:'high',rationale:'cheapest loaf'},ctx) as ToolReply;
  assert.equal(result.ok,false);
  assert.match(result.refused,/excluded/);
 });
@@ -237,7 +241,7 @@ test('a rationale carrying an invented price is scrubbed before it is stored', a
  const ctx=await fixtureContext();
  const bread=ctx.offers.find(o=>/Whole Wheat Bread/.test(o.title))!;
  const result=await toolByName('propose_match')!.run(
-  {itemId:'item-bread',offerId:bread.id,confidence:'high',rationale:'Same loaf, and it is $0.75 cheaper than Metro.'},ctx) as any;
+  {itemId:'item-bread',offerId:bread.id,confidence:'high',rationale:'Same loaf, and it is $0.75 cheaper than Metro.'},ctx) as ToolReply;
  assert.equal(result.ok,true);
  const stored=[...ctx.proposals.values()][0];
  assert.doesNotMatch(stored.rationale,/\$0\.75/);
@@ -258,7 +262,7 @@ test('baskets total in integer cents and stay incomplete when an item has no pri
 
 test('compute_basket is the only source of a total and excludes the extras', async()=>{
  const ctx=await fixtureContext();
- const result=await toolByName('compute_basket')!.run({},ctx) as any;
+ const result=await toolByName('compute_basket')!.run({},ctx) as ToolReply;
  assert.equal(result.ok,true);
  assert.match(result.note,/Delivery, tax, deposits/);
  assert.equal(result.perShopBudgetCents,12000);
