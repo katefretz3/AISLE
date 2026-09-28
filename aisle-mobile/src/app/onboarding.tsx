@@ -250,7 +250,12 @@ export default function Onboarding({
             </div>
             <div
               className="setup-progress"
-              aria-label={step < 4 ? `Step ${step + 1} of 4` : 'Saving your preferences'}
+              role="progressbar"
+              aria-label="Setup progress"
+              aria-valuemin={1}
+              aria-valuemax={4}
+              aria-valuenow={Math.min(step + 1, 4)}
+              aria-valuetext={step < 4 ? `Step ${step + 1} of 4` : 'Saving your preferences'}
             >
               {[0, 1, 2, 3].map(index => (
                 <span key={index} className={index <= step ? 'filled' : ''} />

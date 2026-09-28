@@ -32,7 +32,7 @@
 }
 .checklist-running-label {
   display: block;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 650;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -232,7 +232,7 @@
 .checklist-rows .item-unit {
   display: block;
   margin-top: 2px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--muted-foreground);
@@ -243,7 +243,7 @@
 .checklist-rows .item-paid {
   display: block;
   margin-top: 2px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--primary);
@@ -261,7 +261,7 @@
 .checklist-rows .item-observed {
   display: block;
   margin-top: 2px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--primary);
 }

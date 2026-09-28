@@ -155,7 +155,7 @@
 }
 .starters-usual small {
   display: block;
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   color: var(--muted-foreground);
   overflow: hidden;
   text-overflow: ellipsis;

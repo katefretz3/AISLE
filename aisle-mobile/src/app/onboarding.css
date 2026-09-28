@@ -39,7 +39,7 @@
   margin-top: 49px;
 }
 .setup-aside-copy > span {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 1.6px;
   color: #c8ddad;
@@ -137,7 +137,7 @@
   min-height: 27px;
 }
 .setup-topline > span {
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 1.1px;
   font-weight: 650;
   color: #62776c;
@@ -218,7 +218,7 @@
 .setup-field > legend > span {
   font-size: 12px;
   font-weight: 400;
-  color: #6c7d70;
+  color: #69796d;
 }
 .setup-field > input,
 .setup-shell input:not([type='checkbox']) {
@@ -673,7 +673,7 @@
 }
 .setup-footer > p:not(.setup-error) {
   font-size: 12px;
-  color: #71816e;
+  color: #677664;
   margin-top: 11px;
   text-align: center;
 }
@@ -681,7 +681,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #6d806a;
+  color: #677864;
   font-size: 12px;
 }
 .setup-error {
@@ -760,7 +760,7 @@
 }
 .location-picker-title p {
   font-size: 13px;
-  color: #627961;
+  color: #5f755e;
   margin-top: 4px;
 }
 .radius-value {
@@ -790,7 +790,7 @@
   align-items: center;
   justify-content: space-between;
   margin: 5px 0 13px;
-  color: #6c7d64;
+  color: #66765e;
   font-size: 12px;
 }
 .location-map-frame {
@@ -812,7 +812,7 @@
   max-height: none !important;
 }
 .location-map .leaflet-control-attribution {
-  font-size: 10px !important;
+  font-size: 12px !important;
   line-height: 1.5 !important;
   padding: 2px 5px;
   background: #fffffff0;
@@ -879,8 +879,8 @@
 }
 .location-coordinates {
   display: block;
-  font-size: 11px;
-  color: #728169;
+  font-size: 12px;
+  color: #65725d;
   margin-top: 7px;
 }
 .map-error {
@@ -984,11 +984,11 @@
     gap: 7px;
   }
   .setup-footer > p:not(.setup-error) {
-    font-size: 11px;
+    font-size: 12px;
     margin-top: 9px;
   }
   .setup-privacy {
-    font-size: 11px;
+    font-size: 12px;
   }
   .location-picker {
     padding: 13px;
@@ -1023,7 +1023,7 @@
     font-size: 13px;
   }
   .setup-basket-count > strong {
-    font-size: 11px;
+    font-size: 12px;
   }
   .setup-accordion [data-slot='accordion-trigger'] {
     padding: 15px 12px;

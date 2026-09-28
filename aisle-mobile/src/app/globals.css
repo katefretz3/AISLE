@@ -15,7 +15,7 @@
   --secondary: #eff3ea;
   --secondary-foreground: #203e35;
   --muted: #f2f4ef;
-  --muted-foreground: #768079;
+  --muted-foreground: #5c6862;
   --accent: #edf3e7;
   --accent-foreground: #164b3e;
   --destructive: #a94636;
@@ -208,11 +208,11 @@ textarea {
   margin-left: -10px;
 }
 .brand-caption {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.05px;
   margin-top: 9px;
-  color: #809082;
+  color: #6b786c;
 }
 .nav-content {
   padding: 0 17px;
@@ -220,7 +220,7 @@ textarea {
   overflow: auto;
 }
 .nav-label {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 650;
   letter-spacing: 1.6px;
   color: #8b958c;
@@ -236,7 +236,7 @@ textarea {
   border-radius: 9px !important;
   font-size: 13px !important;
   font-weight: 500;
-  color: #68776b;
+  color: #59665c;
   transition:
     background 0.18s,
     color 0.18s;
@@ -261,7 +261,7 @@ textarea {
   border-radius: 5px;
   background: #dce9cb;
   padding: 1px 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 }
 .sidebar-note {
@@ -284,7 +284,7 @@ textarea {
   max-width: 140px;
 }
 .sidebar-note p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.8;
   color: #86907d;
   margin: 8px 0 17px;
@@ -293,7 +293,7 @@ textarea {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: #4c693c;
 }
@@ -333,7 +333,7 @@ textarea {
   overflow: hidden;
 }
 .profile span:not(.avatar) {
-  font-size: 10px;
+  font-size: 12px;
   color: #919a91;
 }
 .profile .icon-button {
@@ -371,7 +371,7 @@ textarea {
   align-items: center;
   gap: 12px;
   font-size: 12px;
-  color: #959b94;
+  color: #6b6f6a;
 }
 .breadcrumb strong {
   font-weight: 500;
@@ -405,8 +405,8 @@ textarea {
   border-radius: 20px;
   background: #fafaf0;
   padding: 5px 9px;
-  font-size: 10px;
-  color: #7c805c;
+  font-size: 12px;
+  color: #6e7151;
 }
 .data-badge > span {
   background: #a5ad63;
@@ -431,10 +431,10 @@ textarea {
   margin-bottom: 27px;
 }
 .eyebrow {
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 1.6px;
   font-weight: 650;
-  color: #829276;
+  color: #66725c;
   display: block;
   margin-bottom: 7px;
 }
@@ -509,7 +509,7 @@ h1 {
   gap: 7px;
   color: #507143;
   font-weight: 550;
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
 }
 .text-button:hover {
@@ -538,7 +538,7 @@ h1 {
   gap: 5px;
   padding: 5px 9px;
   border-radius: 5px;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.4;
   font-weight: 550;
   white-space: nowrap;
@@ -553,7 +553,7 @@ h1 {
 }
 .pill-neutral {
   background: #f3f4ef;
-  color: #838b7d;
+  color: #676d62;
 }
 .pill-amber {
   background: #fff2d9;
@@ -625,7 +625,7 @@ h1 {
   font-size: 15px;
 }
 .section-top p {
-  font-size: 10px;
+  font-size: 12px;
   color: #8d9686;
   margin-top: 5px;
 }
@@ -718,14 +718,14 @@ h1 {
   font-weight: 560;
 }
 .item-copy > span {
-  font-size: 10px;
+  font-size: 12px;
   color: #919989;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .item-quantity {
-  font-size: 10px;
+  font-size: 12px;
   color: #8d9785;
   margin-right: 16px;
 }
@@ -761,12 +761,12 @@ h1 {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 550;
 }
 .item-observed {
   display: block;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 500;
   color: #5c7f4a;
   margin-top: 3px;
@@ -774,7 +774,7 @@ h1 {
 }
 .item-paid {
   display: block;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 400;
   color: #7d9765;
   margin-top: 3px;
@@ -802,8 +802,8 @@ h1 {
   border: 1px dashed #dfe5d7;
   border-radius: 7px;
   padding: 10px;
-  color: #6e8957;
-  font-size: 11px;
+  color: #61794d;
+  font-size: 12px;
   transition: background 0.2s;
 }
 .list-add:hover {
@@ -815,7 +815,7 @@ h1 {
   justify-content: space-between;
   padding: 13px 23px;
   color: #939c8c;
-  font-size: 9px;
+  font-size: 12px;
 }
 .budget-card {
   padding: 0 22px 17px;
@@ -837,8 +837,8 @@ h1 {
   letter-spacing: -1px;
 }
 .budget-numbers span {
-  font-size: 11px;
-  color: #8e9986;
+  font-size: 12px;
+  color: #6c7466;
 }
 .budget-progress {
   height: 6px !important;
@@ -853,8 +853,8 @@ h1 {
   background: #c08d56 !important;
 }
 .budget-card p {
-  font-size: 10px;
-  color: #929c8b;
+  font-size: 12px;
+  color: #6f776a;
   line-height: 1.7;
 }
 .green-text {
@@ -870,7 +870,7 @@ h1 {
   margin-top: 18px;
   padding-top: 14px;
   border-top: 1px solid #ecf0e5;
-  font-size: 10px;
+  font-size: 12px;
   color: #718c54;
   width: 100%;
 }
@@ -884,8 +884,8 @@ h1 {
   margin-top: 40px;
   padding: 22px 0 25px;
   border-top: 1px solid #e7ece0;
-  color: #9ba690;
-  font-size: 9px;
+  color: #687061;
+  font-size: 12px;
 }
 .workspace-footer span,
 .workspace-footer button {
@@ -920,16 +920,16 @@ h1 {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 10px;
-  color: #8d9d7f;
+  font-size: 12px;
+  color: #68745e;
   white-space: nowrap;
 }
 .list-toolbar {
   display: flex;
   align-items: center;
   gap: 15px;
-  color: #929c8b;
-  font-size: 11px;
+  color: #6f776a;
+  font-size: 12px;
   padding-bottom: 18px;
 }
 .list-toolbar > span {
@@ -945,7 +945,7 @@ h1 {
   flex-shrink: 0;
 }
 .filter-pill {
-  font-size: 10px;
+  font-size: 12px;
   border: 1px solid #e8eddf;
   border-radius: 20px;
   padding: 6px 10px;
@@ -965,13 +965,15 @@ h1 {
   width: 41px;
   height: 41px;
 }
+/* An unlocked lock is quieter than a locked one, but still has to be visible
+   as a control (3:1 for non-text contrast), so it is not faded right out. */
 .lock-button {
-  opacity: 0.3;
+  opacity: 0.6;
 }
 .lock-button:hover,
 .lock-button.is-locked {
   opacity: 1;
-  color: #a5915f;
+  color: #7d6a3a;
 }
 .quantity {
   display: flex;
@@ -990,7 +992,7 @@ h1 {
   color: #859075;
 }
 .quantity span {
-  font-size: 11px;
+  font-size: 12px;
   min-width: 18px;
   text-align: center;
   color: #6b7d5a;
@@ -1012,8 +1014,8 @@ h1 {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  font-size: 10px;
-  color: #94a084;
+  font-size: 12px;
+  color: #6d7661;
   padding: 15px 10px;
   border-top: 1px solid #eef2e7;
   line-height: 1.7;
@@ -1034,9 +1036,9 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 12px;
   margin-bottom: 17px;
-  color: #8a967d;
+  color: #6c7662;
 }
 .list-summary > div strong {
   color: #4f6544;
@@ -1045,19 +1047,19 @@ h1 {
   margin-top: 6px;
 }
 .list-summary > p {
-  font-size: 9px;
+  font-size: 12px;
   text-align: center;
-  color: #949f88;
+  color: #6d7564;
   margin-top: 12px;
 }
 .quiet-tip {
   display: flex;
   gap: 12px;
   padding: 0 10px;
-  color: #90a378;
+  color: #677556;
 }
 .quiet-tip p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.9;
 }
 .inline-warning {
@@ -1067,7 +1069,7 @@ h1 {
   padding: 11px 12px;
   border-radius: 8px;
   background: #fff6e6;
-  font-size: 11px;
+  font-size: 12px;
   color: #9d7e48;
   margin: 3px 0 9px;
 }
@@ -1093,7 +1095,7 @@ h1 {
 .empty-state p {
   font-size: 12px;
   line-height: 1.8;
-  color: #8d9a80;
+  color: #68725e;
   max-width: 330px;
   margin: 10px auto 20px;
 }
@@ -1106,7 +1108,7 @@ h1 {
   width: fit-content !important;
 }
 .segment-tabs > button {
-  font-size: 11px !important;
+  font-size: 12px !important;
   min-height: 34px;
   padding: 0 14px !important;
   border-radius: 6px !important;
@@ -1129,7 +1131,7 @@ h1 {
   padding: 0 12px !important;
 }
 .data-footnote {
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.9;
   color: #909b83;
   margin-top: 21px;
@@ -1159,7 +1161,7 @@ h1 {
   margin: 20px 0 8px;
 }
 .metric > p {
-  font-size: 11px;
+  font-size: 12px;
   color: #8c9a7b;
 }
 .history-card {
@@ -1187,7 +1189,7 @@ h1 {
   font-size: 13px;
 }
 .history-row > div span {
-  font-size: 10px;
+  font-size: 12px;
   color: #909d81;
 }
 .history-row > strong {
@@ -1203,14 +1205,14 @@ h1 {
   padding: 20px 22px;
   border: 1px dashed #dce6cc;
   border-radius: 12px;
-  color: #8d9f77;
+  color: #657255;
 }
 .transparency-note strong {
   font-size: 12px;
-  color: #77905e;
+  color: #60744c;
 }
 .transparency-note p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.8;
   margin-top: 5px;
   max-width: 710px;
@@ -1270,7 +1272,7 @@ h1 {
   font-weight: 550;
 }
 .location-field span:not(.pill) {
-  font-size: 10px;
+  font-size: 12px;
   color: #9aa88b;
   line-height: 1.6;
 }
@@ -1290,7 +1292,7 @@ h1 {
   background: #fff;
   border-radius: 9px;
   padding: 14px 10px;
-  font-size: 11px;
+  font-size: 12px;
   color: #8b9b79;
 }
 .transport-choice.selected {
@@ -1309,7 +1311,7 @@ h1 {
   color: #819967;
 }
 .field-help {
-  font-size: 10px !important;
+  font-size: 12px !important;
   line-height: 1.9;
   color: #929f84;
   margin: 12px 0;
@@ -1330,7 +1332,7 @@ h1 {
   font-weight: 560;
 }
 .switch-row p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.7;
   color: #94a082;
   margin-top: 5px;
@@ -1359,7 +1361,7 @@ h1 {
   font-size: 17px;
 }
 .memory-card > p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.8;
   color: #909f7d;
   margin: 10px 0 21px;
@@ -1371,7 +1373,7 @@ h1 {
   padding: 13px 0;
   border-top: 1px solid #e5ecd9;
   color: #6f8858;
-  font-size: 11px;
+  font-size: 12px;
 }
 .memory-item > span {
   flex: 1;
@@ -1381,7 +1383,7 @@ h1 {
 }
 .forget-button {
   margin-top: 21px;
-  font-size: 10px;
+  font-size: 12px;
   white-space: normal;
 }
 .memory-suggestion {
@@ -1394,12 +1396,12 @@ h1 {
   font-size: 12px;
 }
 .memory-suggestion p {
-  font-size: 10px;
+  font-size: 12px;
   color: #8b9b79;
   margin: 7px 0 13px;
 }
 .memory-suggestion .button {
-  font-size: 10px;
+  font-size: 12px;
   min-height: 34px;
 }
 .onboarding-replay {
@@ -1410,7 +1412,7 @@ h1 {
   width: 100%;
   margin-top: 21px;
   color: #8b9c76;
-  font-size: 11px;
+  font-size: 12px;
 }
 .shopping-progress {
   padding: 24px;
@@ -1423,7 +1425,7 @@ h1 {
   font-size: 12px;
 }
 .shopping-progress > div:first-child span {
-  font-size: 11px;
+  font-size: 12px;
   color: #8d9d7a;
 }
 .shopping-progress + [class],
@@ -1462,7 +1464,7 @@ h1 {
   font-weight: 550;
 }
 .shop-summary p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.9;
   color: #909f7e;
   margin: 14px 0 23px;
@@ -1490,7 +1492,7 @@ h1 {
 [data-slot='dialog-description'] {
   font-size: 12px !important;
   line-height: 1.8 !important;
-  color: #91a07e !important;
+  color: #6b765d !important;
 }
 [data-slot='dialog-overlay'],
 [data-slot='sheet-overlay'],
@@ -1561,7 +1563,7 @@ h1 {
   display: flex;
   gap: 6px;
   align-items: center;
-  font-size: 9px;
+  font-size: 12px;
   color: #b8c9a9;
   z-index: 2;
 }
@@ -1578,13 +1580,13 @@ h1 {
   gap: 10px;
 }
 .onboard-top > span {
-  font-size: 8px;
+  font-size: 12px;
   letter-spacing: 1.1px;
   color: #9daa91;
   font-weight: 650;
 }
 .onboard-top .text-button {
-  font-size: 9px;
+  font-size: 12px;
 }
 .step-indicators {
   display: flex;
@@ -1609,7 +1611,7 @@ h1 {
 .onboard-description {
   margin-top: 10px;
   max-width: 340px;
-  font-size: 11px !important;
+  font-size: 12px !important;
 }
 .onboard-fields {
   margin: 25px 0 16px;
@@ -1619,10 +1621,10 @@ h1 {
   flex: 1;
 }
 .onboard-fields label {
-  font-size: 11px;
+  font-size: 12px;
 }
 .onboard-fields label > span {
-  font-size: 10px;
+  font-size: 12px;
   color: #a2ad97;
   font-weight: 400;
 }
@@ -1635,11 +1637,11 @@ h1 {
   padding: 12px;
 }
 .onboard-fields .location-field strong {
-  font-size: 11px;
+  font-size: 12px;
 }
 .onboard-fields .location-field .pill {
   margin-left: auto;
-  font-size: 8px;
+  font-size: 12px;
   padding: 4px 6px;
 }
 .household-buttons {
@@ -1668,12 +1670,12 @@ h1 {
 }
 .onboarding-actions .button {
   min-width: 150px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .onboarding-foot {
   display: block;
   text-align: center;
-  font-size: 9px;
+  font-size: 12px;
   color: #a6b299;
   margin-top: 24px;
 }
@@ -1696,7 +1698,7 @@ h1 {
   color: #849973;
 }
 .budget-input > span:last-child {
-  font-size: 11px;
+  font-size: 12px;
   color: #a3af93;
   white-space: nowrap;
 }
@@ -1718,13 +1720,13 @@ h1 {
   font-size: 12px;
 }
 .onboard-fields .switch-row p {
-  font-size: 10px;
+  font-size: 12px;
 }
 .sample-checkbox {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 11px !important;
+  font-size: 12px !important;
 }
 .onboard-note {
   display: flex;
@@ -1733,7 +1735,7 @@ h1 {
   background: #f5f7ee;
   color: #9dad8a;
   padding: 13px;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.8;
 }
 .onboard-note svg {
@@ -1792,7 +1794,7 @@ h1 {
   font-size: 12px;
 }
 .catalog-item span:not(.product-art) {
-  font-size: 10px;
+  font-size: 12px;
   color: #93a282;
 }
 .add-product {
@@ -1814,7 +1816,7 @@ h1 {
   align-items: center;
   border-top: 1px solid #e9efde;
   padding-top: 18px;
-  font-size: 11px;
+  font-size: 12px;
   color: #93a27f;
   margin-top: 5px;
 }
@@ -1843,7 +1845,7 @@ h1 {
   margin: 10px 0;
 }
 .swap-summary span {
-  font-size: 11px;
+  font-size: 12px;
   color: #8c9f76;
 }
 .swap-summary strong {
@@ -1871,7 +1873,7 @@ h1 {
 }
 .swap-reason {
   display: block;
-  font-size: 9px;
+  font-size: 12px;
   color: #a2ae94;
   margin-top: 4px;
   line-height: 1.7;
@@ -1883,13 +1885,13 @@ h1 {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 9px;
+  font-size: 12px;
   color: #8e9e7a;
   margin: 5px 0;
   flex-wrap: wrap;
 }
 .swap-row .green-text {
-  font-size: 9px;
+  font-size: 12px;
 }
 .swap-actions {
   display: flex;
@@ -1898,12 +1900,12 @@ h1 {
   align-items: center;
 }
 .swap-actions .button {
-  font-size: 10px;
+  font-size: 12px;
   padding: 7px 12px;
   min-height: 33px;
 }
 .swap-actions .text-button {
-  font-size: 9px;
+  font-size: 12px;
 }
 .receipt-modal {
   max-width: 540px !important;
@@ -1932,7 +1934,7 @@ h1 {
   white-space: nowrap;
 }
 .upload-zone span {
-  font-size: 9px;
+  font-size: 12px;
   color: #9ead8b;
 }
 .upload-zone.uploaded {
@@ -1940,14 +1942,14 @@ h1 {
   background: #f1f7e8;
 }
 .receipt-modal .form-grid label {
-  font-size: 11px;
+  font-size: 12px;
 }
 .receipt-modal .form-grid input {
   height: 42px;
   font-size: 12px;
 }
 .receipt-line-details {
-  font-size: 11px;
+  font-size: 12px;
   margin-top: 9px;
 }
 .receipt-line-details summary {
@@ -1959,7 +1961,7 @@ h1 {
   padding: 10px 0;
 }
 .receipt-line-details p {
-  font-size: 10px;
+  font-size: 12px;
   color: #9dad8a;
   margin-bottom: 13px;
 }
@@ -1975,12 +1977,12 @@ h1 {
   gap: 15px;
   border-bottom: 1px solid #edf2e4;
   padding: 7px 0;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 400;
 }
 .receipt-line-details input {
   width: 90px !important;
-  font-size: 11px;
+  font-size: 12px;
   padding: 7px !important;
   margin: 0 !important;
 }
@@ -1992,7 +1994,7 @@ h1 {
   border-radius: 8px;
   padding: 12px;
   margin: 4px 0;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.8;
 }
 .accuracy-card {
@@ -2024,7 +2026,7 @@ h1 {
   color: #3f6b4f;
 }
 .accuracy-headline span {
-  font-size: 10px;
+  font-size: 12px;
   color: #8c9f76;
 }
 .accuracy-rows {
@@ -2042,7 +2044,7 @@ h1 {
   gap: 14px;
   padding: 12px 0;
   border-bottom: 1px solid #edf2e4;
-  font-size: 11px;
+  font-size: 12px;
   color: #8fa37b;
 }
 .accuracy-rows li:last-child {
@@ -2055,7 +2057,7 @@ h1 {
   font-variant-numeric: tabular-nums;
 }
 .accuracy-figures small {
-  font-size: 10px;
+  font-size: 12px;
   color: #a2ae94;
 }
 .accuracy-figures strong {
@@ -2065,12 +2067,12 @@ h1 {
 }
 .accuracy-figures em {
   font-style: normal;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
 }
 .accuracy-empty {
   margin: 0;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.8;
   color: #98a78a;
 }
@@ -2100,7 +2102,7 @@ h1 {
   display: flex;
   justify-content: space-between;
   gap: 20px;
-  font-size: 11px;
+  font-size: 12px;
   padding: 13px 0;
   border-bottom: 1px solid #edf2e4;
 }
@@ -2134,7 +2136,7 @@ h1 {
   font-size: 12px;
 }
 .how-steps p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.8;
   color: #98a78a;
   margin-top: 5px;
@@ -2147,11 +2149,11 @@ h1 {
   margin-bottom: 8px;
 }
 .help-data strong {
-  font-size: 11px;
+  font-size: 12px;
   color: #7d9466;
 }
 .help-data p {
-  font-size: 10px;
+  font-size: 12px;
   color: #9ba889;
   line-height: 1.9;
   margin-top: 7px;
@@ -2172,7 +2174,7 @@ h1 {
     font-size: 34px;
   }
   .brand-caption {
-    font-size: 9px;
+    font-size: 12px;
   }
   .nav-content {
     padding: 0 12px;
@@ -2212,10 +2214,10 @@ h1 {
     gap: 7px;
   }
   .item-copy strong {
-    font-size: 11px;
+    font-size: 12px;
   }
   .item-copy > span {
-    font-size: 9px;
+    font-size: 12px;
   }
   .lock-button {
     width: 23px;
@@ -2246,10 +2248,10 @@ h1 {
     padding: 21px;
   }
   .metric > span {
-    font-size: 11px;
+    font-size: 12px;
   }
   .metric > p {
-    font-size: 10px;
+    font-size: 12px;
   }
 }
 @media (max-width: 960px) {
@@ -2296,8 +2298,8 @@ h1 {
     align-items: center;
     justify-content: center;
     gap: 5px;
-    font-size: 9px;
-    color: #9aaa8c;
+    font-size: 12px;
+    color: #6b7661;
     flex: 1;
     min-height: 46px;
     border-radius: 10px;
@@ -2345,10 +2347,10 @@ h1 {
     display: none;
   }
   .location-button {
-    font-size: 10px;
+    font-size: 12px;
   }
   .data-badge {
-    font-size: 9px;
+    font-size: 12px;
     padding: 5px 7px;
     gap: 5px;
   }
@@ -2360,14 +2362,14 @@ h1 {
     font-size: 25px;
   }
   .eyebrow {
-    font-size: 8px;
+    font-size: 12px;
     letter-spacing: 1.2px;
   }
   .page-heading p {
-    font-size: 11px;
+    font-size: 12px;
   }
   .page-heading > .button {
-    font-size: 10px;
+    font-size: 12px;
     padding: 9px 11px;
     min-height: 37px;
     gap: 6px;
@@ -2382,7 +2384,7 @@ h1 {
     font-size: 12px;
   }
   .budget-link {
-    font-size: 9px;
+    font-size: 12px;
     flex-wrap: wrap;
     line-height: 1.7;
   }
@@ -2408,7 +2410,7 @@ h1 {
     gap: 7px;
   }
   .heading-actions .button {
-    font-size: 10px;
+    font-size: 12px;
     gap: 5px;
     padding: 10px;
     min-height: 37px;
@@ -2426,7 +2428,7 @@ h1 {
     font-size: 12px;
   }
   .item-copy > span {
-    font-size: 10px;
+    font-size: 12px;
   }
   .full-list .product-art {
     width: 41px;
@@ -2440,7 +2442,7 @@ h1 {
     min-width: 16px;
   }
   .segment-tabs > button {
-    font-size: 10px !important;
+    font-size: 12px !important;
     min-height: 30px !important;
     padding: 0 12px !important;
   }
@@ -2451,7 +2453,7 @@ h1 {
     padding: 17px;
   }
   .metric > span {
-    font-size: 10px;
+    font-size: 12px;
     gap: 5px;
     align-items: flex-start;
     line-height: 1.4;
@@ -2465,7 +2467,7 @@ h1 {
     margin: 17px 0 5px;
   }
   .metric > p {
-    font-size: 9px;
+    font-size: 12px;
     line-height: 1.7;
   }
   .preferences-layout {
@@ -2499,10 +2501,10 @@ h1 {
     font-size: 25px !important;
   }
   .onboard-top > span {
-    font-size: 8px;
+    font-size: 12px;
   }
   .onboard-top .text-button {
-    font-size: 9px;
+    font-size: 12px;
   }
   .onboard-fields {
     gap: 23px;
@@ -2515,7 +2517,7 @@ h1 {
     font-size: 12px;
   }
   .onboard-fields .location-field .pill {
-    font-size: 9px;
+    font-size: 12px;
   }
   .onboarding-actions {
     margin-top: 12px;
@@ -2544,16 +2546,16 @@ h1 {
     font-size: 13px;
   }
   .onboard-fields .switch-row p {
-    font-size: 11px;
+    font-size: 12px;
   }
   .onboard-note {
-    font-size: 11px;
+    font-size: 12px;
   }
   .onboarding-actions .button {
     min-height: 43px;
   }
   .workspace-footer {
-    font-size: 8px;
+    font-size: 12px;
     gap: 14px;
     align-items: flex-start;
   }
@@ -2572,7 +2574,7 @@ h1 {
     height: 300px;
   }
   .catalog-modal .search-field input {
-    font-size: 11px;
+    font-size: 12px;
   }
   .swaps-modal,
   .receipt-modal,
@@ -2587,7 +2589,7 @@ h1 {
     padding: 15px;
   }
   .swap-summary span {
-    font-size: 10px;
+    font-size: 12px;
     max-width: 200px;
   }
   .swap-summary strong {
@@ -2615,7 +2617,7 @@ h1 {
     display: none;
   }
   .data-badge {
-    font-size: 8px;
+    font-size: 12px;
   }
   .mobile-brand {
     font-size: 25px;
@@ -2627,10 +2629,10 @@ h1 {
     font-size: 23px;
   }
   .page-heading p {
-    font-size: 10px;
+    font-size: 12px;
   }
   .page-heading > .button {
-    font-size: 9px;
+    font-size: 12px;
     padding: 9px;
     gap: 4px;
   }
@@ -2644,13 +2646,13 @@ h1 {
     font-size: 24px;
   }
   .budget-numbers span {
-    font-size: 10px;
+    font-size: 12px;
   }
   .budget-card h3 {
-    font-size: 11px;
+    font-size: 12px;
   }
   .budget-card p {
-    font-size: 9px;
+    font-size: 12px;
   }
   .full-list {
     padding: 0 14px;
@@ -2667,10 +2669,10 @@ h1 {
     height: 34px;
   }
   .item-copy strong {
-    font-size: 11px;
+    font-size: 12px;
   }
   .item-copy > span {
-    font-size: 9px;
+    font-size: 12px;
   }
   .lock-button {
     width: 22px;
@@ -2686,7 +2688,7 @@ h1 {
     min-width: 15px;
   }
   .full-list .item-price {
-    font-size: 11px;
+    font-size: 12px;
     min-width: 37px;
   }
   .full-list .remove {
@@ -2710,7 +2712,7 @@ h1 {
     gap: 10px;
   }
   .history-row > div span {
-    font-size: 9px;
+    font-size: 12px;
   }
   .history-row > strong {
     font-size: 15px;
@@ -2732,16 +2734,16 @@ h1 {
     gap: 7px;
   }
   .onboard-top > span {
-    font-size: 7px;
+    font-size: 12px;
   }
   .onboard-top .text-button {
-    font-size: 8px;
+    font-size: 12px;
   }
   .onboard-fields .location-field strong {
-    font-size: 11px;
+    font-size: 12px;
   }
   .onboard-fields .location-field .pill {
-    font-size: 8px;
+    font-size: 12px;
   }
   .onboarding-content:before {
     margin-bottom: 24px;
@@ -2756,13 +2758,13 @@ h1 {
     height: 280px;
   }
   .catalog-modal .search-field input {
-    font-size: 10px;
+    font-size: 12px;
   }
   .swaps-modal [data-slot='dialog-title'] {
     font-size: 20px !important;
   }
   .swap-row p {
-    font-size: 8px;
+    font-size: 12px;
   }
   .receipt-modal .form-grid {
     grid-template-columns: 1fr;
@@ -2802,11 +2804,11 @@ h1 {
 .workspace-footer,
 .field-help,
 .saved-label {
-  font-size: 11px;
+  font-size: 12px;
 }
 .page-heading p {
   font-size: 13px;
-  color: #72806c;
+  color: #657160;
 }
 .item-copy strong {
   font-size: 13px;
@@ -2816,10 +2818,10 @@ h1 {
 .budget-card p,
 .field-help,
 .profile span:not(.avatar) {
-  color: #75816a;
+  color: #68725e;
 }
 .sidebar-note p {
-  color: #728267;
+  color: #65735b;
 }
 .button,
 .text-button,
@@ -2827,13 +2829,13 @@ h1 {
   font-size: 12px;
 }
 .budget-link {
-  font-size: 11px;
+  font-size: 12px;
 }
 .eyebrow {
-  font-size: 10px;
+  font-size: 12px;
 }
 .nav-label {
-  color: #77846d;
+  color: #6d7863;
 }
 .onboard-top > span {
   color: #6e825e;
@@ -2851,21 +2853,21 @@ h1 {
   color: #5b7648;
 }
 .onboarding-foot {
-  font-size: 10px;
+  font-size: 12px;
   color: #768966;
 }
 .onboard-note {
   color: #6f875a;
 }
 .filter-pill {
-  font-size: 11px;
+  font-size: 12px;
   color: #6c8059;
 }
 .catalog-item strong {
   font-size: 13px;
 }
 .catalog-item span:not(.product-art) {
-  font-size: 11px;
+  font-size: 12px;
   color: #728764;
 }
 .form-grid label,
@@ -2885,10 +2887,10 @@ h1 {
   color: #738762;
 }
 .onboarding-visual-bottom {
-  font-size: 10px;
+  font-size: 12px;
 }
 .field-help {
-  font-size: 11px !important;
+  font-size: 12px !important;
 }
 .data-footnote {
   color: #75876a;
@@ -2901,14 +2903,14 @@ h1 {
     font-size: 12px;
   }
   .item-copy > span {
-    font-size: 11px;
+    font-size: 12px;
   }
   .workspace-footer {
-    font-size: 10px;
+    font-size: 12px;
   }
   .budget-card p,
   .budget-link {
-    font-size: 11px;
+    font-size: 12px;
   }
   .catalog-modal .search-field input {
     font-size: 12px;
@@ -2925,7 +2927,7 @@ h1 {
   }
   .section-top p,
   .saved-label {
-    font-size: 11px;
+    font-size: 12px;
   }
   .list-title input {
     font-size: 16px !important;
@@ -2939,27 +2941,27 @@ h1 {
     gap: 6px;
   }
   .full-list .item-copy strong {
-    font-size: 11px;
+    font-size: 12px;
   }
   .full-list .item-copy > span {
-    font-size: 10px;
+    font-size: 12px;
   }
   .budget-card p,
   .budget-link {
-    font-size: 10px;
+    font-size: 12px;
   }
   .page-heading > .button,
   .heading-actions .button {
-    font-size: 10px;
+    font-size: 12px;
   }
   .onboard-top > span {
-    font-size: 8px;
+    font-size: 12px;
   }
   .onboard-top .text-button {
-    font-size: 9px;
+    font-size: 12px;
   }
   .onboard-fields .location-field strong {
-    font-size: 11px;
+    font-size: 12px;
   }
 }
 /* The mobile setup keeps progress and the next action in reach. */
@@ -3007,7 +3009,7 @@ h1 {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-size: 10px;
+  font-size: 12px;
 }
 .onboarding-side-steps .current {
   color: #e2f1b9;
@@ -3058,7 +3060,7 @@ h1 {
   margin-bottom: 11px;
 }
 .personal-onboarding legend span {
-  font-size: 10px;
+  font-size: 12px;
   color: #8c9d7a;
   font-weight: 400;
 }
@@ -3066,7 +3068,7 @@ h1 {
   display: block;
   margin: 8px 0 0;
   line-height: 1.7;
-  font-size: 10px !important;
+  font-size: 12px !important;
 }
 .personal-onboarding .transport-choices {
   margin: 0;
@@ -3120,7 +3122,7 @@ h1 {
   color: #536f44;
 }
 .priority-options small {
-  font-size: 10px;
+  font-size: 12px;
   display: block;
   margin-top: 3px;
   color: #849970;
@@ -3138,7 +3140,7 @@ h1 {
   border-radius: 23px;
   padding: 9px 13px;
   color: #788e64;
-  font-size: 11px;
+  font-size: 12px;
   min-height: 36px;
   background: #fff;
 }
@@ -3149,7 +3151,7 @@ h1 {
 }
 .preference-chips + button {
   margin-top: 12px;
-  font-size: 10px;
+  font-size: 12px;
 }
 .staple-search {
   margin: 0 0 10px !important;
@@ -3181,13 +3183,13 @@ h1 {
   border-color: #adc990;
 }
 .staple-grid button > span:first-child {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 550;
   color: #5b7849;
 }
 .staple-grid small {
   display: block;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 400;
   color: #859875;
   line-height: 1.6;
@@ -3226,7 +3228,7 @@ h1 {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 12px;
   color: #75915d;
 }
 .personal-onboarding .switch-row {
@@ -3234,7 +3236,7 @@ h1 {
 }
 .personal-onboarding .switch-row p {
   max-width: 320px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .personal-onboarding .back-step {
   min-width: 0;
@@ -3271,11 +3273,11 @@ h1 {
   font-size: 12px;
 }
 .suggestion-card span:not(.product-art) {
-  font-size: 10px;
+  font-size: 12px;
   color: #92a07f;
 }
 .suggestion-card small {
-  font-size: 9px;
+  font-size: 12px;
   color: #789b5d;
   margin-top: 3px;
 }
@@ -3289,14 +3291,14 @@ h1 {
   gap: 8px;
 }
 .taste-profile .inline-warning {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.7;
   margin-top: 18px;
   align-items: flex-start;
 }
 .swap-reason {
   display: block;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.6;
   color: #8c9d79;
   margin-top: 5px;
@@ -3336,10 +3338,10 @@ h1 {
     margin-bottom: 24px;
   }
   .personal-onboarding .onboard-top > span {
-    font-size: 9px;
+    font-size: 12px;
   }
   .personal-onboarding .onboard-top .text-button {
-    font-size: 11px;
+    font-size: 12px;
   }
   .personal-onboarding .onboard-title {
     font-size: 27px !important;
@@ -3371,7 +3373,7 @@ h1 {
     font-size: 13px !important;
   }
   .personal-onboarding .field-help {
-    font-size: 11px !important;
+    font-size: 12px !important;
     line-height: 1.8;
   }
   .personal-onboarding .onboarding-actions {
@@ -3387,7 +3389,7 @@ h1 {
     min-width: 0;
   }
   .personal-onboarding .onboarding-foot {
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1.6;
     margin-top: 14px;
   }
@@ -3399,7 +3401,7 @@ h1 {
     font-size: 13px;
   }
   .priority-options small {
-    font-size: 11px;
+    font-size: 12px;
   }
   .priority-options > button {
     padding: 14px;
@@ -3410,7 +3412,7 @@ h1 {
     padding: 10px 13px;
   }
   .preference-chips + button {
-    font-size: 11px;
+    font-size: 12px;
     min-height: 33px;
   }
   .staple-grid {
@@ -3423,7 +3425,7 @@ h1 {
     font-size: 12px;
   }
   .staple-grid small {
-    font-size: 10px;
+    font-size: 12px;
   }
   .brand-chips {
     max-height: 155px;
@@ -3446,7 +3448,7 @@ h1 {
     line-height: 1.7;
   }
   .personal-onboarding .onboard-note {
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.8;
   }
   .suggestion-grid {
@@ -3456,10 +3458,10 @@ h1 {
     font-size: 13px;
   }
   .suggestion-card small {
-    font-size: 11px;
+    font-size: 12px;
   }
   .suggestion-card span:not(.product-art) {
-    font-size: 11px;
+    font-size: 12px;
   }
   .suggestion-card .add-product {
     width: 37px;
@@ -3467,7 +3469,9 @@ h1 {
   }
   .full-list .item-row {
     display: grid;
-    grid-template-columns: 41px minmax(0, 1fr) 31px 83px 28px;
+    /* The lock column is a full 44px: at 31px its hit circle overlapped the
+       quantity stepper's, so a tap near the edge could land on either. */
+    grid-template-columns: 41px minmax(0, 1fr) 44px 83px 28px;
     gap: 9px;
     position: relative;
     min-height: 88px;
@@ -3488,13 +3492,14 @@ h1 {
     font-size: 13px;
   }
   .full-list .item-row .item-copy > span {
-    font-size: 11px;
+    font-size: 12px;
   }
   .full-list .item-row .lock-button {
     grid-column: 3;
     grid-row: 2;
-    width: 31px;
-    height: 30px;
+    width: 44px;
+    height: 44px;
+    align-self: center;
   }
   .full-list .item-row .quantity {
     grid-column: 4;
@@ -3529,7 +3534,7 @@ h1 {
   }
   .mobile-nav button {
     min-height: 49px;
-    font-size: 10px;
+    font-size: 12px;
   }
   .button {
     min-height: 44px;
@@ -3555,7 +3560,7 @@ h1 {
   align-items: center;
   gap: 8px;
   color: #7d9270;
-  font-size: 10px;
+  font-size: 12px;
   margin: 2px 0 12px;
 }
 .radius-dial input {
@@ -3634,7 +3639,7 @@ h1 {
   display: grid;
   place-items: center;
   color: #4c713a;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 650;
 }
 .radius-circle span {
@@ -3653,7 +3658,7 @@ h1 {
   border-radius: 15px;
   padding: 5px 8px;
   color: #59794a;
-  font-size: 10px;
+  font-size: 12px;
 }
 .chain-mark {
   display: inline-grid;
@@ -3663,7 +3668,7 @@ h1 {
   padding: 0 4px;
   border-radius: 7px;
   font-weight: 750;
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: -0.3px;
   flex-shrink: 0;
 }
@@ -3713,7 +3718,7 @@ h1 {
 }
 .basket-groups summary small,
 .setup-secondary summary small {
-  font-size: 10px;
+  font-size: 12px;
   color: #849979;
   line-height: 1.45;
 }
@@ -3759,7 +3764,7 @@ h1 {
   animation: fade-up 0.7s 1.4s ease both;
 }
 .personalizing-screen small {
-  font-size: 11px;
+  font-size: 12px;
   color: #95a486;
   animation: fade-up 0.7s 1.8s ease both;
 }
@@ -3911,16 +3916,16 @@ h1 {
     gap: 9px;
   }
   .full-list .list-toolbar > span {
-    font-size: 10px;
+    font-size: 12px;
   }
   .full-list .list-toolbar .text-button {
-    font-size: 10px;
+    font-size: 12px;
   }
   .full-list .list-toolbar .icon-button {
     width: 24px;
   }
   .full-list .saved-label {
-    font-size: 10px;
+    font-size: 12px;
   }
   .full-list .list-title input {
     width: 70%;
@@ -3987,7 +3992,7 @@ h1 {
   --secondary: #eaf0e6;
   --secondary-foreground: #1d3b33;
   --muted: #f0f3ed;
-  --muted-foreground: #66736c;
+  --muted-foreground: #5c6862;
   --accent: #e3efe0;
   --accent-foreground: #125643;
   --destructive: #a3402f;
