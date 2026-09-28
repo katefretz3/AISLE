@@ -67,11 +67,11 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Take a photo of your grocery receipt to save it with your shopping trip.</string>
+	<string>Aisle uses the camera when you choose to photograph a grocery receipt or a shelf price label. Photos stay on this device.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Choose a grocery receipt photo you want to save.</string>
+	<string>Aisle opens your photos when you choose a receipt or shelf label picture to attach. Only the photo you pick is used, and it stays on this device.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Save a receipt photo only when you choose to export it.</string>
+	<string>Aisle saves a receipt photo to your library only when you export it and choose Save Image.</string>
 	<key>UIUserInterfaceStyle</key>
 	<string>Light</string>
 	<key>LSSupportsOpeningDocumentsInPlace</key>

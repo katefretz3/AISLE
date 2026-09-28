@@ -257,12 +257,12 @@ export const PRIVACY: LegalDocument = {
       id: 'leaves',
       heading: '4. What leaves your device, and why',
       body: [
-        `Three kinds of request go out from the app. None of them carries your name, your list or your health information.`,
+        `Three kinds of request go out from the app. None of them carries your name, your exact position, your receipts or your photographs. The first two never carry your list or your preferences. The third, which is optional, does, and it is described in full below.`,
       ],
       list: [
         `**Nearby shops.** To find grocery stores near you, the app sends a coarse search area — rounded to roughly a 5 km cell, never your exact position — to an OpenStreetMap query service. It does not send your pin, your list or your preferences.`,
         `**Retailer catalogues.** The app requests publicly published product and price pages from retailer websites. These are ordinary web requests for public pages; the retailer's server sees the request and your IP address, as it would for any visit.`,
-        `**Automated matching (only if enabled).** If the operator has configured a reasoning service, the app sends the item names on your list and the catalogue results it collected, so the model can decide which product matches which line. It does not send your name, location, receipts, health information or history. If no service is configured, this never happens and the app matches with built-in rules instead.`,
+        `**Automated matching (only if enabled).** If the operator has configured a reasoning service, the app sends it what it needs to match your list to real products: the items on your list with their quantities and brand locks; the catalogue results it collected; the shops found near you, with their addresses and straight-line distances; and your household profile. That profile includes your household size, city, search radius, budget, shopping priority, preferred shops and brands, products you favour or exclude, and — because a match must respect them — any allergies and dietary needs you entered. If learning is on, it also includes the brand preferences and repurchase timing Aisle worked out from your own confirmed choices and saved shops. It does not send your name, your exact position, your receipts, receipt photos, shelf-label photos or the prices you typed in. The service is run by the operator and passes the request to Anthropic's Claude API to be answered. If no service is configured, none of this happens and the app matches with built-in rules instead.`,
       ],
     },
 
@@ -355,7 +355,7 @@ export const PRIVACY: LegalDocument = {
         `**OpenStreetMap / Overpass query service** — receives a coarse search area to return nearby shops.`,
         `**Retailer websites** — receive requests for their public catalogue pages.`,
         `**Map tile provider** — if you open the map, it receives the area you are viewing in order to serve tiles.`,
-        `**Reasoning service (optional)** — receives list item names and collected catalogue results, only if the operator has configured one.`,
+        `**Reasoning service (optional)** — run by the operator and answered by Anthropic's Claude API. Only if the operator has configured one, it receives your list, the collected catalogue results, nearby shops and your household profile, including any allergies and dietary needs you entered (section 4 lists every field).`,
       ],
     },
 

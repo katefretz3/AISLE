@@ -14,6 +14,7 @@ import {toolByName, computeBaskets, basketsFrom, type ToolContext} from '@/lib/a
 import {feedCandidates, coverageGaps, discoverStores} from '@/lib/agent/discovery';
 import {runAgent} from '@/lib/agent/orchestrator';
 import {chainFor, inOntario} from '@/lib/agent/registry';
+import {PRIVACY} from '@/lib/legal';
 import {FIXTURE_ORIGIN, fixturePlaces, fixtureReader, fixtureState} from './fixtures';
 
 /** The fields the tool tests read back from a tool's reply. */
@@ -689,4 +690,54 @@ test('an unpriced item carries a kind, so the interface can group the reasons', 
   // Items sharing a kind collapse to one group.
   const kinds = new Set(gaps.map(g => g.kind));
   assert.ok(kinds.size <= gaps.length, 'grouping can only reduce the count');
+});
+
+// Section 4 of the privacy policy lists every field the reasoning service
+// receives. If this test fails, the model is being sent something new: update
+// legal.ts (sections 4 and 13) in the same change, then this list.
+test('the model receives exactly the profile fields the privacy policy lists', async () => {
+  const ctx = await fixtureContext();
+  const profile = (await toolByName('get_shopper_profile')!.run({}, ctx)) as Record<
+    string,
+    unknown
+  >;
+  assert.deepEqual(Object.keys(profile).sort(), [
+    'brandPreferences',
+    'cadenceDays',
+    'confidence',
+    'dueForRepurchase',
+    'explicit',
+    'learningEnabled',
+    'notes',
+    'ok',
+    'perShopBudgetCents',
+  ]);
+  assert.deepEqual(Object.keys(profile.explicit as object).sort(), [
+    'allergens',
+    'categoryLocks',
+    'city',
+    'dietary',
+    'excludedProducts',
+    'favouriteProducts',
+    'household',
+    'preferredBrands',
+    'preferredStores',
+    'priority',
+    'radiusKm',
+    'substitutions',
+    'transport',
+  ]);
+  const policy = JSON.stringify(PRIVACY.sections.find(s => s.id === 'leaves'));
+  for (const phrase of ['allergies and dietary needs', 'household size', 'budget', 'addresses'])
+    assert.ok(policy.includes(phrase), `privacy policy no longer mentions ${phrase}`);
+  const list = (await toolByName('get_grocery_list')!.run({}, ctx)) as {items: object[]};
+  for (const item of list.items)
+    assert.deepEqual(Object.keys(item).sort(), [
+      'custom',
+      'itemId',
+      'knownProduct',
+      'locked',
+      'name',
+      'quantity',
+    ]);
 });
