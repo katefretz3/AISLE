@@ -730,7 +730,7 @@ test('the model receives exactly the profile fields the privacy policy lists', a
   const policy = JSON.stringify(PRIVACY.sections.find(s => s.id === 'leaves'));
   for (const phrase of ['allergies and dietary needs', 'household size', 'budget', 'addresses'])
     assert.ok(policy.includes(phrase), `privacy policy no longer mentions ${phrase}`);
-  const list = (await toolByName('get_grocery_list')!.run({}, ctx)) as {items: object[]};
+  const list = (await toolByName('get_grocery_list')!.run({}, ctx)) as unknown as {items: object[]};
   for (const item of list.items)
     assert.deepEqual(Object.keys(item).sort(), [
       'custom',
