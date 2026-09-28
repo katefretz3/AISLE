@@ -1,6 +1,15 @@
 'use client';
 
-import {useCallback, useEffect, useMemo, useRef, useState, type CSSProperties} from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -73,8 +82,9 @@ import ShopChecklist, {type ChecklistOrder} from '@/components/shop-checklist';
 import ListStarters from '@/components/list-starters';
 import DueThisWeek from '@/components/due-this-week';
 import ShelfPriceCapture from '@/components/shelf-price-capture';
-import Account from './account';
-import Legal from './legal';
+// Not needed to open the app, so each loads the first time it is shown.
+const Account = lazy(() => import('./account'));
+const Legal = lazy(() => import('./legal'));
 import {
   loadState,
   saveState,
@@ -117,7 +127,7 @@ import {
 import {valueSwaps, totalSaving, type ValueSwap} from '@/lib/value-swaps';
 // One version number: the release check holds iOS and Android to this too.
 import {version as APP_VERSION} from '../../package.json';
-import {cx, newId, ProductIcon, Pill, Choice, Empty} from './parts';
+import {cx, newId, ProductIcon, Pill, Choice, Empty, ViewLoading} from './parts';
 import {ItemRow, type ItemRowContext} from './item-row';
 import {BudgetCard} from './home-cards';
 import {useHousehold} from './use-household';
@@ -1138,23 +1148,27 @@ export default function AisleApp() {
             />
           )}
           {view === 'account' && (
-            <Account
-              state={state}
-              saveStatus={saveStatus}
-              onPrefs={prefs}
-              onCommit={commit}
-              onEditFood={() => setOnboard(true)}
-              onReplaySetup={() => setOnboard(true)}
-              onLegal={goLegal}
-              onErase={() => {
-                agent.forget();
-                void eraseStoredFiles();
-              }}
-              appVersion={APP_VERSION}
-            />
+            <Suspense fallback={<ViewLoading />}>
+              <Account
+                state={state}
+                saveStatus={saveStatus}
+                onPrefs={prefs}
+                onCommit={commit}
+                onEditFood={() => setOnboard(true)}
+                onReplaySetup={() => setOnboard(true)}
+                onLegal={goLegal}
+                onErase={() => {
+                  agent.forget();
+                  void eraseStoredFiles();
+                }}
+                appVersion={APP_VERSION}
+              />
+            </Suspense>
           )}
           {view === 'legal' && (
-            <Legal docId={legalDoc} onSelect={goLegal} onBack={() => goLegal(null)} />
+            <Suspense fallback={<ViewLoading />}>
+              <Legal docId={legalDoc} onSelect={goLegal} onBack={() => goLegal(null)} />
+            </Suspense>
           )}
           {view === 'shop' && (
             <>

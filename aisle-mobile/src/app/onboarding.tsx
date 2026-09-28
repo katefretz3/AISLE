@@ -227,7 +227,7 @@ export default function Onboarding({
               </li>
             ))}
           </ol>
-          <img src="/images/grocery-bag.png" alt="" className="setup-photo" />
+          <img src="/images/grocery-bag.webp" alt="" className="setup-photo" />
           <div className="setup-aside-foot">
             <MapPin size={15} />
             Made for Ontario shoppers
@@ -649,7 +649,11 @@ export default function Onboarding({
                     How we handle your data
                   </button>
                   <button className="button primary" onClick={next}>
-                    {step === 3 ? (revisit ? 'Save preferences' : 'Find my best shop') : 'Continue'}
+                    {step === 3
+                      ? revisit
+                        ? 'Save preferences'
+                        : 'Save and check prices'
+                      : 'Continue'}
                     <ArrowRight size={17} />
                   </button>
                 </div>

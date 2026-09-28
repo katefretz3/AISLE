@@ -5,7 +5,7 @@
 // and rebuilt it each time: focus moved off a button after one press, and
 // every row redrew on every keystroke anywhere in the app.
 import type {ReactNode} from 'react';
-import {ShoppingBasket} from 'lucide-react';
+import {LoaderCircle, ShoppingBasket} from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -81,6 +81,15 @@ export function Empty({
       <h3>{title}</h3>
       <p>{children}</p>
       {action}
+    </div>
+  );
+}
+
+/** Shown for the moment a lazily loaded screen takes to arrive. */
+export function ViewLoading() {
+  return (
+    <div className="system-message" role="status">
+      <LoaderCircle className="spin" size={16} /> Loading…
     </div>
   );
 }

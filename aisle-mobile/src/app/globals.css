@@ -2,6 +2,12 @@
 @import 'tw-animate-css';
 @import '../vendor/shadcn-tailwind-4.13.0.css';
 
+/* Aisle has no dark theme yet. Tailwind's `dark:` variant otherwise follows the
+   phone's setting, which switched a handful of controls (inputs, destructive
+   buttons) to dark styles on an otherwise light screen. Tie it to a `.dark`
+   class the app never sets until a full theme exists. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   color-scheme: light;
   --background: #f7f8f5;
