@@ -11,32 +11,35 @@
  *  sensor resolution, and the difference is roughly ten times the bytes. At
  *  1200 a label filling a third of the frame still has ~400px across it, which
  *  is far more than is needed to read a price and a pack size. */
-export const MAX_PHOTO_EDGE=1200;
+export const MAX_PHOTO_EDGE = 1200;
 
 /** A single stored photo should not exceed this; one that does is re-encoded
  *  harder rather than being allowed to sit on the device at full weight. */
-export const TARGET_PHOTO_BYTES=900*1024;
+export const TARGET_PHOTO_BYTES = 900 * 1024;
 
 /** Beyond this the capture is refused rather than silently truncated. */
-export const MAX_PHOTO_BYTES=8*1024*1024;
+export const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 
-export const PHOTO_TYPES=['image/jpeg','image/png','image/webp'];
+export const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 /**
  * Target dimensions for a stored photo.
  *
  * Only ever scales down: enlarging a small photo adds bytes and no detail.
  */
-export function scaledSize(width:number,height:number,maxEdge=MAX_PHOTO_EDGE){
- if(!(width>0)||!(height>0)||!(maxEdge>0))return {width:0,height:0};
- const factor=Math.min(1,maxEdge/Math.max(width,height));
- return {width:Math.max(1,Math.round(width*factor)),height:Math.max(1,Math.round(height*factor))};
+export function scaledSize(width: number, height: number, maxEdge = MAX_PHOTO_EDGE) {
+  if (!(width > 0) || !(height > 0) || !(maxEdge > 0)) return {width: 0, height: 0};
+  const factor = Math.min(1, maxEdge / Math.max(width, height));
+  return {
+    width: Math.max(1, Math.round(width * factor)),
+    height: Math.max(1, Math.round(height * factor)),
+  };
 }
 
 /** `<id>.json` → `<id>`, ignoring anything that is not one of ours. */
-export function photoIdFromFile(name:string):string|null{
- const m=name.match(/^([a-f0-9]{16,64})\.json$/);
- return m?m[1]:null;
+export function photoIdFromFile(name: string): string | null {
+  const m = name.match(/^([a-f0-9]{16,64})\.json$/);
+  return m ? m[1] : null;
 }
 
 /**
@@ -48,20 +51,20 @@ export function photoIdFromFile(name:string):string|null{
  * disk, which also cleans up after a write that succeeded when the save that
  * should have followed it did not.
  */
-export function orphanPhotoIds(fileNames:string[],keep:Iterable<string>):string[]{
- const live=new Set(keep);
- const orphans:string[]=[];
- for(const name of fileNames){
-  const id=photoIdFromFile(name);
-  if(id&&!live.has(id))orphans.push(id);
- }
- return orphans;
+export function orphanPhotoIds(fileNames: string[], keep: Iterable<string>): string[] {
+  const live = new Set(keep);
+  const orphans: string[] = [];
+  for (const name of fileNames) {
+    const id = photoIdFromFile(name);
+    if (id && !live.has(id)) orphans.push(id);
+  }
+  return orphans;
 }
 
 /** Whether a file is worth accepting before any of it is read. */
-export function photoRejection(size:number,type:string):string|null{
- if(!PHOTO_TYPES.includes(type))return 'Choose a JPEG, PNG or WebP image.';
- if(!(size>0))return 'That file is empty.';
- if(size>MAX_PHOTO_BYTES)return 'Choose an image under 8 MB.';
- return null;
+export function photoRejection(size: number, type: string): string | null {
+  if (!PHOTO_TYPES.includes(type)) return 'Choose a JPEG, PNG or WebP image.';
+  if (!(size > 0)) return 'That file is empty.';
+  if (size > MAX_PHOTO_BYTES) return 'Choose an image under 8 MB.';
+  return null;
 }

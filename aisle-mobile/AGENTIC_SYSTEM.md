@@ -15,24 +15,24 @@ so and the item stays visibly unpriced. An honest gap is a correct answer; a
 plausible number is not.
 
 This matters most because the system uses a language model. Models are good at
-the judgement call in the middle of this problem — is *"Dempster's 100% Whole
-Wheat, 675 g"* in a catalogue the same thing as *"whole wheat bread"* on
+the judgement call in the middle of this problem — is _"Dempster's 100% Whole
+Wheat, 675 g"_ in a catalogue the same thing as _"whole wheat bread"_ on
 someone's list? — and they are also perfectly capable of producing a confident
 price that nobody charges. The architecture below gives the model the first job
 and structurally denies it the second.
 
 ## Where AI is used, and where it is not
 
-| Step | Who does it |
-|---|---|
-| Finding stores near the household | OpenStreetMap directory query |
-| Deciding which retailers can be read | robots.txt, storefront currency, payload probe |
-| Collecting prices | Retailer adapters over HTTPS |
-| Deciding *which* catalogue product is the requested item | **Language model**, or rule-based matching when none is configured |
-| Ranking, quantities, totals, budgets | Integer-cent arithmetic in `tools.ts` |
-| Enforcing locks, exclusions, protected brands | Deterministic guards inside the tool handlers |
-| Writing the explanation | **Language model**, then scrubbed by `policy.ts` |
-| Confirming a match | The household, in the app |
+| Step                                                     | Who does it                                                        |
+| -------------------------------------------------------- | ------------------------------------------------------------------ |
+| Finding stores near the household                        | OpenStreetMap directory query                                      |
+| Deciding which retailers can be read                     | robots.txt, storefront currency, payload probe                     |
+| Collecting prices                                        | Retailer adapters over HTTPS                                       |
+| Deciding _which_ catalogue product is the requested item | **Language model**, or rule-based matching when none is configured |
+| Ranking, quantities, totals, budgets                     | Integer-cent arithmetic in `tools.ts`                              |
+| Enforcing locks, exclusions, protected brands            | Deterministic guards inside the tool handlers                      |
+| Writing the explanation                                  | **Language model**, then scrubbed by `policy.ts`                   |
+| Confirming a match                                       | The household, in the app                                          |
 
 The model never returns a price, a distance, a store or a total. It selects
 among records the collect phase already fetched.
@@ -55,7 +55,7 @@ among records the collect phase already fetched.
 4. **Verify.** Every offer still referenced is re-checked against the ledger:
    the evidence row must exist and be a 200, the price must be positive integer
    cents in CAD, the observation must not be stale or in the future, and the
-   product must be available. Anything failing is discarded *before* arithmetic.
+   product must be available. Anything failing is discarded _before_ arithmetic.
 5. **Compose.** Totals are computed in integer cents. The explanation then goes
    through the policy scrubber, which removes any money figure, distance or
    offer id the run cannot support and records it as a violation.
@@ -70,7 +70,7 @@ each list item with its proposed match or an explicit gap, per-retailer baskets,
 nearby stores tagged with whether Aisle can price them, and an evidence table of
 every response behind the numbers.
 
-Two details matter for the honesty rule. Matches are *proposals* until the
+Two details matter for the honesty rule. Matches are _proposals_ until the
 household confirms them, and an unconfirmed line is labelled as such and counted
 separately in the basket. And confirming a match re-totals from the run snapshot
 with `basketsFrom()`, a pure function — no re-collection, so a displayed figure
@@ -82,17 +82,17 @@ The model's entire surface. Each is plain TypeScript with zod-validated
 arguments; a malformed or over-reaching call is refused with a message the model
 can read and correct.
 
-| Tool | Returns |
-|---|---|
-| `get_shopper_profile` | Explicit preferences plus learned brand rates and repurchase timing |
-| `get_grocery_list` | The list, with quantities and locks |
-| `find_stores_nearby` | Mapped Ontario stores, distances, and chains with no price feed |
-| `discover_price_feeds` | Per-retailer verdict on whether a catalogue is readable |
-| `collect_prices` | Fresh price records with evidence ids |
-| `search_offers` | Collected records only |
-| `propose_match` | Records a proposal — refused if it breaks a household rule |
-| `flag_unavailable` | Records an honest gap |
-| `compute_basket` | Integer-cent totals against the per-shop budget |
+| Tool                   | Returns                                                             |
+| ---------------------- | ------------------------------------------------------------------- |
+| `get_shopper_profile`  | Explicit preferences plus learned brand rates and repurchase timing |
+| `get_grocery_list`     | The list, with quantities and locks                                 |
+| `find_stores_nearby`   | Mapped Ontario stores, distances, and chains with no price feed     |
+| `discover_price_feeds` | Per-retailer verdict on whether a catalogue is readable             |
+| `collect_prices`       | Fresh price records with evidence ids                               |
+| `search_offers`        | Collected records only                                              |
+| `propose_match`        | Records a proposal — refused if it breaks a household rule          |
+| `flag_unavailable`     | Records an honest gap                                               |
+| `compute_basket`       | Integer-cent totals against the per-shop budget                     |
 
 Three things the tools structurally prevent:
 
@@ -161,7 +161,7 @@ Being direct about the ceiling, because the honest-data rule cuts both ways:
 
 - **Major chains are not priced.** Loblaws, Metro, Sobeys, Walmart, Costco and
   their banners publish no public machine-readable price feed. `registry.ts`
-  records that, the agent reports those stores near you *without* prices, and it
+  records that, the agent reports those stores near you _without_ prices, and it
   never estimates them. Real coverage needs licensed retailer feeds.
 - **These are online catalogue prices, not branch prices.** Aisle will not send
   someone to a shop because of an online price, and says so.

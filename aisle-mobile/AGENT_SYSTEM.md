@@ -20,18 +20,18 @@ The default application now uses observed retailer data. The old hash-generated 
 
 ## What the profile changes
 
-| Input | Behaviour |
-|---|---|
-| City, pin and radius | Coarse directory query, exact client-side distance filtering |
-| Preferred stores | Prioritize mapped preferred chains unless closest-first is chosen |
-| Shopping priority | Order nearby stores; online baskets stay product-price comparisons without invented travel costs |
-| Transport | Explain the limits of straight-line distances for the chosen travel mode; no invented routes or costs |
-| Weekly budget and cadence | Per-shop budget = weekly budget × cadence days / 7; budget warnings |
-| Household size | Per-person budget context; quantities are not guessed or overwritten |
-| Favourite products | Candidate replenishment suggestions |
-| Protected brands, category locks and substitutions | Candidate filtering |
-| Exclusions and food restrictions | Suggestion constraints and ingredient-review notices |
-| Opt-in purchase/choice history | Replenishment timing and brand-acceptance score |
+| Input                                              | Behaviour                                                                                             |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| City, pin and radius                               | Coarse directory query, exact client-side distance filtering                                          |
+| Preferred stores                                   | Prioritize mapped preferred chains unless closest-first is chosen                                     |
+| Shopping priority                                  | Order nearby stores; online baskets stay product-price comparisons without invented travel costs      |
+| Transport                                          | Explain the limits of straight-line distances for the chosen travel mode; no invented routes or costs |
+| Weekly budget and cadence                          | Per-shop budget = weekly budget × cadence days / 7; budget warnings                                   |
+| Household size                                     | Per-person budget context; quantities are not guessed or overwritten                                  |
+| Favourite products                                 | Candidate replenishment suggestions                                                                   |
+| Protected brands, category locks and substitutions | Candidate filtering                                                                                   |
+| Exclusions and food restrictions                   | Suggestion constraints and ingredient-review notices                                                  |
+| Opt-in purchase/choice history                     | Replenishment timing and brand-acceptance score                                                       |
 
 ## Storage and interfaces
 

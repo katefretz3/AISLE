@@ -7,413 +7,600 @@
 // useless, because it would look finished.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {DOCUMENTS,OPERATOR,PLACEHOLDER_FIELDS,PRIVACY,SOURCES,TERMS,documentById,hasPlaceholders} from '@/lib/legal';
-import {initialState,stores,productById,reopenList,pruneSavedLists,type Trip,type ListItem,type SavedList} from '@/lib/catalog';
-import {groupForWalk,tallyBasket} from '@/lib/shopping-order';
+import {
+  DOCUMENTS,
+  OPERATOR,
+  PLACEHOLDER_FIELDS,
+  PRIVACY,
+  SOURCES,
+  TERMS,
+  documentById,
+  hasPlaceholders,
+} from '@/lib/legal';
+import {
+  initialState,
+  stores,
+  productById,
+  reopenList,
+  pruneSavedLists,
+  type Trip,
+  type ListItem,
+  type SavedList,
+} from '@/lib/catalog';
+import {groupForWalk, tallyBasket} from '@/lib/shopping-order';
 import {valueSwaps} from '@/lib/value-swaps';
 import {personalSuggestions} from '@/lib/catalog';
-import {coverageRows,coverageSummary} from '@/lib/coverage';
+import {coverageRows, coverageSummary} from '@/lib/coverage';
 import {CHAINS} from '@/lib/agent/registry';
 import type {SourcedOffer} from '@/lib/agent/provenance';
 import type {UserState} from '@/lib/catalog';
 import {fixtureState} from './fixtures';
-import {chooseBasis,unitPriceCents,formatUnitPrice,withUnitPrices} from '@/lib/unit-price';
+import {chooseBasis, unitPriceCents, formatUnitPrice, withUnitPrices} from '@/lib/unit-price';
 import type {Pack} from '@/lib/agent/types';
-import {perShopBudget,cadenceDays} from '@/lib/agent';
+import {perShopBudget, cadenceDays} from '@/lib/agent';
 import ErrorBoundary from '@/components/error-boundary';
 
-const textOf=(doc:typeof TERMS)=>
- doc.sections.flatMap(s=>[s.heading,...s.body,...(s.list??[]),s.callout??'']).join('\n').toLowerCase();
+const textOf = (doc: typeof TERMS) =>
+  doc.sections
+    .flatMap(s => [s.heading, ...s.body, ...(s.list ?? []), s.callout ?? ''])
+    .join('\n')
+    .toLowerCase();
 
-test('every legal document is structurally sound', ()=>{
- assert.equal(DOCUMENTS.length,3);
- for(const doc of DOCUMENTS){
-  assert.ok(doc.title.trim(),`${doc.id} has no title`);
-  assert.ok(doc.summary.trim(),`${doc.id} has no summary`);
-  assert.ok(doc.sections.length>=5,`${doc.id} has only ${doc.sections.length} sections`);
-  const ids=doc.sections.map(s=>s.id);
-  assert.equal(new Set(ids).size,ids.length,`${doc.id} has duplicate section ids`);
-  for(const section of doc.sections){
-   assert.ok(section.heading.trim(),`${doc.id}/${section.id} has no heading`);
-   assert.ok(section.body.length>0&&section.body.every(p=>p.trim()),`${doc.id}/${section.id} has an empty paragraph`);
-   assert.match(section.id,/^[a-z0-9-]+$/,`${doc.id}/${section.id} is not anchor-safe`);
+test('every legal document is structurally sound', () => {
+  assert.equal(DOCUMENTS.length, 3);
+  for (const doc of DOCUMENTS) {
+    assert.ok(doc.title.trim(), `${doc.id} has no title`);
+    assert.ok(doc.summary.trim(), `${doc.id} has no summary`);
+    assert.ok(doc.sections.length >= 5, `${doc.id} has only ${doc.sections.length} sections`);
+    const ids = doc.sections.map(s => s.id);
+    assert.equal(new Set(ids).size, ids.length, `${doc.id} has duplicate section ids`);
+    for (const section of doc.sections) {
+      assert.ok(section.heading.trim(), `${doc.id}/${section.id} has no heading`);
+      assert.ok(
+        section.body.length > 0 && section.body.every(p => p.trim()),
+        `${doc.id}/${section.id} has an empty paragraph`,
+      );
+      assert.match(section.id, /^[a-z0-9-]+$/, `${doc.id}/${section.id} is not anchor-safe`);
+    }
+    assert.equal(documentById(doc.id)?.id, doc.id);
   }
-  assert.equal(documentById(doc.id)?.id,doc.id);
- }
- assert.equal(documentById('nope'),null);
+  assert.equal(documentById('nope'), null);
 });
 
-test('unfinished operator details are detected, not shipped quietly', ()=>{
- // While placeholders remain the screens show a blocking notice. If someone
- // fills them in, this test still passes — it checks the mechanism, not the
- // current state.
- const placeholders=Object.entries(OPERATOR).filter(([,v])=>v.startsWith('PLACEHOLDER')).map(([k])=>k);
- assert.deepEqual(PLACEHOLDER_FIELDS,placeholders);
- assert.equal(hasPlaceholders,placeholders.length>0);
+test('unfinished operator details are detected, not shipped quietly', () => {
+  // While placeholders remain the screens show a blocking notice. If someone
+  // fills them in, this test still passes — it checks the mechanism, not the
+  // current state.
+  const placeholders = Object.entries(OPERATOR)
+    .filter(([, v]) => v.startsWith('PLACEHOLDER'))
+    .map(([k]) => k);
+  assert.deepEqual(PLACEHOLDER_FIELDS, placeholders);
+  assert.equal(hasPlaceholders, placeholders.length > 0);
 });
 
-test('the Terms carry the disclaimers this app specifically needs', ()=>{
- const text=textOf(TERMS);
- for(const [claim,needle] of [
-  ['prices are not guaranteed',/not (quotes|guarantees)|not confirmed prices/],
-  ['online prices are not branch prices',/not the same as the price at a particular branch/],
-  ['no allergy safety',/allergy|allergen/],
-  ['read the label',/read the product label/],
-  ['Ontario scope',/ontario/],
-  ['no account, no recovery',/cannot recover your data/],
-  ['automated matching can be wrong',/matching can be wrong/],
-  ['limitation of liability',/limitation of liability/],
-  ['governing law',/governed by the laws/],
-  ['consumer rights preserved',/consumer protection legislation/],
- ] as const){
-  assert.match(text,needle,`Terms should address: ${claim}`);
- }
+test('the Terms carry the disclaimers this app specifically needs', () => {
+  const text = textOf(TERMS);
+  for (const [claim, needle] of [
+    ['prices are not guaranteed', /not (quotes|guarantees)|not confirmed prices/],
+    ['online prices are not branch prices', /not the same as the price at a particular branch/],
+    ['no allergy safety', /allergy|allergen/],
+    ['read the label', /read the product label/],
+    ['Ontario scope', /ontario/],
+    ['no account, no recovery', /cannot recover your data/],
+    ['automated matching can be wrong', /matching can be wrong/],
+    ['limitation of liability', /limitation of liability/],
+    ['governing law', /governed by the laws/],
+    ['consumer rights preserved', /consumer protection legislation/],
+  ] as const) {
+    assert.match(text, needle, `Terms should address: ${claim}`);
+  }
 });
 
-test('the Privacy Policy describes what the app actually does', ()=>{
- const text=textOf(PRIVACY);
- for(const [claim,needle] of [
-  ['no account',/no account/],
-  ['device storage',/stored on your device|on your device/],
-  ['no analytics',/analytics/],
-  ['never sold',/never sell/],
-  ['coarse location only',/coarse search area/],
-  ['retailer requests',/catalogue/],
-  ['learning is opt-in',/off by default/],
-  ['allergies never inferred',/never inferred/],
-  ['retention',/24 hours/],
-  ['children',/children/],
-  ['Canadian privacy law',/pipeda|privacy commissioner/],
-  ['security',/https/],
- ] as const){
-  assert.match(text,needle,`Privacy Policy should address: ${claim}`);
- }
+test('the Privacy Policy describes what the app actually does', () => {
+  const text = textOf(PRIVACY);
+  for (const [claim, needle] of [
+    ['no account', /no account/],
+    ['device storage', /stored on your device|on your device/],
+    ['no analytics', /analytics/],
+    ['never sold', /never sell/],
+    ['coarse location only', /coarse search area/],
+    ['retailer requests', /catalogue/],
+    ['learning is opt-in', /off by default/],
+    ['allergies never inferred', /never inferred/],
+    ['retention', /24 hours/],
+    ['children', /children/],
+    ['Canadian privacy law', /pipeda|privacy commissioner/],
+    ['security', /https/],
+  ] as const) {
+    assert.match(text, needle, `Privacy Policy should address: ${claim}`);
+  }
 });
 
-test('attribution required by our data licences is present', ()=>{
- const text=textOf(SOURCES);
- // OpenStreetMap's ODbL requires visible attribution; shipping without it
- // would be a licence breach, not a cosmetic omission.
- assert.match(text,/openstreetmap/,'OpenStreetMap must be credited');
- assert.match(text,/odbl|open database licence/,'the ODbL must be named');
- assert.match(text,/geonames/,'city coordinates come from GeoNames');
- assert.match(text,/credits/,'photo credits must be referenced');
- assert.match(text,/no verified ingredient/,'the absence of ingredient data should be stated');
+test('attribution required by our data licences is present', () => {
+  const text = textOf(SOURCES);
+  // OpenStreetMap's ODbL requires visible attribution; shipping without it
+  // would be a licence breach, not a cosmetic omission.
+  assert.match(text, /openstreetmap/, 'OpenStreetMap must be credited');
+  assert.match(text, /odbl|open database licence/, 'the ODbL must be named');
+  assert.match(text, /geonames/, 'city coordinates come from GeoNames');
+  assert.match(text, /credits/, 'photo credits must be referenced');
+  assert.match(text, /no verified ingredient/, 'the absence of ingredient data should be stated');
 });
 
-test('documents cross-reference each other rather than contradicting', ()=>{
- assert.match(textOf(TERMS),/privacy policy/,'Terms should point at the Privacy Policy');
- assert.match(textOf(TERMS),/data sources/,'Terms should point at Data sources');
- for(const doc of DOCUMENTS)assert.ok(doc.lastUpdated.trim(),`${doc.id} has no date`);
+test('documents cross-reference each other rather than contradicting', () => {
+  assert.match(textOf(TERMS), /privacy policy/, 'Terms should point at the Privacy Policy');
+  assert.match(textOf(TERMS), /data sources/, 'Terms should point at Data sources');
+  for (const doc of DOCUMENTS) assert.ok(doc.lastUpdated.trim(), `${doc.id} has no date`);
 });
 
 // ---- account settings ------------------------------------------------------
 
-test('budget bounds on the settings screen match what the app accepts', ()=>{
- const prefs=initialState().prefs;
- // The screen clamps to 10..2000; the derived per-shop figure must stay sane
- // across the whole range and every cadence.
- for(const budget of [10,120,2000])
-  for(const frequency of ['twice-weekly','weekly','fortnightly'] as const){
-   const value=perShopBudget({...prefs,budget,frequency});
-   assert.ok(Number.isInteger(value),`per-shop budget must be integer cents (${budget}/${frequency})`);
-   assert.ok(value>0,`per-shop budget must be positive (${budget}/${frequency})`);
-   assert.ok(value<=Math.round(budget*100*cadenceDays(frequency)/7)+1);
-  }
+test('budget bounds on the settings screen match what the app accepts', () => {
+  const prefs = initialState().prefs;
+  // The screen clamps to 10..2000; the derived per-shop figure must stay sane
+  // across the whole range and every cadence.
+  for (const budget of [10, 120, 2000])
+    for (const frequency of ['twice-weekly', 'weekly', 'fortnightly'] as const) {
+      const value = perShopBudget({...prefs, budget, frequency});
+      assert.ok(
+        Number.isInteger(value),
+        `per-shop budget must be integer cents (${budget}/${frequency})`,
+      );
+      assert.ok(value > 0, `per-shop budget must be positive (${budget}/${frequency})`);
+      assert.ok(value <= Math.round((budget * 100 * cadenceDays(frequency)) / 7) + 1);
+    }
 });
 
-test('erasing everything leaves a usable, onboarded state', ()=>{
- // The Erase control resets to this shape; if it left `onboarded:false` the
- // household would be dropped back into setup instead of an empty list.
- const fresh={...initialState(),items:[],onboarded:true};
- assert.equal(fresh.items.length,0);
- assert.equal(fresh.onboarded,true);
- assert.equal(fresh.trips.length,0);
- assert.equal(fresh.events.length,0);
- assert.ok(fresh.prefs.city,'a city must remain set so the agent can still run');
+test('erasing everything leaves a usable, onboarded state', () => {
+  // The Erase control resets to this shape; if it left `onboarded:false` the
+  // household would be dropped back into setup instead of an empty list.
+  const fresh = {...initialState(), items: [], onboarded: true};
+  assert.equal(fresh.items.length, 0);
+  assert.equal(fresh.onboarded, true);
+  assert.equal(fresh.trips.length, 0);
+  assert.equal(fresh.events.length, 0);
+  assert.ok(fresh.prefs.city, 'a city must remain set so the agent can still run');
 });
 
 // ---- crash recovery --------------------------------------------------------
 
-test('the error boundary captures a render error instead of blanking the app', ()=>{
- // React calls this static when a child throws during render; returning the
- // error is what swaps the tree for the recovery screen rather than unmounting
- // everything and leaving a white page.
- const boom=new Error('render exploded');
- const next=ErrorBoundary.getDerivedStateFromError(boom);
- assert.equal(next.error,boom);
+test('the error boundary captures a render error instead of blanking the app', () => {
+  // React calls this static when a child throws during render; returning the
+  // error is what swaps the tree for the recovery screen rather than unmounting
+  // everything and leaving a white page.
+  const boom = new Error('render exploded');
+  const next = ErrorBoundary.getDerivedStateFromError(boom);
+  assert.equal(next.error, boom);
 
- const instance=new ErrorBoundary({children:null});
- assert.equal(instance.state.error,null,'starts clean so it renders children normally');
+  const instance = new ErrorBoundary({children: null});
+  assert.equal(instance.state.error, null, 'starts clean so it renders children normally');
 });
 
 // ---- shopping history ------------------------------------------------------
 
-test('a trip records its shop name so history survives an unknown source', ()=>{
- // Shops can now start from an agent basket, whose retailer is not one of the
- // bundled chains. History used to assert the chain existed, which crashed the
- // spending screen for anyone who shopped at a discovered retailer.
- const trip:Trip={id:'t1',storeId:'goodnessme',storeName:'Goodness Me!',date:'2026-09-20',
-  total:4250,predicted:0,comparisonTotal:0,items:3,prices:[]};
- assert.equal(stores.find(s=>s.id===trip.storeId),undefined,
-  'this retailer is deliberately not a bundled chain');
- // The screen resolves the chain, then the recorded name, then the raw id.
- const resolved=stores.find(s=>s.id===trip.storeId)?.name??trip.storeName??trip.storeId;
- assert.equal(resolved,'Goodness Me!');
+test('a trip records its shop name so history survives an unknown source', () => {
+  // Shops can now start from an agent basket, whose retailer is not one of the
+  // bundled chains. History used to assert the chain existed, which crashed the
+  // spending screen for anyone who shopped at a discovered retailer.
+  const trip: Trip = {
+    id: 't1',
+    storeId: 'goodnessme',
+    storeName: 'Goodness Me!',
+    date: '2026-09-20',
+    total: 4250,
+    predicted: 0,
+    comparisonTotal: 0,
+    items: 3,
+    prices: [],
+  };
+  assert.equal(
+    stores.find(s => s.id === trip.storeId),
+    undefined,
+    'this retailer is deliberately not a bundled chain',
+  );
+  // The screen resolves the chain, then the recorded name, then the raw id.
+  const resolved = stores.find(s => s.id === trip.storeId)?.name ?? trip.storeName ?? trip.storeId;
+  assert.equal(resolved, 'Goodness Me!');
 
- // A trip saved before this field existed still resolves to something showable.
- const legacy:Trip={...trip,storeName:undefined};
- const legacyResolved=stores.find(s=>s.id===legacy.storeId)?.name??legacy.storeName??legacy.storeId;
- assert.equal(legacyResolved,'goodnessme','falls back to the id rather than throwing');
+  // A trip saved before this field existed still resolves to something showable.
+  const legacy: Trip = {...trip, storeName: undefined};
+  const legacyResolved =
+    stores.find(s => s.id === legacy.storeId)?.name ?? legacy.storeName ?? legacy.storeId;
+  assert.equal(legacyResolved, 'goodnessme', 'falls back to the id rather than throwing');
 
- const bundled:Trip={...trip,storeId:'metro',storeName:undefined};
- assert.equal(stores.find(s=>s.id===bundled.storeId)?.name,'Metro');
+  const bundled: Trip = {...trip, storeId: 'metro', storeName: undefined};
+  assert.equal(stores.find(s => s.id === bundled.storeId)?.name, 'Metro');
 });
 
 // ---- in-store checklist ----------------------------------------------------
 
-const listItem=(id:string,productId:string|null,checked=false):ListItem=>
- ({id,productId,name:productId?productById[productId]?.name??id:id,qty:1,checked,locked:false});
-
-test('the checklist follows the walk, not the order things were typed', ()=>{
- // Typed in a deliberately awkward order: frozen first, produce last.
- const items=[listItem('a','ice-cream'),listItem('b','shampoo'),listItem('c','pasta'),
-  listItem('d','bananas'),listItem('e','bread'),listItem('f','chicken')];
- const groups=groupForWalk(items).map(g=>g.id);
- assert.deepEqual(groups,['produce','bakery','meat','pantry','personal','frozen']);
- // Frozen last matters: picked up first it thaws in the trolley.
- assert.equal(groups[groups.length-1],'frozen');
- assert.ok(groups.indexOf('produce')<groups.indexOf('pantry'),'perimeter before centre aisles');
+const listItem = (id: string, productId: string | null, checked = false): ListItem => ({
+  id,
+  productId,
+  name: productId ? (productById[productId]?.name ?? id) : id,
+  qty: 1,
+  checked,
+  locked: false,
 });
 
-test('items somebody typed themselves collect at the end, never dropped', ()=>{
- const groups=groupForWalk([listItem('a','bananas'),listItem('b',null),listItem('c','ice-cream')]);
- const last=groups[groups.length-1];
- assert.equal(last.id,'other');
- assert.equal(last.name,'Anything else');
- assert.equal(groups.flatMap(g=>g.items).length,3,'every item is still present');
+test('the checklist follows the walk, not the order things were typed', () => {
+  // Typed in a deliberately awkward order: frozen first, produce last.
+  const items = [
+    listItem('a', 'ice-cream'),
+    listItem('b', 'shampoo'),
+    listItem('c', 'pasta'),
+    listItem('d', 'bananas'),
+    listItem('e', 'bread'),
+    listItem('f', 'chicken'),
+  ];
+  const groups = groupForWalk(items).map(g => g.id);
+  assert.deepEqual(groups, ['produce', 'bakery', 'meat', 'pantry', 'personal', 'frozen']);
+  // Frozen last matters: picked up first it thaws in the trolley.
+  assert.equal(groups[groups.length - 1], 'frozen');
+  assert.ok(groups.indexOf('produce') < groups.indexOf('pantry'), 'perimeter before centre aisles');
 });
 
-test('group counts track what has been picked up', ()=>{
- const groups=groupForWalk([listItem('a','bananas',true),listItem('b','apples'),listItem('c','bread',true)]);
- const produce=groups.find(g=>g.id==='produce')!;
- assert.equal(produce.items.length,2);
- assert.equal(produce.checked,1);
- assert.equal(groups.find(g=>g.id==='bakery')!.checked,1);
+test('items somebody typed themselves collect at the end, never dropped', () => {
+  const groups = groupForWalk([
+    listItem('a', 'bananas'),
+    listItem('b', null),
+    listItem('c', 'ice-cream'),
+  ]);
+  const last = groups[groups.length - 1];
+  assert.equal(last.id, 'other');
+  assert.equal(last.name, 'Anything else');
+  assert.equal(groups.flatMap(g => g.items).length, 3, 'every item is still present');
 });
 
-test('the running total counts only what is in the trolley, and says what it cannot price', ()=>{
- const items=[listItem('a','bananas',true),listItem('b','milk',true),
-  listItem('c','bread',true),listItem('d','chicken')];
- const prices:Record<string,number|null>={a:169,b:649,c:null,d:1499};
- const tally=tallyBasket(items,id=>prices[id]??null);
- assert.equal(tally.inBasket,169+649,'unticked items are not in the trolley');
- assert.equal(tally.priced,2);
- assert.equal(tally.unpriced,1,'a ticked item with no price is reported, not counted as zero');
- assert.equal(tally.checked,3);
- // Counting an unpriced pickup as zero would under-report the shop, which is
- // the one number a shopper has to be able to trust.
- assert.notEqual(tally.inBasket,169+649+0+1499);
+test('group counts track what has been picked up', () => {
+  const groups = groupForWalk([
+    listItem('a', 'bananas', true),
+    listItem('b', 'apples'),
+    listItem('c', 'bread', true),
+  ]);
+  const produce = groups.find(g => g.id === 'produce')!;
+  assert.equal(produce.items.length, 2);
+  assert.equal(produce.checked, 1);
+  assert.equal(groups.find(g => g.id === 'bakery')!.checked, 1);
+});
+
+test('the running total counts only what is in the trolley, and says what it cannot price', () => {
+  const items = [
+    listItem('a', 'bananas', true),
+    listItem('b', 'milk', true),
+    listItem('c', 'bread', true),
+    listItem('d', 'chicken'),
+  ];
+  const prices: Record<string, number | null> = {a: 169, b: 649, c: null, d: 1499};
+  const tally = tallyBasket(items, id => prices[id] ?? null);
+  assert.equal(tally.inBasket, 169 + 649, 'unticked items are not in the trolley');
+  assert.equal(tally.priced, 2);
+  assert.equal(tally.unpriced, 1, 'a ticked item with no price is reported, not counted as zero');
+  assert.equal(tally.checked, 3);
+  // Counting an unpriced pickup as zero would under-report the shop, which is
+  // the one number a shopper has to be able to trust.
+  assert.notEqual(tally.inBasket, 169 + 649 + 0 + 1499);
 });
 
 // ---- reusing a list --------------------------------------------------------
 
-test('reopening a saved list gives fresh, unticked items', ()=>{
- const saved:SavedList={id:'s1',name:'Last shop',savedAt:'2026-09-20T10:00:00.000Z',auto:true,
-  items:[listItem('old-1','bananas',true),listItem('old-2','milk',true)]};
- const reopened=reopenList(saved);
- assert.equal(reopened.length,2);
- assert.ok(reopened.every(i=>!i.checked),'a reused list starts unticked');
- assert.ok(reopened.every(i=>!saved.items.some(o=>o.id===i.id)),'ids are new, so the copies are independent');
- assert.deepEqual(reopened.map(i=>i.productId),['bananas','milk']);
+test('reopening a saved list gives fresh, unticked items', () => {
+  const saved: SavedList = {
+    id: 's1',
+    name: 'Last shop',
+    savedAt: '2026-09-20T10:00:00.000Z',
+    auto: true,
+    items: [listItem('old-1', 'bananas', true), listItem('old-2', 'milk', true)],
+  };
+  const reopened = reopenList(saved);
+  assert.equal(reopened.length, 2);
+  assert.ok(
+    reopened.every(i => !i.checked),
+    'a reused list starts unticked',
+  );
+  assert.ok(
+    reopened.every(i => !saved.items.some(o => o.id === i.id)),
+    'ids are new, so the copies are independent',
+  );
+  assert.deepEqual(
+    reopened.map(i => i.productId),
+    ['bananas', 'milk'],
+  );
 });
 
-test('automatic snapshots never crowd out a list somebody named', ()=>{
- const make=(id:string,auto:boolean,day:number):SavedList=>
-  ({id,name:id,auto,savedAt:`2026-09-${String(day).padStart(2,'0')}T10:00:00.000Z`,items:[]});
- const lists=[...Array.from({length:9},(_,i)=>make(`auto-${i}`,true,i+1)),
-  make('Christmas dinner',false,1),make('Party',false,2)];
- const pruned=pruneSavedLists(lists);
- assert.equal(pruned.filter(l=>!l.auto).length,2,'both named lists survive');
- assert.equal(pruned.filter(l=>l.auto).length,5,'only the newest automatic snapshots are kept');
- assert.ok(pruned.filter(l=>l.auto).every(l=>Number(l.savedAt.slice(8,10))>=5),'and they are the newest');
+test('automatic snapshots never crowd out a list somebody named', () => {
+  const make = (id: string, auto: boolean, day: number): SavedList => ({
+    id,
+    name: id,
+    auto,
+    savedAt: `2026-09-${String(day).padStart(2, '0')}T10:00:00.000Z`,
+    items: [],
+  });
+  const lists = [
+    ...Array.from({length: 9}, (_, i) => make(`auto-${i}`, true, i + 1)),
+    make('Christmas dinner', false, 1),
+    make('Party', false, 2),
+  ];
+  const pruned = pruneSavedLists(lists);
+  assert.equal(pruned.filter(l => !l.auto).length, 2, 'both named lists survive');
+  assert.equal(
+    pruned.filter(l => l.auto).length,
+    5,
+    'only the newest automatic snapshots are kept',
+  );
+  assert.ok(
+    pruned.filter(l => l.auto).every(l => Number(l.savedAt.slice(8, 10)) >= 5),
+    'and they are the newest',
+  );
 });
 
 // ---- unit prices -----------------------------------------------------------
 
-const pack=(amount:number,unit:'g'|'ml'|'each'):Pack=>({amount,unit,label:`${amount} ${unit}`});
-
-test('unit price divides the price by the pack, on the chosen basis', ()=>{
- const basis=chooseBasis([pack(675,'g')])!;
- assert.equal(basis.label,'100 g','a 675 g pack reads better per 100 g than per kg');
- // $3.79 for 675 g = 0.5614 cents per gram = 56.15 cents per 100 g.
- const cents=unitPriceCents(379,pack(675,'g'),basis)!;
- assert.ok(Math.abs(cents-56.148)<0.01,`got ${cents}`);
- assert.equal(formatUnitPrice(cents,basis),'$0.56 / 100 g');
+const pack = (amount: number, unit: 'g' | 'ml' | 'each'): Pack => ({
+  amount,
+  unit,
+  label: `${amount} ${unit}`,
 });
 
-test('a large pack switches to the bigger basis so the number stays readable', ()=>{
- const basis=chooseBasis([pack(2000,'g')])!;
- assert.equal(basis.label,'kg');
- assert.equal(formatUnitPrice(unitPriceCents(899,pack(2000,'g'),basis),basis),'$4.50 / kg');
- const litres=chooseBasis([pack(1750,'ml')])!;
- assert.equal(litres.label,'L');
- assert.equal(formatUnitPrice(unitPriceCents(449,pack(1750,'ml'),litres),litres),'$2.57 / L');
+test('unit price divides the price by the pack, on the chosen basis', () => {
+  const basis = chooseBasis([pack(675, 'g')])!;
+  assert.equal(basis.label, '100 g', 'a 675 g pack reads better per 100 g than per kg');
+  // $3.79 for 675 g = 0.5614 cents per gram = 56.15 cents per 100 g.
+  const cents = unitPriceCents(379, pack(675, 'g'), basis)!;
+  assert.ok(Math.abs(cents - 56.148) < 0.01, `got ${cents}`);
+  assert.equal(formatUnitPrice(cents, basis), '$0.56 / 100 g');
 });
 
-test('everything in one comparison shares a basis', ()=>{
- // A 500 g pack and a 2 kg pack must not be shown as $/100 g against $/kg:
- // the two numbers would look comparable and differ by a factor of ten.
- const {basis,priced}=withUnitPrices(
-  [{price:299,pack:pack(500,'g')},{price:899,pack:pack(2000,'g')}],
-  row=>row);
- assert.equal(basis!.label,'kg','the largest pack sets the basis for the set');
- assert.ok(priced.every(p=>p.text?.endsWith('/ kg')),'both rows use it');
- assert.equal(priced[0].text,'$5.98 / kg');
- assert.equal(priced[1].text,'$4.50 / kg');
- assert.equal(priced[1].best,true,'the genuinely cheaper one per kilo wins');
- assert.equal(priced[0].best,false);
+test('a large pack switches to the bigger basis so the number stays readable', () => {
+  const basis = chooseBasis([pack(2000, 'g')])!;
+  assert.equal(basis.label, 'kg');
+  assert.equal(formatUnitPrice(unitPriceCents(899, pack(2000, 'g'), basis), basis), '$4.50 / kg');
+  const litres = chooseBasis([pack(1750, 'ml')])!;
+  assert.equal(litres.label, 'L');
+  assert.equal(formatUnitPrice(unitPriceCents(449, pack(1750, 'ml'), litres), litres), '$2.57 / L');
 });
 
-test('an unknown pack gets no unit price rather than a guessed one', ()=>{
- assert.equal(unitPriceCents(399,null,chooseBasis([pack(100,'g')])),null);
- assert.equal(unitPriceCents(399,pack(0,'g'),chooseBasis([pack(100,'g')])),null);
- assert.equal(chooseBasis([null,undefined]),null);
- assert.equal(formatUnitPrice(null,null),null);
- // Mixed units cannot share a basis, so the odd one out is left unpriced.
- const {priced}=withUnitPrices([{price:299,pack:pack(500,'g')},{price:199,pack:pack(1,'each')}],r=>r);
- assert.ok(priced[0].text,'the majority unit is priced');
- assert.equal(priced[1].text,null,'the other is not converted');
+test('everything in one comparison shares a basis', () => {
+  // A 500 g pack and a 2 kg pack must not be shown as $/100 g against $/kg:
+  // the two numbers would look comparable and differ by a factor of ten.
+  const {basis, priced} = withUnitPrices(
+    [
+      {price: 299, pack: pack(500, 'g')},
+      {price: 899, pack: pack(2000, 'g')},
+    ],
+    row => row,
+  );
+  assert.equal(basis!.label, 'kg', 'the largest pack sets the basis for the set');
+  assert.ok(
+    priced.every(p => p.text?.endsWith('/ kg')),
+    'both rows use it',
+  );
+  assert.equal(priced[0].text, '$5.98 / kg');
+  assert.equal(priced[1].text, '$4.50 / kg');
+  assert.equal(priced[1].best, true, 'the genuinely cheaper one per kilo wins');
+  assert.equal(priced[0].best, false);
 });
 
-test('a per-item price that only restates the ticket price is not shown', ()=>{
- // "$1.99 / item" for a single jar is the price with a suffix, not a second
- // fact, and the app does not pad the screen with figures that say nothing.
- const single=chooseBasis([pack(1,'each')])!;
- assert.equal(unitPriceCents(199,pack(1,'each'),single),null);
- // A multi-pack is a real division, so it stays.
- const dozen=chooseBasis([pack(12,'each')])!;
- assert.equal(formatUnitPrice(unitPriceCents(504,pack(12,'each'),dozen),dozen),'$0.42 / item');
+test('an unknown pack gets no unit price rather than a guessed one', () => {
+  assert.equal(unitPriceCents(399, null, chooseBasis([pack(100, 'g')])), null);
+  assert.equal(unitPriceCents(399, pack(0, 'g'), chooseBasis([pack(100, 'g')])), null);
+  assert.equal(chooseBasis([null, undefined]), null);
+  assert.equal(formatUnitPrice(null, null), null);
+  // Mixed units cannot share a basis, so the odd one out is left unpriced.
+  const {priced} = withUnitPrices(
+    [
+      {price: 299, pack: pack(500, 'g')},
+      {price: 199, pack: pack(1, 'each')},
+    ],
+    r => r,
+  );
+  assert.ok(priced[0].text, 'the majority unit is priced');
+  assert.equal(priced[1].text, null, 'the other is not converted');
 });
 
-test('a tie between units is settled by which one informs the shopper', ()=>{
- // One weight and one count: spelling must not decide it. Weight wins, so the
- // gram pack gets a comparable figure and the count pack is left alone.
- const {basis,priced}=withUnitPrices(
-  [{price:299,pack:pack(500,'g')},{price:199,pack:pack(1,'each')}],r=>r);
- assert.equal(basis!.unit,'g');
- assert.equal(priced[0].text,'$0.60 / 100 g');
- assert.equal(priced[1].text,null);
+test('a per-item price that only restates the ticket price is not shown', () => {
+  // "$1.99 / item" for a single jar is the price with a suffix, not a second
+  // fact, and the app does not pad the screen with figures that say nothing.
+  const single = chooseBasis([pack(1, 'each')])!;
+  assert.equal(unitPriceCents(199, pack(1, 'each'), single), null);
+  // A multi-pack is a real division, so it stays.
+  const dozen = chooseBasis([pack(12, 'each')])!;
+  assert.equal(
+    formatUnitPrice(unitPriceCents(504, pack(12, 'each'), dozen), dozen),
+    '$0.42 / item',
+  );
 });
 
-test('a lone offer is never crowned best value', ()=>{
- // There is nothing for it to have beaten.
- const {priced}=withUnitPrices([{price:299,pack:pack(500,'g')}],r=>r);
- assert.equal(priced[0].best,false);
- // Nor is a tie, where there is nothing to choose between them.
- const tied=withUnitPrices([{price:200,pack:pack(100,'g')},{price:400,pack:pack(200,'g')}],r=>r);
- assert.ok(tied.priced.every(p=>!p.best));
+test('a tie between units is settled by which one informs the shopper', () => {
+  // One weight and one count: spelling must not decide it. Weight wins, so the
+  // gram pack gets a comparable figure and the count pack is left alone.
+  const {basis, priced} = withUnitPrices(
+    [
+      {price: 299, pack: pack(500, 'g')},
+      {price: 199, pack: pack(1, 'each')},
+    ],
+    r => r,
+  );
+  assert.equal(basis!.unit, 'g');
+  assert.equal(priced[0].text, '$0.60 / 100 g');
+  assert.equal(priced[1].text, null);
+});
+
+test('a lone offer is never crowned best value', () => {
+  // There is nothing for it to have beaten.
+  const {priced} = withUnitPrices([{price: 299, pack: pack(500, 'g')}], r => r);
+  assert.equal(priced[0].best, false);
+  // Nor is a tie, where there is nothing to choose between them.
+  const tied = withUnitPrices(
+    [
+      {price: 200, pack: pack(100, 'g')},
+      {price: 400, pack: pack(200, 'g')},
+    ],
+    r => r,
+  );
+  assert.ok(tied.priced.every(p => !p.best));
 });
 
 // ---- better-value suggestions ----------------------------------------------
 // These replace the retired demo's "swaps", which compared two hash-generated
 // numbers. Every rule below exists to stop a suggestion that is not a saving.
 
-const offer=(id:string,title:string,price:number,amount:number,unit:'g'|'ml'|'each'='g',
- sourceId='fixture'):SourcedOffer=>({
- id,sourceId,retailer:'Fixture Grocer',title,brand:'Dempster’s',url:'https://fixture.example.ca/p',
- price,currency:'CAD',pack:{amount,unit,label:`${amount} ${unit}`},available:true,
- observedAt:new Date().toISOString(),expiresAt:new Date(Date.now()+864e5).toISOString(),
- scope:'online',tags:[],evidenceId:'ev-1',excerpt:'{}'});
+const offer = (
+  id: string,
+  title: string,
+  price: number,
+  amount: number,
+  unit: 'g' | 'ml' | 'each' = 'g',
+  sourceId = 'fixture',
+): SourcedOffer => ({
+  id,
+  sourceId,
+  retailer: 'Fixture Grocer',
+  title,
+  brand: 'Dempster’s',
+  url: 'https://fixture.example.ca/p',
+  price,
+  currency: 'CAD',
+  pack: {amount, unit, label: `${amount} ${unit}`},
+  available: true,
+  observedAt: new Date().toISOString(),
+  expiresAt: new Date(Date.now() + 864e5).toISOString(),
+  scope: 'online',
+  tags: [],
+  evidenceId: 'ev-1',
+  excerpt: '{}',
+});
 
-function breadState(over:Partial<UserState['prefs']>={}):UserState{
- const base=fixtureState();
- return {...base,items:[{id:'item-bread',productId:'bread',name:'Whole wheat bread',qty:1,checked:false,locked:false}],
-  prefs:{...base.prefs,minimumSwapSaving:50,...over}};
+function breadState(over: Partial<UserState['prefs']> = {}): UserState {
+  const base = fixtureState();
+  return {
+    ...base,
+    items: [
+      {
+        id: 'item-bread',
+        productId: 'bread',
+        name: 'Whole wheat bread',
+        qty: 1,
+        checked: false,
+        locked: false,
+      },
+    ],
+    prefs: {...base.prefs, minimumSwapSaving: 50, ...over},
+  };
 }
-const pick=(o:SourcedOffer,packs=1)=>new Map([['item-bread',{offer:o,packs,lineTotal:o.price*packs}]]);
+const pick = (o: SourcedOffer, packs = 1) =>
+  new Map([['item-bread', {offer: o, packs, lineTotal: o.price * packs}]]);
 
-test('a cheaper offer for the same amount is suggested, with both records named', ()=>{
- const current=offer('a','Whole Wheat Bread',449,675);
- const rival=offer('b','Whole Wheat Bread Bakery',349,675);
- const [swap]=valueSwaps(breadState(),[current,rival],pick(current));
- assert.ok(swap,'a genuinely cheaper equal-size offer is offered');
- assert.equal(swap.to.offer.id,'b');
- assert.equal(swap.from.offer.id,'a','the suggestion says what it is replacing');
- assert.equal(swap.saving,100);
- assert.equal(swap.sizeNote,'Same amount');
+test('a cheaper offer for the same amount is suggested, with both records named', () => {
+  const current = offer('a', 'Whole Wheat Bread', 449, 675);
+  const rival = offer('b', 'Whole Wheat Bread Bakery', 349, 675);
+  const [swap] = valueSwaps(breadState(), [current, rival], pick(current));
+  assert.ok(swap, 'a genuinely cheaper equal-size offer is offered');
+  assert.equal(swap.to.offer.id, 'b');
+  assert.equal(swap.from.offer.id, 'a', 'the suggestion says what it is replacing');
+  assert.equal(swap.saving, 100);
+  assert.equal(swap.sizeNote, 'Same amount');
 });
 
-test('a smaller pack is never dressed up as a saving', ()=>{
- // The trap: less food for less money looks like a discount and is not one.
- const current=offer('a','Whole Wheat Bread',449,675);
- const smaller=offer('b','Whole Wheat Bread',299,450);
- assert.deepEqual(valueSwaps(breadState(),[current,smaller],pick(current)),[],
-  'buying less bread is not a saving');
- // More food for less money is a real one.
- const bigger=offer('c','Whole Wheat Bread',399,900);
- const [swap]=valueSwaps(breadState(),[current,bigger],pick(current));
- assert.equal(swap.to.offer.id,'c');
- assert.match(swap.sizeNote,/Gives you more/);
+test('a smaller pack is never dressed up as a saving', () => {
+  // The trap: less food for less money looks like a discount and is not one.
+  const current = offer('a', 'Whole Wheat Bread', 449, 675);
+  const smaller = offer('b', 'Whole Wheat Bread', 299, 450);
+  assert.deepEqual(
+    valueSwaps(breadState(), [current, smaller], pick(current)),
+    [],
+    'buying less bread is not a saving',
+  );
+  // More food for less money is a real one.
+  const bigger = offer('c', 'Whole Wheat Bread', 399, 900);
+  const [swap] = valueSwaps(breadState(), [current, bigger], pick(current));
+  assert.equal(swap.to.offer.id, 'c');
+  assert.match(swap.sizeNote, /Gives you more/);
 });
 
-test('suggestions stay inside the shop you are actually visiting', ()=>{
- const current=offer('a','Whole Wheat Bread',449,675);
- const elsewhere=offer('b','Whole Wheat Bread',249,675,'g','other-shop');
- assert.deepEqual(valueSwaps(breadState(),[current,elsewhere],pick(current)),[],
-  'a cheaper loaf at a different shop is a different trip, not a swap');
+test('suggestions stay inside the shop you are actually visiting', () => {
+  const current = offer('a', 'Whole Wheat Bread', 449, 675);
+  const elsewhere = offer('b', 'Whole Wheat Bread', 249, 675, 'g', 'other-shop');
+  assert.deepEqual(
+    valueSwaps(breadState(), [current, elsewhere], pick(current)),
+    [],
+    'a cheaper loaf at a different shop is a different trip, not a swap',
+  );
 });
 
-test('locks, thresholds, diets and allergies all suppress suggestions', ()=>{
- const current=offer('a','Whole Wheat Bread',449,675);
- const rival=offer('b','Whole Wheat Bread',349,675);
- const offers=[current,rival];
- const locked=breadState();
- locked.items=[{...locked.items[0],locked:true}];
- assert.deepEqual(valueSwaps(locked,offers,pick(current)),[],'a locked item is left alone');
- assert.deepEqual(valueSwaps(breadState({minimumSwapSaving:200}),offers,pick(current)),[],
-  'a saving under the household threshold is not worth interrupting for');
- assert.deepEqual(valueSwaps(breadState({substitutions:false}),offers,pick(current)),[],
-  'substitutions turned off means no suggestions');
- assert.deepEqual(valueSwaps(breadState({allergens:['Wheat']}),offers,pick(current)),[],
-  'an allergy is never traded against a price');
- assert.deepEqual(valueSwaps(breadState({dietary:['Vegan']}),offers,pick(current)),[],
-  'nor is a diet');
+test('locks, thresholds, diets and allergies all suppress suggestions', () => {
+  const current = offer('a', 'Whole Wheat Bread', 449, 675);
+  const rival = offer('b', 'Whole Wheat Bread', 349, 675);
+  const offers = [current, rival];
+  const locked = breadState();
+  locked.items = [{...locked.items[0], locked: true}];
+  assert.deepEqual(valueSwaps(locked, offers, pick(current)), [], 'a locked item is left alone');
+  assert.deepEqual(
+    valueSwaps(breadState({minimumSwapSaving: 200}), offers, pick(current)),
+    [],
+    'a saving under the household threshold is not worth interrupting for',
+  );
+  assert.deepEqual(
+    valueSwaps(breadState({substitutions: false}), offers, pick(current)),
+    [],
+    'substitutions turned off means no suggestions',
+  );
+  assert.deepEqual(
+    valueSwaps(breadState({allergens: ['Wheat']}), offers, pick(current)),
+    [],
+    'an allergy is never traded against a price',
+  );
+  assert.deepEqual(
+    valueSwaps(breadState({dietary: ['Vegan']}), offers, pick(current)),
+    [],
+    'nor is a diet',
+  );
 });
 
-test('an item with no collected price has nothing to compare against', ()=>{
- const rival=offer('b','Whole Wheat Bread',349,675);
- assert.deepEqual(valueSwaps(breadState(),[rival],new Map()),[],
-  'without a current pick there is no saving to compute');
+test('an item with no collected price has nothing to compare against', () => {
+  const rival = offer('b', 'Whole Wheat Bread', 349, 675);
+  assert.deepEqual(
+    valueSwaps(breadState(), [rival], new Map()),
+    [],
+    'without a current pick there is no saving to compute',
+  );
 });
 
 // ---- coverage directory -----------------------------------------------------
 
-test('the coverage directory tells the truth about every chain', ()=>{
- const rows=coverageRows(null);
- assert.equal(rows.length,CHAINS.length,'no chain is quietly left out');
- const loblaws=rows.find(r=>r.chain.id==='loblaws')!;
- assert.equal(loblaws.status,'no-feed');
- assert.match(loblaws.explanation,/no public machine-readable price feed/i);
- const readable=rows.find(r=>r.chain.id==='goodnessme')!;
- assert.equal(readable.status,'readable','a chain with a feed is marked readable before any run');
- const summary=coverageSummary(rows);
- assert.equal(summary.total,CHAINS.length);
- assert.ok(summary.readable>0&&summary.readable<summary.total,
-  'the honest headline is that most chains cannot be priced');
- // Readable chains sort above the ones Aisle cannot price.
- assert.ok(rows.findIndex(r=>r.status==='readable')<rows.findIndex(r=>r.status==='no-feed'));
+test('the coverage directory tells the truth about every chain', () => {
+  const rows = coverageRows(null);
+  assert.equal(rows.length, CHAINS.length, 'no chain is quietly left out');
+  const loblaws = rows.find(r => r.chain.id === 'loblaws')!;
+  assert.equal(loblaws.status, 'no-feed');
+  assert.match(loblaws.explanation, /no public machine-readable price feed/i);
+  const readable = rows.find(r => r.chain.id === 'goodnessme')!;
+  assert.equal(
+    readable.status,
+    'readable',
+    'a chain with a feed is marked readable before any run',
+  );
+  const summary = coverageSummary(rows);
+  assert.equal(summary.total, CHAINS.length);
+  assert.ok(
+    summary.readable > 0 && summary.readable < summary.total,
+    'the honest headline is that most chains cannot be priced',
+  );
+  // Readable chains sort above the ones Aisle cannot price.
+  assert.ok(
+    rows.findIndex(r => r.status === 'readable') < rows.findIndex(r => r.status === 'no-feed'),
+  );
 });
 
-test('the "often on your list" strip has data to show once a favourite is set', ()=>{
- // It survived the demo's retirement because it is built from preferences and
- // confirmed choices, not from prices. A fresh household sees nothing, which
- // is why it renders conditionally.
- const base=fixtureState();
- assert.deepEqual(personalSuggestions(base),[],'nothing to suggest before anything is known');
- const withFavourite={...base,prefs:{...base.prefs,favouriteProducts:['apples']}};
- const rows=personalSuggestions(withFavourite);
- assert.ok(rows.length>0,'a picked staple is suggested');
- assert.equal(rows[0].product.id,'apples');
- assert.equal(rows[0].why,'A staple you picked','every row says why it is there');
+test('the "often on your list" strip has data to show once a favourite is set', () => {
+  // It survived the demo's retirement because it is built from preferences and
+  // confirmed choices, not from prices. A fresh household sees nothing, which
+  // is why it renders conditionally.
+  const base = fixtureState();
+  assert.deepEqual(personalSuggestions(base), [], 'nothing to suggest before anything is known');
+  const withFavourite = {...base, prefs: {...base.prefs, favouriteProducts: ['apples']}};
+  const rows = personalSuggestions(withFavourite);
+  assert.ok(rows.length > 0, 'a picked staple is suggested');
+  assert.equal(rows[0].product.id, 'apples');
+  assert.equal(rows[0].why, 'A staple you picked', 'every row says why it is there');
 });

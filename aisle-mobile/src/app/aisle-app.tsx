@@ -1,460 +1,2273 @@
-"use client";
+'use client';
 
-import {useCallback,useEffect,useMemo,useRef,useState,type ReactNode,type CSSProperties} from "react";
-import {ArrowLeft,ArrowRight,ArrowUpRight,BarChart3,Check,CheckCheck,ChevronDown,ChevronRight,ChevronsUpDown,ClipboardList,Download,HelpCircle,Home,Info,Leaf,ListPlus,LoaderCircle,LockKeyhole,MapPin,Minus,Plus,ReceiptText,Settings2,ShieldCheck,ShoppingBasket,ShoppingBag,SlidersHorizontal,Sparkles,Store as StoreIcon,Trash2,X,Upload,Camera,CheckCircle2,TriangleAlert,Wallet,RefreshCw,FileText,HeartHandshake} from "lucide-react";
-import {Scale,History,Bookmark,Target,Tag} from "lucide-react";
-import {Sidebar,SidebarProvider,SidebarContent,SidebarHeader,SidebarFooter,SidebarMenu,SidebarMenuItem,SidebarMenuButton} from "@/components/ui/sidebar";
-import {Dialog,DialogContent,DialogTitle,DialogDescription} from "@/components/ui/dialog";
-import {AlertDialog,AlertDialogContent,AlertDialogTitle,AlertDialogDescription,AlertDialogAction,AlertDialogCancel,AlertDialogFooter} from "@/components/ui/alert-dialog";
-import {Tabs,TabsList,TabsTrigger,TabsContent} from "@/components/ui/tabs";
-import {Checkbox} from "@/components/ui/checkbox";
-import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from "@/components/ui/select";
-import {Progress} from "@/components/ui/progress";
-import {Toaster} from "@/components/ui/sonner";
-import {toast} from "sonner";
-import Onboarding from "./onboarding";
-import {StoreLogo} from "@/components/store-logo";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type CSSProperties,
+} from 'react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpRight,
+  BarChart3,
+  Check,
+  CheckCheck,
+  ChevronDown,
+  ChevronRight,
+  ChevronsUpDown,
+  ClipboardList,
+  Download,
+  HelpCircle,
+  Home,
+  Info,
+  Leaf,
+  ListPlus,
+  LoaderCircle,
+  LockKeyhole,
+  MapPin,
+  Minus,
+  Plus,
+  ReceiptText,
+  Settings2,
+  ShieldCheck,
+  ShoppingBasket,
+  ShoppingBag,
+  SlidersHorizontal,
+  Sparkles,
+  Store as StoreIcon,
+  Trash2,
+  X,
+  Upload,
+  Camera,
+  CheckCircle2,
+  TriangleAlert,
+  Wallet,
+  RefreshCw,
+  FileText,
+  HeartHandshake,
+} from 'lucide-react';
+import {Scale, History, Bookmark, Target, Tag} from 'lucide-react';
+import {
+  Sidebar,
+  SidebarProvider,
+  SidebarContent,
+  SidebarHeader,
+  SidebarFooter,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+} from '@/components/ui/sidebar';
+import {Dialog, DialogContent, DialogTitle, DialogDescription} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogFooter,
+} from '@/components/ui/alert-dialog';
+import {Tabs, TabsList, TabsTrigger, TabsContent} from '@/components/ui/tabs';
+import {Checkbox} from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {Progress} from '@/components/ui/progress';
+import {Toaster} from '@/components/ui/sonner';
+import {toast} from 'sonner';
+import Onboarding from './onboarding';
+import {StoreLogo} from '@/components/store-logo';
 import AgentWorkspace from '@/components/agent-workspace';
 import CategoryBrowser from '@/components/category-browser';
 import {useAgentRun} from '@/lib/use-agent-run';
-import {pruneSavedLists,type SavedList} from '@/lib/catalog';
-import {chooseBasis,unitPriceCents,formatUnitPrice} from '@/lib/unit-price';
+import {pruneSavedLists, type SavedList} from '@/lib/catalog';
+import {chooseBasis, unitPriceCents, formatUnitPrice} from '@/lib/unit-price';
 import BasketCompare from '@/components/basket-compare';
-import ShopChecklist,{type ChecklistOrder} from '@/components/shop-checklist';
+import ShopChecklist, {type ChecklistOrder} from '@/components/shop-checklist';
 import ListStarters from '@/components/list-starters';
 import DueThisWeek from '@/components/due-this-week';
 import ShelfPriceCapture from '@/components/shelf-price-capture';
 import Account from './account';
 import Legal from './legal';
-import {loadState,saveState,uploadReceipt,openReceiptFile,captureReceipt,shareList,isDevice,sweepShelfPhotos,deleteShelfPhoto,tapFeedback} from "@/lib/persistence";
-import {personalSuggestions,recordChoice,starterList,productById,productImagePath,stores,categories,money,initialState,parseList,type Product,type Store,type UserState,type ListItem,type Preferences,type Trip,type TripLine} from "@/lib/catalog";
-import {priceHistory,accuracy} from '@/lib/shopping-history';
-import {recordShelfPrice,removeShelfPrice,latestShelfPrice,resolveLinePrice,tallyProvenance,shelfPriceAgeDays,isStale,referencedPhotoIds} from '@/lib/shelf-prices';
-import {valueSwaps,totalSaving,type ValueSwap} from "@/lib/value-swaps";
+import {
+  loadState,
+  saveState,
+  uploadReceipt,
+  openReceiptFile,
+  captureReceipt,
+  shareList,
+  isDevice,
+  sweepShelfPhotos,
+  deleteShelfPhoto,
+  tapFeedback,
+} from '@/lib/persistence';
+import {
+  personalSuggestions,
+  recordChoice,
+  starterList,
+  productById,
+  productImagePath,
+  stores,
+  categories,
+  money,
+  initialState,
+  parseList,
+  type Product,
+  type Store,
+  type UserState,
+  type ListItem,
+  type Preferences,
+  type Trip,
+  type TripLine,
+} from '@/lib/catalog';
+import {priceHistory, accuracy} from '@/lib/shopping-history';
+import {
+  recordShelfPrice,
+  removeShelfPrice,
+  latestShelfPrice,
+  resolveLinePrice,
+  tallyProvenance,
+  shelfPriceAgeDays,
+  isStale,
+  referencedPhotoIds,
+} from '@/lib/shelf-prices';
+import {valueSwaps, totalSaving, type ValueSwap} from '@/lib/value-swaps';
 
-type View="home"|"list"|"compare"|"spending"|"account"|"legal"|"shop";
-const APP_VERSION="1.0.0";
-const nav=[{id:"home",label:"My week",icon:Home},{id:"list",label:"My grocery list",icon:ClipboardList},{id:"compare",label:"Compare baskets",icon:StoreIcon},{id:"spending",label:"My spending",icon:BarChart3}] as const;
-function newId(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,"0")).join("");}
-const cx=(...v:(string|false|null|undefined)[])=>v.filter(Boolean).join(" ");
-function ProductIcon({product,small=false}:{product?:Product|null;small?:boolean}){return <span className={cx("product-art",small&&"small",!product&&"unknown")}><img src={productImagePath(product?.id)} alt="" loading="lazy" decoding="async"/></span>;}
+type View = 'home' | 'list' | 'compare' | 'spending' | 'account' | 'legal' | 'shop';
+const APP_VERSION = '1.0.0';
+const nav = [
+  {id: 'home', label: 'My week', icon: Home},
+  {id: 'list', label: 'My grocery list', icon: ClipboardList},
+  {id: 'compare', label: 'Compare baskets', icon: StoreIcon},
+  {id: 'spending', label: 'My spending', icon: BarChart3},
+] as const;
+function newId() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)), b =>
+    b.toString(16).padStart(2, '0'),
+  ).join('');
+}
+const cx = (...v: (string | false | null | undefined)[]) => v.filter(Boolean).join(' ');
+function ProductIcon({product, small = false}: {product?: Product | null; small?: boolean}) {
+  return (
+    <span className={cx('product-art', small && 'small', !product && 'unknown')}>
+      <img src={productImagePath(product?.id)} alt="" loading="lazy" decoding="async" />
+    </span>
+  );
+}
 
-function Pill({children,kind="green"}:{children:ReactNode;kind?:string}){return <span className={`pill pill-${kind}`}>{children}</span>;}
-function Choice({value,onChange,options,label}:{value:string;onChange:(v:string)=>void;options:{value:string;label:string}[];label:string}){return <Select value={value} onValueChange={onChange}><SelectTrigger aria-label={label} className="choice"><SelectValue/></SelectTrigger><SelectContent>{options.map(o=><SelectItem value={o.value} key={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>;}
+function Pill({children, kind = 'green'}: {children: ReactNode; kind?: string}) {
+  return <span className={`pill pill-${kind}`}>{children}</span>;
+}
+function Choice({
+  value,
+  onChange,
+  options,
+  label,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: {value: string; label: string}[];
+  label: string;
+}) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger aria-label={label} className="choice">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map(o => (
+          <SelectItem value={o.value} key={o.value}>
+            {o.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
 
-export default function AisleApp(){
- const [state,setState]=useState<UserState>(initialState);
- const ref=useRef(state),revision=useRef(0),saveChain=useRef(Promise.resolve());
- // The MCP tool reads the latest run without re-subscribing on every change.
- const agentRef=useRef<typeof agent.run>(null);
- const [ready,setReady]=useState(false),[loadError,setLoadError]=useState(false),[saveStatus,setSaveStatus]=useState("Saved"),[savingError,setSavingError]=useState("");
- const [view,setView]=useState<View>("home");
- const [legalDoc,setLegalDoc]=useState<string|null>(null),[resetOpen,setResetOpen]=useState(false);
- const [startersOpen,setStartersOpen]=useState(false);
- const [captureItem,setCaptureItem]=useState<ListItem|null>(null);
- const [checklistOrder,setChecklistOrder]=useState<ChecklistOrder>(()=>{
-  try{return (localStorage.getItem('aisle.checklistOrder') as ChecklistOrder)||'aisle';}catch{return 'aisle';}
- });
- function changeChecklistOrder(next:ChecklistOrder){setChecklistOrder(next);try{localStorage.setItem('aisle.checklistOrder',next);}catch{/* storage unavailable; the order still applies this session */}}
- const [onboard,setOnboard]=useState(false);
- const [catalogOpen,setCatalogOpen]=useState(false),[paste,setPaste]=useState(""),[importMode,setImportMode]=useState("browse");
- const [help,setHelp]=useState(false),[swapsOpen,setSwapsOpen]=useState(false),[clearOpen,setClearOpen]=useState(false),[receiptOpen,setReceiptOpen]=useState(false),[historyDetail,setHistoryDetail]=useState<Trip|null>(null);
- const [listFilter,setListFilter]=useState("All items");
- const [receiptStore,setReceiptStore]=useState("food-basics"),[receiptTotal,setReceiptTotal]=useState(""),[receiptDate,setReceiptDate]=useState(""),[receiptId,setReceiptId]=useState<string|undefined>(),[receiptName,setReceiptName]=useState(""),[uploading,setUploading]=useState(false),[actuals,setActuals]=useState<Record<string,string>>({});
- const [matchingItem,setMatchingItem]=useState<string|null>(null);
- const fileRef=useRef<HTMLInputElement>(null);
- const agent=useAgentRun(state,ready&&state.onboarded);
- // What this household has actually paid. For the 17 Ontario chains Aisle
- // cannot read, this is the only price any of their items will ever carry.
- const paidHistory=useMemo(()=>priceHistory(state.trips),[state.trips]);
-
- agentRef.current=agent.run;
- const best=agent.best?{id:agent.best.sourceId,name:agent.best.name,subtotal:agent.best.subtotal}:undefined;
- // One shape for "a basket you are shopping from", whichever engine produced it.
- // `lineTotal` is always the cost of that whole list line, packs included.
- const fromAgent=(basket:ReturnType<typeof agent.basketFor>)=>basket?{
-  id:basket.sourceId,name:basket.name,subtotal:basket.subtotal,complete:basket.complete,
-  total:basket.total,priced:basket.priced,
-  lineTotal:(itemId:string)=>{const line=basket.lines.find(l=>l.itemId===itemId);
-   return line?.offer?line.lineTotal:null;},
-  unitPrice:(itemId:string)=>{
-   const offer=basket.lines.find(l=>l.itemId===itemId)?.offer;
-   if(!offer)return null;
-   const basis=chooseBasis([offer.pack]);
-   return formatUnitPrice(unitPriceCents(offer.price,offer.pack,basis),basis);
-  },
- }:null;
- const activeBasket=useMemo(()=>fromAgent(agent.basketFor(state.activeShop)),
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  [state.activeShop,state.items,agent.baskets]);
- const headlineBasket=useMemo(()=>fromAgent(agent.best),
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  [agent.best,state.items]);
- // The shop being walked. Shelf prices compare within a shop, so this decides
- // which captured price is the relevant one.
- const shopStoreId=state.activeShop??'';
- const lineFor=useCallback((item:ListItem,shopping:boolean)=>
-  resolveLinePrice(item,(shopping?activeBasket:headlineBasket)?.lineTotal(item.id)??null,
-   state,shopping?shopStoreId:undefined),
-  [activeBasket,headlineBasket,state,shopStoreId]);
- // Better-value suggestions, drawn from the offers actually collected for the
- // basket in hand. With nothing collected there is nothing to suggest.
- const swaps=useMemo(()=>{
-  const basket=agent.basketFor(state.activeShop)??agent.best;
-  if(!basket||!agent.run)return [];
-  const current=new Map(basket.lines.flatMap(line=>line.offer
-   ?[[line.itemId,{offer:line.offer,packs:line.packs,lineTotal:line.lineTotal}] as const]:[]));
-  return valueSwaps(state,agent.run.offers,new Map(current));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
- },[state,agent.run,agent.best,agent.baskets,state.activeShop]);
- const potential=totalSaving(swaps);
- const active=activeBasket;
- const itemCount=state.items.reduce((n,i)=>n+i.qty,0);
- const checked=state.items.filter(i=>i.checked).length;
- const missing=state.items.filter(i=>!i.productId).length;
-
- async function load(){setLoadError(false);try{const data=await loadState();ref.current=data.state;setState(data.state);revision.current=data.revision;setOnboard(!data.state.onboarded);setSavingError("");setSaveStatus("Saved");setReady(true);
-   // Prices are dropped by several routes — removed by hand, aged out, pushed
-   // past the cap — and each would otherwise leave its photo behind.
-   void sweepShelfPhotos(referencedPhotoIds(data.state));
-  }catch{setLoadError(true);}}
- useEffect(()=>{void load();const handle=()=>{
-   const raw=location.hash.slice(1);
-   const [head,tail]=raw.split("/");
-   if(head==="legal"){setView("legal");setLegalDoc(tail??null);return;}
-   // `preferences` was the old name for this screen.
-   const name=head==="account"?"account":head;
-   if(["home","list","compare","spending","account","shop"].includes(name))setView(name as View);
-  };handle();window.addEventListener("hashchange",handle);return()=>window.removeEventListener("hashchange",handle);},[]);
- function go(v:View){if(v!=="legal")setLegalDoc(null);setView(v);window.history.replaceState(null,"",`#${v}`);window.scrollTo({top:0,behavior:"smooth"});}
- function goLegal(docId:string|null){setLegalDoc(docId);setView("legal");window.history.replaceState(null,"",docId?`#legal/${docId}`:"#legal");window.scrollTo({top:0,behavior:"smooth"});}
- function persist(next:UserState){setSaveStatus("Saving…");saveChain.current=saveChain.current.then(async()=>{try{const data=await saveState(next,revision.current);revision.current=data.revision;setSaveStatus("Saved");setSavingError("");}catch(e){setSaveStatus("Not saved");setSavingError(e instanceof Error?e.message:"Unable to save changes");}});}
- function commit(update:UserState|((s:UserState)=>UserState)){if(!ready){toast.error("Your saved list is not ready. Please retry loading.");return;}const next=typeof update==="function"?update(ref.current):update;ref.current=next;setState(next);persist(next);}
- function prefs(p:Partial<Preferences>){commit(s=>({...s,prefs:{...s.prefs,...p}}));}
- function addProduct(id:string){if(matchingItem){commit(s=>({...s,items:s.items.map(i=>i.id===matchingItem?{...i,productId:id,name:productById[id].name}:i)}));setMatchingItem(null);setCatalogOpen(false);toast.success("Product matched. Your baskets are updated.");return;}commit(s=>{const existing=s.items.find(i=>i.productId===id);return {...recordChoice(s,"added",id),items:existing?s.items.map(i=>i.id===existing.id?{...i,qty:Math.min(99,i.qty+1),checked:false}:i):[...s.items,{id:newId(),productId:id,name:productById[id].name,qty:1,checked:false,locked:false}]};});toast.success(`${productById[id].name} added to your list`);}
- function applyStarter(rows:{productId:string|null;name:string;qty:number}[],replace:boolean){
-  commit(s=>{
-   const fresh=rows.map((row,index)=>({id:`${Date.now().toString(36)}-${index}`,productId:row.productId,
-    name:row.name,qty:row.qty,checked:false,locked:false}));
-   if(replace)return {...s,items:fresh.slice(0,150),activeShop:null};
-   const items=s.items.map(item=>({...item}));
-   for(const row of fresh){
-    // Adding something already on the list raises its quantity instead of
-    // creating a duplicate line to tick twice in the shop.
-    const existing=row.productId?items.find(i=>i.productId===row.productId):undefined;
-    if(existing)existing.qty=Math.min(99,existing.qty+row.qty);else items.push(row);
-   }
-   return {...s,items:items.slice(0,150)};
+export default function AisleApp() {
+  const [state, setState] = useState<UserState>(initialState);
+  const ref = useRef(state),
+    revision = useRef(0),
+    saveChain = useRef(Promise.resolve());
+  // The MCP tool reads the latest run without re-subscribing on every change.
+  const agentRef = useRef<typeof agent.run>(null);
+  const [ready, setReady] = useState(false),
+    [loadError, setLoadError] = useState(false),
+    [saveStatus, setSaveStatus] = useState('Saved'),
+    [savingError, setSavingError] = useState('');
+  const [view, setView] = useState<View>('home');
+  const [legalDoc, setLegalDoc] = useState<string | null>(null),
+    [resetOpen, setResetOpen] = useState(false);
+  const [startersOpen, setStartersOpen] = useState(false);
+  const [captureItem, setCaptureItem] = useState<ListItem | null>(null);
+  const [checklistOrder, setChecklistOrder] = useState<ChecklistOrder>(() => {
+    try {
+      return (localStorage.getItem('aisle.checklistOrder') as ChecklistOrder) || 'aisle';
+    } catch {
+      return 'aisle';
+    }
   });
-  toast.success(replace?`Your list is now ${rows.length} item${rows.length===1?'':'s'}.`
-   :`${rows.length} item${rows.length===1?'':'s'} added.`);
- }
-
- /** Keep a copy of a finished shop so the next list can start from it. */
- function snapshotList(state:UserState,name:string,auto:boolean):SavedList[]{
-  if(!state.items.length)return state.savedLists??[];
-  const snapshot:SavedList={id:newId(),name,savedAt:new Date().toISOString(),auto,
-   items:state.items.map(item=>({...item,checked:false}))};
-  return pruneSavedLists([snapshot,...(state.savedLists??[])]);
- }
-
- function addText(){const parsed=parseList(paste);if(!parsed.length)return;commit(s=>{const items=s.items.map(i=>({...i}));for(const p of parsed){const old=items.find(i=>p.productId&&i.productId===p.productId);if(old)old.qty=Math.min(99,old.qty+p.qty);else items.push({...p,id:newId(),checked:false,locked:false});}return {...s,items:items.slice(0,150)};});setCatalogOpen(false);setPaste("");go("list");toast.success(`${parsed.length} items added. Check the sizes and any unmatched items.`);}
- function updateItem(id:string,p:Partial<ListItem>){commit(s=>({...s,items:s.items.map(i=>i.id===id?{...i,...p}:i)}));}
- function removeItem(item:ListItem){commit(s=>({...s,items:s.items.filter(i=>i.id!==item.id)}));toast("Item removed",{action:{label:"Undo",onClick:()=>commit(s=>({...s,items:[...s.items,item]}))}});}
- /** Taking a suggestion records the cheaper offer as this item's choice at that
-  *  retailer. It never edits the list itself — the household asked for the
-  *  product, not for a different one. */
- function applySwap(swap:ValueSwap){
-  commit(s=>{
-   const selections={...s.offerSelections,[swap.item.id]:{...s.offerSelections?.[swap.item.id]}};
-   selections[swap.item.id][swap.to.offer.sourceId]=swap.to.offer.id;
-   const product=swap.item.productId?productById[swap.item.productId]:null;
-   return {...s,offerSelections:selections,events:s.prefs.learning
-    ?[...s.events,{category:product?.category??"Other",action:"accepted_swap",productId:swap.item.productId??undefined,
-      offerId:swap.to.offer.id,brand:swap.to.offer.brand,storeId:swap.to.offer.sourceId,date:new Date().toISOString()}].slice(-200)
-    :s.events};
-  });
-  toast.success(`Switched to ${swap.to.offer.title} at ${swap.retailer}. That line is ${money(swap.saving)} less.`);
- }
- function rejectSwap(swap:ValueSwap){
-  commit(s=>({...s,items:s.items.map(i=>i.id===swap.item.id?{...i,locked:true}:i),
-   events:s.prefs.learning
-    ?[...s.events,{category:swap.item.productId?productById[swap.item.productId]?.category??"Other":"Other",
-      action:"kept_brand",date:new Date().toISOString()}].slice(-200)
-    :s.events}));
-  toast("Kept your original choice and locked it for this list.");
- }
- // What the checklist total is made of, so a mixed figure is never shown as one
- // kind of number.
- // One answer to "what will this cost", used by the budget card and the
- // checklist alike, with its composition kept alongside it.
- const listTotal=useMemo(()=>{
-  let cents=0;
-  const tally=tallyProvenance(state.items,item=>{
-   const price=lineFor(item,false);
-   if(price)cents+=price.cents;
-   return price;
-  });
-  return {cents,...tally};
- },[state.items,lineFor]);
-
- const checklistProvenance=useMemo(()=>tallyProvenance(state.items,item=>lineFor(item,true)),
-  [state.items,lineFor]);
-
- function beginShop(id:string){const name=agent.basketFor(id)?.name;commit(s=>({...s,activeShop:id,items:s.items.map(i=>({...i,checked:false}))}));go("shop");toast.success(name?`Your checklist for ${name} is ready`:"Your shopping checklist is ready");}
- function openReceipt(){
-  const store=state.activeShop??best?.id??stores[0].id;
-  setReceiptStore(store);setReceiptTotal("");setReceiptDate(new Date().toISOString().slice(0,10));
-  setReceiptId(undefined);setReceiptName("");
-  // Anything read off a shelf during this shop is what that line cost, so offer
-  // it rather than making somebody type the same number twice. It is a draft
-  // they can correct against the receipt before saving.
-  const prefill:Record<string,string>={};
-  for(const item of state.items.filter(i=>i.checked)){
-   const resolved=lineFor(item,true);
-   if(resolved?.source==='observed')prefill[item.id]=(resolved.cents/100).toFixed(2);
+  function changeChecklistOrder(next: ChecklistOrder) {
+    setChecklistOrder(next);
+    try {
+      localStorage.setItem('aisle.checklistOrder', next);
+    } catch {
+      /* storage unavailable; the order still applies this session */
+    }
   }
-  setActuals(prefill);setReceiptOpen(true);
- }
- async function upload(file?:File){if(!file)return;setUploading(true);try{const body=await uploadReceipt(file);setReceiptId(body.id);setReceiptName(body.name);toast.success("Receipt attached. Enter the amount you paid below.");}catch(e){toast.error(e instanceof Error?e.message:"Upload failed");}finally{setUploading(false);if(fileRef.current)fileRef.current.value="";}}
- function saveReceipt(){const total=Math.round(Number(receiptTotal)*100);if(!receiptTotal||!Number.isFinite(total)||total<=0||total>10000000){toast.error("Enter a valid receipt total.");return;}if(!receiptDate||receiptDate>new Date().toISOString().slice(0,10)){toast.error("Choose today or an earlier shopping date.");return;}const basket=fromAgent(agent.basketFor(receiptStore));
-  // The receipt records everything that came home, not only the lines somebody
-  // typed a price against. Without that, an item bought every week but never
-  // priced would never build a repurchase interval.
-  const bought=state.items.filter(i=>i.checked||actuals[i.id]?.trim());
-  const lines:TripLine[]=bought.map(i=>{
-   const typed=actuals[i.id]?.trim();
-   return {productId:i.productId,name:i.name,quantity:i.qty,
-    actual:typed?Math.round(Number(typed)*100):null,
-    predicted:basket?.lineTotal(i.id)??null};
-  });
-  const entered=lines.filter(l=>l.actual!==null) as (TripLine&{actual:number})[];
-  if(entered.some(l=>!Number.isFinite(l.actual)||l.actual<0)||entered.reduce((sum,l)=>sum+l.actual,0)>total){toast.error("Item totals must be valid and cannot exceed your receipt total.");return;}const trip:Trip={id:newId(),storeId:receiptStore,storeName:shopIdentity(receiptStore).name,date:receiptDate,total,
-   predicted:basket?.subtotal??0,predictedPriced:basket?.priced??0,predictedTotal:basket?.total??state.items.length,
-   comparisonTotal:0,items:state.items.length,receiptId,lines};commit(s=>{let next=s;for(const item of s.items.filter(i=>i.checked||actuals[i.id]?.trim()))if(item.productId)next=recordChoice(next,"purchased",item.productId,receiptStore);const shopName=shopIdentity(receiptStore).name;
-   return {...next,trips:[trip,...s.trips].slice(0,200),activeShop:null,savedLists:snapshotList(s,`${shopName}, ${new Date(receiptDate+'T12:00:00').toLocaleDateString('en-CA',{day:'numeric',month:'short'})}`,true)};});setReceiptOpen(false);go("spending");toast.success("Shopping trip saved to your spending history.");}
- function exportList(){const content=`${state.listName}\n\n${state.items.map(i=>`${i.checked?"[x]":"[ ]"} ${i.qty} × ${i.name}${i.productId?` — ${productById[i.productId].brand}, ${productById[i.productId].size}`:" — match needed"}`).join("\n")}\n\nAisle grocery list. Refer to retailer sources for current prices.`;void shareList(content).then(()=>toast.success(isDevice?"List ready to share":"Shopping list downloaded")).catch(()=>toast.error("Could not share the list."));}
- async function finishOnboarding(profile:Preferences,buildList:boolean){await saveChain.current;const build=(source:UserState):UserState=>({...source,prefs:profile,onboarded:true,items:buildList?starterList(profile):source.items,activeShop:buildList?null:source.activeShop});setSaveStatus("Saving…");try{const next=build(ref.current);const result=await saveState(next,revision.current);revision.current=result.revision;ref.current=next;setState(next);setSaveStatus("Saved");setSavingError("");setOnboard(false);go("home");toast.success("Your Aisle is ready. Your preferences are saved.");}catch(error){if(error instanceof Error&&/another window/i.test(error.message)){const latest=await loadState();const next=build(latest.state);const result=await saveState(next,latest.revision);revision.current=result.revision;ref.current=next;setState(next);setSaveStatus("Saved");setSavingError("");setOnboard(false);go("home");toast.success("Your Aisle is ready. I merged it with your latest list.");return;}setSaveStatus("Not saved");throw error;}}
- useEffect(()=>{const mc=(document as unknown as {modelContext?:{registerTool:(t:unknown,o:unknown)=>void}}).modelContext;if(!mc)return;const abort=new AbortController();try{mc.registerTool({name:"compare_grocery_basket",title:"Compare grocery basket",description:"Return the basket totals Aisle has collected from public retailer catalogues. Every figure traces to an HTTP response; items with no collected price are reported as unpriced rather than estimated. Does not purchase groceries.",inputSchema:{type:"object",properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute(input:unknown){if(!input||typeof input!=="object"||Object.keys(input).length)throw new Error("No arguments expected");return {dataMode:"observed",collectedAt:agentRef.current?.finishedAt??null,stores:(agentRef.current?.baskets??[]).map(b=>({name:b.name,subtotalCents:b.subtotal,itemsPriced:b.priced,itemsOnList:b.total,complete:b.complete}))};}},{signal:abort.signal});mc.registerTool({name:"open_grocery_list",title:"Open grocery list",description:"Navigate to the current list without changing its items.",inputSchema:{type:"object",properties:{},additionalProperties:false},annotations:{readOnlyHint:false},execute(input:unknown){if(!input||typeof input!=="object"||Object.keys(input).length)throw new Error("No arguments expected");go("list");return {view:"list"};}},{signal:abort.signal});}catch{/* WebMCP is optional; the app works without it */}return()=>abort.abort();},[]);
+  const [onboard, setOnboard] = useState(false);
+  const [catalogOpen, setCatalogOpen] = useState(false),
+    [paste, setPaste] = useState(''),
+    [importMode, setImportMode] = useState('browse');
+  const [help, setHelp] = useState(false),
+    [swapsOpen, setSwapsOpen] = useState(false),
+    [clearOpen, setClearOpen] = useState(false),
+    [receiptOpen, setReceiptOpen] = useState(false),
+    [historyDetail, setHistoryDetail] = useState<Trip | null>(null);
+  const [listFilter, setListFilter] = useState('All items');
+  const [receiptStore, setReceiptStore] = useState('food-basics'),
+    [receiptTotal, setReceiptTotal] = useState(''),
+    [receiptDate, setReceiptDate] = useState(''),
+    [receiptId, setReceiptId] = useState<string | undefined>(),
+    [receiptName, setReceiptName] = useState(''),
+    [uploading, setUploading] = useState(false),
+    [actuals, setActuals] = useState<Record<string, string>>({});
+  const [matchingItem, setMatchingItem] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const agent = useAgentRun(state, ready && state.onboarded);
+  // What this household has actually paid. For the 17 Ontario chains Aisle
+  // cannot read, this is the only price any of their items will ever carry.
+  const paidHistory = useMemo(() => priceHistory(state.trips), [state.trips]);
 
- function Empty({icon:Icon=ShoppingBasket,title,children,action}:{icon?:typeof ShoppingBasket;title:string;children:ReactNode;action?:ReactNode}){return <div className="empty-state"><span className="empty-icon"><Icon/></span><h3>{title}</h3><p>{children}</p>{action}</div>;}
- function ItemRow({item,compact=false,shopping=false}:{item:ListItem;compact?:boolean;shopping?:boolean}){const p=item.productId?productById[item.productId]:null;
-  const resolved=lineFor(item,shopping);
-  const price=resolved?.cents??null;
-  const observed=resolved?.source==='observed'?resolved.shelf!:null;
-  const unitText=shopping&&resolved?.source==='collected'?activeBasket?.unitPrice(item.id)??null:null;
-  const paid=item.productId?paidHistory.get(item.productId)??null:null;
-  // At most one line under the price. While shopping, the unit price of the
-  // offer in front of you wins; what you paid before only fills the gap where
-  // no price was collected at all.
-  const secondary=observed
-   // A price the household typed is always marked as theirs, wherever it shows.
-   ?<small className="item-observed">you saw this{isStale(observed)?` · ${shelfPriceAgeDays(observed)} days ago`:''}</small>
-   :shopping
-   ?(unitText?<small className="item-unit">{unitText}</small>
-     :paid&&price===null?<small className="item-paid">paid {money(Math.round(paid.last.unitCents))} last time</small>:null)
-   :(paid?<small className="item-paid">paid {money(Math.round(paid.last.unitCents))} at {paid.last.storeName}</small>:null);
-  return <div className={cx("item-row",item.checked&&"is-checked")}>
-  {shopping&&<Checkbox aria-label={`Mark ${item.name} as bought`} checked={item.checked} onCheckedChange={v=>{if(v===true)tapFeedback();updateItem(item.id,{checked:v===true});}} className="item-check"/>}
-  <ProductIcon product={p} small={compact}/><div className="item-copy"><strong>{item.name}</strong><span>{p?`${p.brand} · ${p.size}`:"Not matched to a catalogue item"}</span></div>
-  {!compact&&!shopping&&<button className={cx("icon-button lock-button",item.locked&&"is-locked")} aria-label={`${item.locked?"Unlock":"Lock"} ${item.name}`} title={item.locked?"Exact product locked":"Keep this exact product"} onClick={()=>updateItem(item.id,{locked:!item.locked})}><LockKeyhole size={15}/></button>}
-  {!compact&&!shopping&&<div className="quantity"><button aria-label={`Decrease ${item.name} quantity`} disabled={item.qty===1} onClick={()=>updateItem(item.id,{qty:item.qty-1})}><Minus size={13}/></button><span>{item.qty}</span><button aria-label={`Increase ${item.name} quantity`} disabled={item.qty>=99} onClick={()=>updateItem(item.id,{qty:item.qty+1})}><Plus size={13}/></button></div>}
-  {compact||shopping?<span className="item-quantity">×{item.qty}</span>:null}
-  {shopping
-   ?<button type="button" className={cx("item-price is-capture",observed&&"is-observed",price==null&&"is-empty")}
-     aria-label={price!=null?`Change the price recorded for ${item.name}`:`Add the shelf price for ${item.name}`}
-     onClick={()=>setCaptureItem(item)}>
-     {price!=null?money(price):<span className="item-price-add"><Tag size={13}/> price</span>}{secondary}</button>
-   :<span className="item-price">{price!=null?money(price):"—"}{secondary}</span>}
-  {!p&&!compact&&<button className="text-button" onClick={()=>{setMatchingItem(item.id);setImportMode("browse");setCatalogOpen(true);}}>Match</button>}
-  {!compact&&!shopping&&<button className="icon-button remove" aria-label={`Remove ${item.name}`} onClick={()=>removeItem(item)}><X size={16}/></button>}
- </div>;}
- /**
-  * How Aisle's estimate compared with the till.
-  *
-  * Only whole-list estimates are scored. `predicted` is the subtotal of what
-  * Aisle could price, so on a shop where it priced 4 of 12 items, putting it
-  * beside the receipt total would manufacture an error that says nothing about
-  * the estimate. Those trips are counted and named instead.
-  */
- function AccuracyCard(){
-  const scored=accuracy(state.trips);
-  const partial=state.trips.length-scored.comparable.length;
-  if(!state.trips.length)return null;
-  return <section className="card accuracy-card">
-   <div className="section-top"><div>
-    <h3><Target size={17}/> How close Aisle got</h3>
-    <p>Only shops where Aisle had a price for every item on your list can be
-     scored against the receipt.</p>
-   </div></div>
-   {scored.comparable.length&&scored.meanDifference!==null
-    ?<>
-      <div className="accuracy-headline">
-       <strong>{scored.meanDifference===0
-        ?'Spot on'
-        :`${money(Math.abs(scored.meanDifference))} ${scored.meanDifference>0?'more':'less'} than estimated`}</strong>
-       <span>on average across {scored.comparable.length} fully priced {scored.comparable.length===1?'shop':'shops'}</span>
+  agentRef.current = agent.run;
+  const best = agent.best
+    ? {id: agent.best.sourceId, name: agent.best.name, subtotal: agent.best.subtotal}
+    : undefined;
+  // One shape for "a basket you are shopping from", whichever engine produced it.
+  // `lineTotal` is always the cost of that whole list line, packs included.
+  const fromAgent = (basket: ReturnType<typeof agent.basketFor>) =>
+    basket
+      ? {
+          id: basket.sourceId,
+          name: basket.name,
+          subtotal: basket.subtotal,
+          complete: basket.complete,
+          total: basket.total,
+          priced: basket.priced,
+          lineTotal: (itemId: string) => {
+            const line = basket.lines.find(l => l.itemId === itemId);
+            return line?.offer ? line.lineTotal : null;
+          },
+          unitPrice: (itemId: string) => {
+            const offer = basket.lines.find(l => l.itemId === itemId)?.offer;
+            if (!offer) return null;
+            const basis = chooseBasis([offer.pack]);
+            return formatUnitPrice(unitPriceCents(offer.price, offer.pack, basis), basis);
+          },
+        }
+      : null;
+  const activeBasket = useMemo(
+    () => fromAgent(agent.basketFor(state.activeShop)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state.activeShop, state.items, agent.baskets],
+  );
+  const headlineBasket = useMemo(
+    () => fromAgent(agent.best),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [agent.best, state.items],
+  );
+  // The shop being walked. Shelf prices compare within a shop, so this decides
+  // which captured price is the relevant one.
+  const shopStoreId = state.activeShop ?? '';
+  const lineFor = useCallback(
+    (item: ListItem, shopping: boolean) =>
+      resolveLinePrice(
+        item,
+        (shopping ? activeBasket : headlineBasket)?.lineTotal(item.id) ?? null,
+        state,
+        shopping ? shopStoreId : undefined,
+      ),
+    [activeBasket, headlineBasket, state, shopStoreId],
+  );
+  // Better-value suggestions, drawn from the offers actually collected for the
+  // basket in hand. With nothing collected there is nothing to suggest.
+  const swaps = useMemo(() => {
+    const basket = agent.basketFor(state.activeShop) ?? agent.best;
+    if (!basket || !agent.run) return [];
+    const current = new Map(
+      basket.lines.flatMap(line =>
+        line.offer
+          ? [
+              [
+                line.itemId,
+                {offer: line.offer, packs: line.packs, lineTotal: line.lineTotal},
+              ] as const,
+            ]
+          : [],
+      ),
+    );
+    return valueSwaps(state, agent.run.offers, new Map(current));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, agent.run, agent.best, agent.baskets, state.activeShop]);
+  const potential = totalSaving(swaps);
+  const active = activeBasket;
+  const itemCount = state.items.reduce((n, i) => n + i.qty, 0);
+  const checked = state.items.filter(i => i.checked).length;
+  const missing = state.items.filter(i => !i.productId).length;
+
+  async function load() {
+    setLoadError(false);
+    try {
+      const data = await loadState();
+      ref.current = data.state;
+      setState(data.state);
+      revision.current = data.revision;
+      setOnboard(!data.state.onboarded);
+      setSavingError('');
+      setSaveStatus('Saved');
+      setReady(true);
+      // Prices are dropped by several routes — removed by hand, aged out, pushed
+      // past the cap — and each would otherwise leave its photo behind.
+      void sweepShelfPhotos(referencedPhotoIds(data.state));
+    } catch {
+      setLoadError(true);
+    }
+  }
+  useEffect(() => {
+    void load();
+    const handle = () => {
+      const raw = location.hash.slice(1);
+      const [head, tail] = raw.split('/');
+      if (head === 'legal') {
+        setView('legal');
+        setLegalDoc(tail ?? null);
+        return;
+      }
+      // `preferences` was the old name for this screen.
+      const name = head === 'account' ? 'account' : head;
+      if (['home', 'list', 'compare', 'spending', 'account', 'shop'].includes(name))
+        setView(name as View);
+    };
+    handle();
+    window.addEventListener('hashchange', handle);
+    return () => window.removeEventListener('hashchange', handle);
+  }, []);
+  function go(v: View) {
+    if (v !== 'legal') setLegalDoc(null);
+    setView(v);
+    window.history.replaceState(null, '', `#${v}`);
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+  function goLegal(docId: string | null) {
+    setLegalDoc(docId);
+    setView('legal');
+    window.history.replaceState(null, '', docId ? `#legal/${docId}` : '#legal');
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+  function persist(next: UserState) {
+    setSaveStatus('Saving…');
+    saveChain.current = saveChain.current.then(async () => {
+      try {
+        const data = await saveState(next, revision.current);
+        revision.current = data.revision;
+        setSaveStatus('Saved');
+        setSavingError('');
+      } catch (e) {
+        setSaveStatus('Not saved');
+        setSavingError(e instanceof Error ? e.message : 'Unable to save changes');
+      }
+    });
+  }
+  function commit(update: UserState | ((s: UserState) => UserState)) {
+    if (!ready) {
+      toast.error('Your saved list is not ready. Please retry loading.');
+      return;
+    }
+    const next = typeof update === 'function' ? update(ref.current) : update;
+    ref.current = next;
+    setState(next);
+    persist(next);
+  }
+  function prefs(p: Partial<Preferences>) {
+    commit(s => ({...s, prefs: {...s.prefs, ...p}}));
+  }
+  function addProduct(id: string) {
+    if (matchingItem) {
+      commit(s => ({
+        ...s,
+        items: s.items.map(i =>
+          i.id === matchingItem ? {...i, productId: id, name: productById[id].name} : i,
+        ),
+      }));
+      setMatchingItem(null);
+      setCatalogOpen(false);
+      toast.success('Product matched. Your baskets are updated.');
+      return;
+    }
+    commit(s => {
+      const existing = s.items.find(i => i.productId === id);
+      return {
+        ...recordChoice(s, 'added', id),
+        items: existing
+          ? s.items.map(i =>
+              i.id === existing.id ? {...i, qty: Math.min(99, i.qty + 1), checked: false} : i,
+            )
+          : [
+              ...s.items,
+              {
+                id: newId(),
+                productId: id,
+                name: productById[id].name,
+                qty: 1,
+                checked: false,
+                locked: false,
+              },
+            ],
+      };
+    });
+    toast.success(`${productById[id].name} added to your list`);
+  }
+  function applyStarter(
+    rows: {productId: string | null; name: string; qty: number}[],
+    replace: boolean,
+  ) {
+    commit(s => {
+      const fresh = rows.map((row, index) => ({
+        id: `${Date.now().toString(36)}-${index}`,
+        productId: row.productId,
+        name: row.name,
+        qty: row.qty,
+        checked: false,
+        locked: false,
+      }));
+      if (replace) return {...s, items: fresh.slice(0, 150), activeShop: null};
+      const items = s.items.map(item => ({...item}));
+      for (const row of fresh) {
+        // Adding something already on the list raises its quantity instead of
+        // creating a duplicate line to tick twice in the shop.
+        const existing = row.productId ? items.find(i => i.productId === row.productId) : undefined;
+        if (existing) existing.qty = Math.min(99, existing.qty + row.qty);
+        else items.push(row);
+      }
+      return {...s, items: items.slice(0, 150)};
+    });
+    toast.success(
+      replace
+        ? `Your list is now ${rows.length} item${rows.length === 1 ? '' : 's'}.`
+        : `${rows.length} item${rows.length === 1 ? '' : 's'} added.`,
+    );
+  }
+
+  /** Keep a copy of a finished shop so the next list can start from it. */
+  function snapshotList(state: UserState, name: string, auto: boolean): SavedList[] {
+    if (!state.items.length) return state.savedLists ?? [];
+    const snapshot: SavedList = {
+      id: newId(),
+      name,
+      savedAt: new Date().toISOString(),
+      auto,
+      items: state.items.map(item => ({...item, checked: false})),
+    };
+    return pruneSavedLists([snapshot, ...(state.savedLists ?? [])]);
+  }
+
+  function addText() {
+    const parsed = parseList(paste);
+    if (!parsed.length) return;
+    commit(s => {
+      const items = s.items.map(i => ({...i}));
+      for (const p of parsed) {
+        const old = items.find(i => p.productId && i.productId === p.productId);
+        if (old) old.qty = Math.min(99, old.qty + p.qty);
+        else items.push({...p, id: newId(), checked: false, locked: false});
+      }
+      return {...s, items: items.slice(0, 150)};
+    });
+    setCatalogOpen(false);
+    setPaste('');
+    go('list');
+    toast.success(`${parsed.length} items added. Check the sizes and any unmatched items.`);
+  }
+  function updateItem(id: string, p: Partial<ListItem>) {
+    commit(s => ({...s, items: s.items.map(i => (i.id === id ? {...i, ...p} : i))}));
+  }
+  function removeItem(item: ListItem) {
+    commit(s => ({...s, items: s.items.filter(i => i.id !== item.id)}));
+    toast('Item removed', {
+      action: {label: 'Undo', onClick: () => commit(s => ({...s, items: [...s.items, item]}))},
+    });
+  }
+  /** Taking a suggestion records the cheaper offer as this item's choice at that
+   *  retailer. It never edits the list itself — the household asked for the
+   *  product, not for a different one. */
+  function applySwap(swap: ValueSwap) {
+    commit(s => {
+      const selections = {
+        ...s.offerSelections,
+        [swap.item.id]: {...s.offerSelections?.[swap.item.id]},
+      };
+      selections[swap.item.id][swap.to.offer.sourceId] = swap.to.offer.id;
+      const product = swap.item.productId ? productById[swap.item.productId] : null;
+      return {
+        ...s,
+        offerSelections: selections,
+        events: s.prefs.learning
+          ? [
+              ...s.events,
+              {
+                category: product?.category ?? 'Other',
+                action: 'accepted_swap',
+                productId: swap.item.productId ?? undefined,
+                offerId: swap.to.offer.id,
+                brand: swap.to.offer.brand,
+                storeId: swap.to.offer.sourceId,
+                date: new Date().toISOString(),
+              },
+            ].slice(-200)
+          : s.events,
+      };
+    });
+    toast.success(
+      `Switched to ${swap.to.offer.title} at ${swap.retailer}. That line is ${money(swap.saving)} less.`,
+    );
+  }
+  function rejectSwap(swap: ValueSwap) {
+    commit(s => ({
+      ...s,
+      items: s.items.map(i => (i.id === swap.item.id ? {...i, locked: true} : i)),
+      events: s.prefs.learning
+        ? [
+            ...s.events,
+            {
+              category: swap.item.productId
+                ? (productById[swap.item.productId]?.category ?? 'Other')
+                : 'Other',
+              action: 'kept_brand',
+              date: new Date().toISOString(),
+            },
+          ].slice(-200)
+        : s.events,
+    }));
+    toast('Kept your original choice and locked it for this list.');
+  }
+  // What the checklist total is made of, so a mixed figure is never shown as one
+  // kind of number.
+  // One answer to "what will this cost", used by the budget card and the
+  // checklist alike, with its composition kept alongside it.
+  const listTotal = useMemo(() => {
+    let cents = 0;
+    const tally = tallyProvenance(state.items, item => {
+      const price = lineFor(item, false);
+      if (price) cents += price.cents;
+      return price;
+    });
+    return {cents, ...tally};
+  }, [state.items, lineFor]);
+
+  const checklistProvenance = useMemo(
+    () => tallyProvenance(state.items, item => lineFor(item, true)),
+    [state.items, lineFor],
+  );
+
+  function beginShop(id: string) {
+    const name = agent.basketFor(id)?.name;
+    commit(s => ({...s, activeShop: id, items: s.items.map(i => ({...i, checked: false}))}));
+    go('shop');
+    toast.success(
+      name ? `Your checklist for ${name} is ready` : 'Your shopping checklist is ready',
+    );
+  }
+  function openReceipt() {
+    const store = state.activeShop ?? best?.id ?? stores[0].id;
+    setReceiptStore(store);
+    setReceiptTotal('');
+    setReceiptDate(new Date().toISOString().slice(0, 10));
+    setReceiptId(undefined);
+    setReceiptName('');
+    // Anything read off a shelf during this shop is what that line cost, so offer
+    // it rather than making somebody type the same number twice. It is a draft
+    // they can correct against the receipt before saving.
+    const prefill: Record<string, string> = {};
+    for (const item of state.items.filter(i => i.checked)) {
+      const resolved = lineFor(item, true);
+      if (resolved?.source === 'observed') prefill[item.id] = (resolved.cents / 100).toFixed(2);
+    }
+    setActuals(prefill);
+    setReceiptOpen(true);
+  }
+  async function upload(file?: File) {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const body = await uploadReceipt(file);
+      setReceiptId(body.id);
+      setReceiptName(body.name);
+      toast.success('Receipt attached. Enter the amount you paid below.');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  }
+  function saveReceipt() {
+    const total = Math.round(Number(receiptTotal) * 100);
+    if (!receiptTotal || !Number.isFinite(total) || total <= 0 || total > 10000000) {
+      toast.error('Enter a valid receipt total.');
+      return;
+    }
+    if (!receiptDate || receiptDate > new Date().toISOString().slice(0, 10)) {
+      toast.error('Choose today or an earlier shopping date.');
+      return;
+    }
+    const basket = fromAgent(agent.basketFor(receiptStore));
+    // The receipt records everything that came home, not only the lines somebody
+    // typed a price against. Without that, an item bought every week but never
+    // priced would never build a repurchase interval.
+    const bought = state.items.filter(i => i.checked || actuals[i.id]?.trim());
+    const lines: TripLine[] = bought.map(i => {
+      const typed = actuals[i.id]?.trim();
+      return {
+        productId: i.productId,
+        name: i.name,
+        quantity: i.qty,
+        actual: typed ? Math.round(Number(typed) * 100) : null,
+        predicted: basket?.lineTotal(i.id) ?? null,
+      };
+    });
+    const entered = lines.filter(l => l.actual !== null) as (TripLine & {actual: number})[];
+    if (
+      entered.some(l => !Number.isFinite(l.actual) || l.actual < 0) ||
+      entered.reduce((sum, l) => sum + l.actual, 0) > total
+    ) {
+      toast.error('Item totals must be valid and cannot exceed your receipt total.');
+      return;
+    }
+    const trip: Trip = {
+      id: newId(),
+      storeId: receiptStore,
+      storeName: shopIdentity(receiptStore).name,
+      date: receiptDate,
+      total,
+      predicted: basket?.subtotal ?? 0,
+      predictedPriced: basket?.priced ?? 0,
+      predictedTotal: basket?.total ?? state.items.length,
+      comparisonTotal: 0,
+      items: state.items.length,
+      receiptId,
+      lines,
+    };
+    commit(s => {
+      let next = s;
+      for (const item of s.items.filter(i => i.checked || actuals[i.id]?.trim()))
+        if (item.productId) next = recordChoice(next, 'purchased', item.productId, receiptStore);
+      const shopName = shopIdentity(receiptStore).name;
+      return {
+        ...next,
+        trips: [trip, ...s.trips].slice(0, 200),
+        activeShop: null,
+        savedLists: snapshotList(
+          s,
+          `${shopName}, ${new Date(receiptDate + 'T12:00:00').toLocaleDateString('en-CA', {day: 'numeric', month: 'short'})}`,
+          true,
+        ),
+      };
+    });
+    setReceiptOpen(false);
+    go('spending');
+    toast.success('Shopping trip saved to your spending history.');
+  }
+  function exportList() {
+    const content = `${state.listName}\n\n${state.items.map(i => `${i.checked ? '[x]' : '[ ]'} ${i.qty} × ${i.name}${i.productId ? ` — ${productById[i.productId].brand}, ${productById[i.productId].size}` : ' — match needed'}`).join('\n')}\n\nAisle grocery list. Refer to retailer sources for current prices.`;
+    void shareList(content)
+      .then(() => toast.success(isDevice ? 'List ready to share' : 'Shopping list downloaded'))
+      .catch(() => toast.error('Could not share the list.'));
+  }
+  async function finishOnboarding(profile: Preferences, buildList: boolean) {
+    await saveChain.current;
+    const build = (source: UserState): UserState => ({
+      ...source,
+      prefs: profile,
+      onboarded: true,
+      items: buildList ? starterList(profile) : source.items,
+      activeShop: buildList ? null : source.activeShop,
+    });
+    setSaveStatus('Saving…');
+    try {
+      const next = build(ref.current);
+      const result = await saveState(next, revision.current);
+      revision.current = result.revision;
+      ref.current = next;
+      setState(next);
+      setSaveStatus('Saved');
+      setSavingError('');
+      setOnboard(false);
+      go('home');
+      toast.success('Your Aisle is ready. Your preferences are saved.');
+    } catch (error) {
+      if (error instanceof Error && /another window/i.test(error.message)) {
+        const latest = await loadState();
+        const next = build(latest.state);
+        const result = await saveState(next, latest.revision);
+        revision.current = result.revision;
+        ref.current = next;
+        setState(next);
+        setSaveStatus('Saved');
+        setSavingError('');
+        setOnboard(false);
+        go('home');
+        toast.success('Your Aisle is ready. I merged it with your latest list.');
+        return;
+      }
+      setSaveStatus('Not saved');
+      throw error;
+    }
+  }
+  useEffect(() => {
+    const mc = (
+      document as unknown as {modelContext?: {registerTool: (t: unknown, o: unknown) => void}}
+    ).modelContext;
+    if (!mc) return;
+    const abort = new AbortController();
+    try {
+      mc.registerTool(
+        {
+          name: 'compare_grocery_basket',
+          title: 'Compare grocery basket',
+          description:
+            'Return the basket totals Aisle has collected from public retailer catalogues. Every figure traces to an HTTP response; items with no collected price are reported as unpriced rather than estimated. Does not purchase groceries.',
+          inputSchema: {type: 'object', properties: {}, additionalProperties: false},
+          annotations: {readOnlyHint: true},
+          execute(input: unknown) {
+            if (!input || typeof input !== 'object' || Object.keys(input).length)
+              throw new Error('No arguments expected');
+            return {
+              dataMode: 'observed',
+              collectedAt: agentRef.current?.finishedAt ?? null,
+              stores: (agentRef.current?.baskets ?? []).map(b => ({
+                name: b.name,
+                subtotalCents: b.subtotal,
+                itemsPriced: b.priced,
+                itemsOnList: b.total,
+                complete: b.complete,
+              })),
+            };
+          },
+        },
+        {signal: abort.signal},
+      );
+      mc.registerTool(
+        {
+          name: 'open_grocery_list',
+          title: 'Open grocery list',
+          description: 'Navigate to the current list without changing its items.',
+          inputSchema: {type: 'object', properties: {}, additionalProperties: false},
+          annotations: {readOnlyHint: false},
+          execute(input: unknown) {
+            if (!input || typeof input !== 'object' || Object.keys(input).length)
+              throw new Error('No arguments expected');
+            go('list');
+            return {view: 'list'};
+          },
+        },
+        {signal: abort.signal},
+      );
+    } catch {
+      /* WebMCP is optional; the app works without it */
+    }
+    return () => abort.abort();
+  }, []);
+
+  function Empty({
+    icon: Icon = ShoppingBasket,
+    title,
+    children,
+    action,
+  }: {
+    icon?: typeof ShoppingBasket;
+    title: string;
+    children: ReactNode;
+    action?: ReactNode;
+  }) {
+    return (
+      <div className="empty-state">
+        <span className="empty-icon">
+          <Icon />
+        </span>
+        <h3>{title}</h3>
+        <p>{children}</p>
+        {action}
       </div>
-      <ul className="accuracy-rows">
-       {scored.comparable.slice(0,4).map(({trip,predicted,actual,difference})=>
-        <li key={trip.id}>
-         <span>{shopIdentity(trip.storeId,trip.storeName).name} · {new Date(trip.date+'T12:00:00').toLocaleDateString('en-CA',{day:'numeric',month:'short'})}</span>
-         <span className="accuracy-figures">
-          <small>est. {money(predicted)}</small>
-          <strong>{money(actual)}</strong>
-          <em className={difference>0?'warning-text':'green-text'}>
-           {difference===0?'exact':`${difference>0?'+':'−'}${money(Math.abs(difference))}`}</em>
-         </span>
-        </li>)}
-      </ul>
-     </>
-    :<p className="accuracy-empty">No shop has been fully priced yet, so there is nothing
-      honest to score. {partial>0&&`${partial} recorded ${partial===1?'shop':'shops'} had items Aisle could not price.`}</p>}
-  </section>;
- }
+    );
+  }
+  function ItemRow({
+    item,
+    compact = false,
+    shopping = false,
+  }: {
+    item: ListItem;
+    compact?: boolean;
+    shopping?: boolean;
+  }) {
+    const p = item.productId ? productById[item.productId] : null;
+    const resolved = lineFor(item, shopping);
+    const price = resolved?.cents ?? null;
+    const observed = resolved?.source === 'observed' ? resolved.shelf! : null;
+    const unitText =
+      shopping && resolved?.source === 'collected'
+        ? (activeBasket?.unitPrice(item.id) ?? null)
+        : null;
+    const paid = item.productId ? (paidHistory.get(item.productId) ?? null) : null;
+    // At most one line under the price. While shopping, the unit price of the
+    // offer in front of you wins; what you paid before only fills the gap where
+    // no price was collected at all.
+    const secondary = observed ? (
+      // A price the household typed is always marked as theirs, wherever it shows.
+      <small className="item-observed">
+        you saw this{isStale(observed) ? ` · ${shelfPriceAgeDays(observed)} days ago` : ''}
+      </small>
+    ) : shopping ? (
+      unitText ? (
+        <small className="item-unit">{unitText}</small>
+      ) : paid && price === null ? (
+        <small className="item-paid">paid {money(Math.round(paid.last.unitCents))} last time</small>
+      ) : null
+    ) : paid ? (
+      <small className="item-paid">
+        paid {money(Math.round(paid.last.unitCents))} at {paid.last.storeName}
+      </small>
+    ) : null;
+    return (
+      <div className={cx('item-row', item.checked && 'is-checked')}>
+        {shopping && (
+          <Checkbox
+            aria-label={`Mark ${item.name} as bought`}
+            checked={item.checked}
+            onCheckedChange={v => {
+              if (v === true) tapFeedback();
+              updateItem(item.id, {checked: v === true});
+            }}
+            className="item-check"
+          />
+        )}
+        <ProductIcon product={p} small={compact} />
+        <div className="item-copy">
+          <strong>{item.name}</strong>
+          <span>{p ? `${p.brand} · ${p.size}` : 'Not matched to a catalogue item'}</span>
+        </div>
+        {!compact && !shopping && (
+          <button
+            className={cx('icon-button lock-button', item.locked && 'is-locked')}
+            aria-label={`${item.locked ? 'Unlock' : 'Lock'} ${item.name}`}
+            title={item.locked ? 'Exact product locked' : 'Keep this exact product'}
+            onClick={() => updateItem(item.id, {locked: !item.locked})}
+          >
+            <LockKeyhole size={15} />
+          </button>
+        )}
+        {!compact && !shopping && (
+          <div className="quantity">
+            <button
+              aria-label={`Decrease ${item.name} quantity`}
+              disabled={item.qty === 1}
+              onClick={() => updateItem(item.id, {qty: item.qty - 1})}
+            >
+              <Minus size={13} />
+            </button>
+            <span>{item.qty}</span>
+            <button
+              aria-label={`Increase ${item.name} quantity`}
+              disabled={item.qty >= 99}
+              onClick={() => updateItem(item.id, {qty: item.qty + 1})}
+            >
+              <Plus size={13} />
+            </button>
+          </div>
+        )}
+        {compact || shopping ? <span className="item-quantity">×{item.qty}</span> : null}
+        {shopping ? (
+          <button
+            type="button"
+            className={cx(
+              'item-price is-capture',
+              observed && 'is-observed',
+              price == null && 'is-empty',
+            )}
+            aria-label={
+              price != null
+                ? `Change the price recorded for ${item.name}`
+                : `Add the shelf price for ${item.name}`
+            }
+            onClick={() => setCaptureItem(item)}
+          >
+            {price != null ? (
+              money(price)
+            ) : (
+              <span className="item-price-add">
+                <Tag size={13} /> price
+              </span>
+            )}
+            {secondary}
+          </button>
+        ) : (
+          <span className="item-price">
+            {price != null ? money(price) : '—'}
+            {secondary}
+          </span>
+        )}
+        {!p && !compact && (
+          <button
+            className="text-button"
+            onClick={() => {
+              setMatchingItem(item.id);
+              setImportMode('browse');
+              setCatalogOpen(true);
+            }}
+          >
+            Match
+          </button>
+        )}
+        {!compact && !shopping && (
+          <button
+            className="icon-button remove"
+            aria-label={`Remove ${item.name}`}
+            onClick={() => removeItem(item)}
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
+    );
+  }
+  /**
+   * How Aisle's estimate compared with the till.
+   *
+   * Only whole-list estimates are scored. `predicted` is the subtotal of what
+   * Aisle could price, so on a shop where it priced 4 of 12 items, putting it
+   * beside the receipt total would manufacture an error that says nothing about
+   * the estimate. Those trips are counted and named instead.
+   */
+  function AccuracyCard() {
+    const scored = accuracy(state.trips);
+    const partial = state.trips.length - scored.comparable.length;
+    if (!state.trips.length) return null;
+    return (
+      <section className="card accuracy-card">
+        <div className="section-top">
+          <div>
+            <h3>
+              <Target size={17} /> How close Aisle got
+            </h3>
+            <p>
+              Only shops where Aisle had a price for every item on your list can be scored against
+              the receipt.
+            </p>
+          </div>
+        </div>
+        {scored.comparable.length && scored.meanDifference !== null ? (
+          <>
+            <div className="accuracy-headline">
+              <strong>
+                {scored.meanDifference === 0
+                  ? 'Spot on'
+                  : `${money(Math.abs(scored.meanDifference))} ${scored.meanDifference > 0 ? 'more' : 'less'} than estimated`}
+              </strong>
+              <span>
+                on average across {scored.comparable.length} fully priced{' '}
+                {scored.comparable.length === 1 ? 'shop' : 'shops'}
+              </span>
+            </div>
+            <ul className="accuracy-rows">
+              {scored.comparable.slice(0, 4).map(({trip, predicted, actual, difference}) => (
+                <li key={trip.id}>
+                  <span>
+                    {shopIdentity(trip.storeId, trip.storeName).name} ·{' '}
+                    {new Date(trip.date + 'T12:00:00').toLocaleDateString('en-CA', {
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                  </span>
+                  <span className="accuracy-figures">
+                    <small>est. {money(predicted)}</small>
+                    <strong>{money(actual)}</strong>
+                    <em className={difference > 0 ? 'warning-text' : 'green-text'}>
+                      {difference === 0
+                        ? 'exact'
+                        : `${difference > 0 ? '+' : '−'}${money(Math.abs(difference))}`}
+                    </em>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p className="accuracy-empty">
+            No shop has been fully priced yet, so there is nothing honest to score.{' '}
+            {partial > 0 &&
+              `${partial} recorded ${partial === 1 ? 'shop' : 'shops'} had items Aisle could not price.`}
+          </p>
+        )}
+      </section>
+    );
+  }
 
- function AgentBudgetCard(){
-  const budget=agent.perShopBudget;
-  // The checklist counts prices the household read off a shelf, so this has to
-  // as well — two screens answering "what will this shop cost" with different
-  // numbers is worse than either answer on its own. The split is stated below.
-  const spent=listTotal.cents;
-  const known=listTotal.collected+listTotal.observed;
-  const pct=budget>0?Math.min(100,Math.round(spent/budget*100)):0;
-  const over=Math.max(0,spent-budget);
-  return <section className="card budget-card">
-   <div className="section-top"><h3>This shop&rsquo;s budget</h3>
-    <button className="icon-button" aria-label="Edit budget" onClick={()=>go("account")}><SlidersHorizontal size={17}/></button></div>
-   <div className="budget-numbers"><strong>{known?money(spent):"\u2014"}</strong><span>of {money(budget)}</span></div>
-   <Progress value={pct} className={cx("budget-progress",over>0&&"over-budget")}/>
-   <p>{!state.items.length
-    ?"Add groceries to your list and Aisle can tell you what the shop should cost."
-    :!known
-    ?"No prices yet. Run a price check, or add what you saw on the shelf while you shop."
-    :listTotal.unpriced>0
-     ?<>{money(spent)} for <strong>{known} of {state.items.length}</strong> items
-      {listTotal.observed>0&&<> — {listTotal.observed} of {listTotal.observed===1?'them a price':'those prices'} you
-       entered yourself</>}. The rest have no price, so this is not your whole shop.</>
-     :over>0
-      ?<><span className="warning-text">{money(over)} over budget</span>
-       {listTotal.observed>0?<>, counting {listTotal.observed} {listTotal.observed===1?'price':'prices'} you entered.</>:'.'} Compare baskets or trim the list.</>
-      :<><span className="green-text">{money(budget-spent)} to spare</span>, with every item priced
-       {listTotal.observed>0&&<> ({listTotal.observed} from what you saw in the shop)</>}.</>}</p>
-   {swaps.length>0&&<button className="budget-link" onClick={()=>setSwapsOpen(true)}>
-    <Sparkles size={16}/> {swaps.length===1?'One cheaper option':`${swaps.length} cheaper options`} worth {money(potential)} <ArrowRight size={16}/></button>}
-   {agent.baskets.length>1&&<button className="budget-link" onClick={()=>go("compare")}>
-    <Sparkles size={16}/> Compare {agent.baskets.length} baskets <ArrowRight size={16}/></button>}
-  </section>;
- }
- // A receipt can be recorded against a bundled chain or a retailer the agent
- // discovered, so every lookup has to tolerate both and neither.
- // Retailers you can record a receipt against: the bundled chains, plus any
- // retailer the agent actually priced, so a shop started from Compare can be
- // logged against the shop you were in.
- const receiptStoreOptions=useMemo(()=>{
-  const rows=stores.map(store=>({value:store.id,label:store.name}));
-  for(const basket of agent.baskets)
-   if(!rows.some(row=>row.value===basket.sourceId))rows.unshift({value:basket.sourceId,label:basket.name});
-  if(state.activeShop&&!rows.some(row=>row.value===state.activeShop))
-   rows.unshift({value:state.activeShop,label:shopIdentity(state.activeShop).name});
-  return rows;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
- },[agent.baskets,state.activeShop]);
+  function AgentBudgetCard() {
+    const budget = agent.perShopBudget;
+    // The checklist counts prices the household read off a shelf, so this has to
+    // as well — two screens answering "what will this shop cost" with different
+    // numbers is worse than either answer on its own. The split is stated below.
+    const spent = listTotal.cents;
+    const known = listTotal.collected + listTotal.observed;
+    const pct = budget > 0 ? Math.min(100, Math.round((spent / budget) * 100)) : 0;
+    const over = Math.max(0, spent - budget);
+    return (
+      <section className="card budget-card">
+        <div className="section-top">
+          <h3>This shop&rsquo;s budget</h3>
+          <button className="icon-button" aria-label="Edit budget" onClick={() => go('account')}>
+            <SlidersHorizontal size={17} />
+          </button>
+        </div>
+        <div className="budget-numbers">
+          <strong>{known ? money(spent) : '\u2014'}</strong>
+          <span>of {money(budget)}</span>
+        </div>
+        <Progress value={pct} className={cx('budget-progress', over > 0 && 'over-budget')} />
+        <p>
+          {!state.items.length ? (
+            'Add groceries to your list and Aisle can tell you what the shop should cost.'
+          ) : !known ? (
+            'No prices yet. Run a price check, or add what you saw on the shelf while you shop.'
+          ) : listTotal.unpriced > 0 ? (
+            <>
+              {money(spent)} for{' '}
+              <strong>
+                {known} of {state.items.length}
+              </strong>{' '}
+              items
+              {listTotal.observed > 0 && (
+                <>
+                  {' '}
+                  — {listTotal.observed} of{' '}
+                  {listTotal.observed === 1 ? 'them a price' : 'those prices'} you entered yourself
+                </>
+              )}
+              . The rest have no price, so this is not your whole shop.
+            </>
+          ) : over > 0 ? (
+            <>
+              <span className="warning-text">{money(over)} over budget</span>
+              {listTotal.observed > 0 ? (
+                <>
+                  , counting {listTotal.observed} {listTotal.observed === 1 ? 'price' : 'prices'}{' '}
+                  you entered.
+                </>
+              ) : (
+                '.'
+              )}{' '}
+              Compare baskets or trim the list.
+            </>
+          ) : (
+            <>
+              <span className="green-text">{money(budget - spent)} to spare</span>, with every item
+              priced
+              {listTotal.observed > 0 && <> ({listTotal.observed} from what you saw in the shop)</>}
+              .
+            </>
+          )}
+        </p>
+        {swaps.length > 0 && (
+          <button className="budget-link" onClick={() => setSwapsOpen(true)}>
+            <Sparkles size={16} />{' '}
+            {swaps.length === 1 ? 'One cheaper option' : `${swaps.length} cheaper options`} worth{' '}
+            {money(potential)} <ArrowRight size={16} />
+          </button>
+        )}
+        {agent.baskets.length > 1 && (
+          <button className="budget-link" onClick={() => go('compare')}>
+            <Sparkles size={16} /> Compare {agent.baskets.length} baskets <ArrowRight size={16} />
+          </button>
+        )}
+      </section>
+    );
+  }
+  // A receipt can be recorded against a bundled chain or a retailer the agent
+  // discovered, so every lookup has to tolerate both and neither.
+  // Retailers you can record a receipt against: the bundled chains, plus any
+  // retailer the agent actually priced, so a shop started from Compare can be
+  // logged against the shop you were in.
+  const receiptStoreOptions = useMemo(() => {
+    const rows = stores.map(store => ({value: store.id, label: store.name}));
+    for (const basket of agent.baskets)
+      if (!rows.some(row => row.value === basket.sourceId))
+        rows.unshift({value: basket.sourceId, label: basket.name});
+    if (state.activeShop && !rows.some(row => row.value === state.activeShop))
+      rows.unshift({value: state.activeShop, label: shopIdentity(state.activeShop).name});
+    return rows;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agent.baskets, state.activeShop]);
 
- function shopIdentity(id:string,fallbackName?:string){
-  const chain=stores.find(store=>store.id===id);
-  if(chain)return chain;
-  const basket=agent.baskets.find(b=>b.sourceId===id);
-  return {id,name:fallbackName??basket?.name??id} as Store;
- }
+  function shopIdentity(id: string, fallbackName?: string) {
+    const chain = stores.find(store => store.id === id);
+    if (chain) return chain;
+    const basket = agent.baskets.find(b => b.sourceId === id);
+    return {id, name: fallbackName ?? basket?.name ?? id} as Store;
+  }
 
+  const suggestions = personalSuggestions(state);
+  return (
+    <SidebarProvider style={{'--sidebar-width': '236px'} as CSSProperties}>
+      <Sidebar collapsible="none" className="aisle-sidebar">
+        <SidebarHeader className="brand-wrap">
+          <a href="#home" className="brand" onClick={() => go('home')} aria-label="Aisle home">
+            <span className="brand-symbol">
+              <ShoppingBasket size={25} strokeWidth={1.8} />
+            </span>
+            aisle<span className="brand-dot">.</span>
+          </a>
+          <span className="brand-caption">A better way to grocery shop</span>
+        </SidebarHeader>
+        <SidebarContent className="nav-content">
+          <p className="nav-label">YOUR SPACE</p>
+          <SidebarMenu>
+            {nav.map(({id, label, icon: Icon}) => (
+              <SidebarMenuItem key={id}>
+                <SidebarMenuButton asChild isActive={view === id} className="nav-item">
+                  <a
+                    href={`#${id}`}
+                    onClick={e => {
+                      e.preventDefault();
+                      go(id);
+                    }}
+                  >
+                    <Icon size={19} />
+                    <span>{label}</span>
+                    {id === 'list' && <span className="nav-count">{state.items.length}</span>}
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+          {state.activeShop && (
+            <button className="resume-shop" onClick={() => go('shop')}>
+              <ShoppingBag size={18} />
+              <span>Continue your shop</span>
+              <ChevronRight size={16} />
+            </button>
+          )}
+          <div className="sidebar-note">
+            <span className="note-icon">
+              <HeartHandshake size={23} />
+            </span>
+            <h4>A little more in your pocket.</h4>
+            <p>Better choices start with a clear view of your whole list.</p>
+            <button onClick={() => setHelp(true)}>
+              The Aisle approach <ArrowUpRight size={15} />
+            </button>
+          </div>
+        </SidebarContent>
+        <SidebarFooter className="sidebar-footer">
+          <button
+            className={cx('nav-item', view === 'account' && 'active')}
+            onClick={() => go('account')}
+          >
+            <Settings2 size={19} /> Account settings
+          </button>
+          <button
+            className={cx('nav-item', view === 'legal' && 'active')}
+            onClick={() => goLegal(null)}
+          >
+            <Scale size={19} /> Legal &amp; privacy
+          </button>
+          <button className="nav-item" onClick={() => setHelp(true)}>
+            <HelpCircle size={19} /> How Aisle works
+          </button>
+          <div className="profile">
+            <span className="avatar">
+              {state.prefs.name ? state.prefs.name.slice(0, 1).toUpperCase() : 'A'}
+            </span>
+            <div>
+              <strong>{state.prefs.name || 'Your household'}</strong>
+              <span>{state.prefs.city || 'Burlington'}, Ontario</span>
+            </div>
+            <button
+              className="icon-button"
+              onClick={() => go('account')}
+              aria-label="Household settings"
+            >
+              <ChevronsUpDown size={16} />
+            </button>
+          </div>
+        </SidebarFooter>
+      </Sidebar>
+      <div className="app-main">
+        <header className="topbar">
+          <div className="mobile-brand brand">
+            <ShoppingBasket size={24} /> aisle.
+          </div>
+          <div className="breadcrumb">
+            Your space <ChevronRight size={13} />{' '}
+            <strong>
+              {nav.find(n => n.id === view)?.label ??
+                (view === 'shop'
+                  ? 'Shopping mode'
+                  : view === 'legal'
+                    ? 'Legal & privacy'
+                    : 'Account settings')}
+            </strong>
+          </div>
+          <div className="topbar-right">
+            <button className="location-button" onClick={() => go('account')}>
+              <MapPin size={16} />
+              <span>{state.prefs.city || 'Burlington'}, ON</span>
+              <ChevronDown size={14} />
+            </button>
+            <span className="top-divider" />
+            <button className="data-badge" onClick={() => setHelp(true)}>
+              <span /> {'Observed prices'} <Info size={13} />
+            </button>
+          </div>
+        </header>
+        {loadError && (
+          <div className="system-message error">
+            <TriangleAlert size={17} /> We couldn’t load your saved list.{' '}
+            <button onClick={() => void load()}>Try again</button>
+            <button onClick={() => setResetOpen(true)}>Start fresh</button>
+          </div>
+        )}
+        {savingError && (
+          <div className="system-message error">
+            <TriangleAlert size={17} />
+            {savingError}
+            <button onClick={() => persist(ref.current)}>Retry save</button>
+            <button onClick={() => void load()}>Reload saved list</button>
+          </div>
+        )}
+        {!ready && !loadError && (
+          <div className="system-message">
+            <LoaderCircle className="spin" size={16} /> Getting your list ready…
+          </div>
+        )}
+        <main className="workspace" id="main-content">
+          {view === 'home' && (
+            <DueThisWeek
+              state={state}
+              onAdd={addProduct}
+              onDismiss={id =>
+                commit(s => ({...s, dueSnoozed: {...s.dueSnoozed, [id]: new Date().toISOString()}}))
+              }
+            />
+          )}
+          {view === 'home' && (
+            <AgentWorkspace
+              state={state}
+              agent={agent}
+              commit={commit}
+              onAdd={addProduct}
+              onList={() => go('list')}
+              onPreferences={() => go('account')}
+              onSetup={() => setOnboard(true)}
+              onCompare={() => go('compare')}
+            />
+          )}
+          {view === 'home' && suggestions.length > 0 && (
+            <section className="personal-recommendations">
+              <div className="section-top">
+                <div>
+                  <h3>Often on your list</h3>
+                  <p>Picked from your preferences and confirmed choices.</p>
+                </div>
+                <Pill kind="neutral">Made for you</Pill>
+              </div>
+              <div className="suggestion-grid">
+                {suggestions.map(({product: p, why}) => (
+                  <div className="suggestion-card" key={p.id}>
+                    <ProductIcon product={p} />
+                    <div>
+                      <strong>{p.name}</strong>
+                      <span>
+                        {p.brand} · {p.size}
+                      </span>
+                      <small>{why}</small>
+                    </div>
+                    <button
+                      className="add-product"
+                      aria-label={`Add suggested ${p.name}`}
+                      onClick={() => addProduct(p.id)}
+                    >
+                      <Plus size={17} />
+                    </button>
+                    <button
+                      className="icon-button"
+                      aria-label={`Dismiss suggestion ${p.name}`}
+                      onClick={() => {
+                        commit(s => ({
+                          ...recordChoice(s, 'dismissed', p.id),
+                          prefs: {
+                            ...s.prefs,
+                            excludedProducts: [...s.prefs.excludedProducts, p.id],
+                          },
+                        }));
+                        toast(
+                          'Suggestion hidden. You can reset hidden suggestions in preferences.',
+                        );
+                      }}
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+          {view === 'list' && (
+            <>
+              <div className="page-heading">
+                <div>
+                  <span className="eyebrow">MAKE IT YOURS</span>
+                  <h1>Your grocery list</h1>
+                  <p>Keep your favourites. Find room to save.</p>
+                </div>
+                <div className="heading-actions">
+                  <button className="button secondary" onClick={exportList}>
+                    <Download size={16} />
+                    <span>Export list</span>
+                  </button>
+                  <button className="button primary" onClick={() => setCatalogOpen(true)}>
+                    <Plus size={18} /> Add groceries
+                  </button>
+                </div>
+              </div>
+              <div className="list-layout">
+                <section className="card full-list">
+                  <div className="list-title">
+                    <input
+                      aria-label="List name"
+                      value={state.listName}
+                      maxLength={80}
+                      onChange={e => {
+                        if (e.target.value.trim()) commit(s => ({...s, listName: e.target.value}));
+                      }}
+                    />
+                    <span className="saved-label">
+                      <CheckCheck size={14} />
+                      {saveStatus}
+                    </span>
+                  </div>
+                  <div className="list-toolbar">
+                    <span>
+                      {state.items.length} products · {itemCount} items
+                    </span>
+                    <button className="text-button" onClick={() => setStartersOpen(true)}>
+                      <History size={15} /> Start from…
+                    </button>
+                    <button
+                      className="text-button"
+                      onClick={() => {
+                        setImportMode('paste');
+                        setCatalogOpen(true);
+                      }}
+                    >
+                      <ClipboardList size={15} /> Paste a list
+                    </button>
+                    <button
+                      className="text-button"
+                      disabled={!state.items.length}
+                      onClick={() => {
+                        commit(st => ({
+                          ...st,
+                          savedLists: snapshotList(st, st.listName || 'Saved list', false),
+                        }));
+                        toast.success('List saved. Reuse it from Start from…');
+                      }}
+                    >
+                      <Bookmark size={15} /> Save list
+                    </button>
+                    <button
+                      className="icon-button"
+                      aria-label="Clear grocery list"
+                      onClick={() => setClearOpen(true)}
+                      disabled={!state.items.length}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                  <div className="category-pills">
+                    {[
+                      'All items',
+                      ...categories
+                        .slice(1)
+                        .filter(c =>
+                          state.items.some(
+                            i => i.productId && productById[i.productId].category === c,
+                          ),
+                        ),
+                      ...(missing ? ['Unmatched'] : []),
+                    ].map(c => (
+                      <button
+                        key={c}
+                        className={cx('filter-pill', listFilter === c && 'selected')}
+                        onClick={() => setListFilter(c)}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                  {missing > 0 && (
+                    <div className="inline-warning">
+                      <Info size={16} />
+                      {missing} {missing === 1 ? 'item needs' : 'items need'} a match before we can
+                      recommend a complete basket.
+                    </div>
+                  )}
+                  {state.items.length ? (
+                    state.items
+                      .filter(
+                        i =>
+                          listFilter === 'All items' ||
+                          (listFilter === 'Unmatched'
+                            ? !i.productId
+                            : i.productId && productById[i.productId].category === listFilter),
+                      )
+                      .map(i => <ItemRow key={i.id} item={i} />)
+                  ) : (
+                    <Empty
+                      title="Your list is empty"
+                      action={
+                        <>
+                          <button className="button primary" onClick={() => setCatalogOpen(true)}>
+                            <Plus size={16} /> Add items
+                          </button>
+                          <button
+                            className="button secondary"
+                            onClick={() => setStartersOpen(true)}
+                          >
+                            <History size={16} /> Start from a previous list
+                          </button>
+                        </>
+                      }
+                    >
+                      Browse by aisle, paste a list you already have, or reuse a shop you have done
+                      before.
+                    </Empty>
+                  )}
+                  <button className="list-add" onClick={() => setCatalogOpen(true)}>
+                    <Plus size={17} /> Add another item
+                  </button>
+                  <div className="list-bottom-note">
+                    <LockKeyhole size={14} /> Lock a product to keep it out of swap suggestions.
+                  </div>
+                </section>
+                <aside className="list-aside">
+                  <AgentBudgetCard />
+                  <section className="card list-summary">
+                    <h3>Your list at a glance</h3>
+                    <div>
+                      <span>List items</span>
+                      <strong>{state.items.length}</strong>
+                    </div>
+                    <div>
+                      <span>Priced by Aisle</span>
+                      <strong>
+                        {headlineBasket
+                          ? `${headlineBasket.priced} of ${headlineBasket.total}`
+                          : 'Not checked yet'}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>Baskets compared</span>
+                      <strong>{agent.baskets.length}</strong>
+                    </div>
+                    <div>
+                      <span>Products locked</span>
+                      <strong>{state.items.filter(i => i.locked).length}</strong>
+                    </div>
+                    <button
+                      className="button primary full"
+                      onClick={() => go('compare')}
+                      disabled={!state.items.length}
+                    >
+                      Compare my list <ArrowRight size={17} />
+                    </button>
+                    <p>Review observed prices and confirm retailer products before comparing.</p>
+                  </section>
+                  <div className="quiet-tip">
+                    <ShieldCheck size={20} />
+                    <p>Your choices stay yours. We ask before changing anything on your list.</p>
+                  </div>
+                </aside>
+              </div>
+            </>
+          )}
+          {view === 'compare' && (
+            <BasketCompare
+              state={state}
+              agent={agent}
+              onShop={beginShop}
+              onList={() => go('list')}
+              onSetup={() => setOnboard(true)}
+            />
+          )}
+          {view === 'spending' && (
+            <>
+              <div className="page-heading">
+                <div>
+                  <span className="eyebrow">A LITTLE MORE CLARITY</span>
+                  <h1>Your grocery spending</h1>
+                  <p>Make sense of your shops, one receipt at a time.</p>
+                </div>
+                <button className="button primary" onClick={openReceipt}>
+                  <Plus size={17} /> Add a receipt
+                </button>
+              </div>
+              {state.trips.length > 0 && (
+                <div className="spending-stats">
+                  <div className="card metric">
+                    <span>
+                      <Wallet size={18} /> Recorded spending
+                    </span>
+                    <strong>{money(state.trips.reduce((sum, t) => sum + t.total, 0))}</strong>
+                    <p>
+                      Across {state.trips.length} saved{' '}
+                      {state.trips.length === 1 ? 'trip' : 'trips'}
+                    </p>
+                  </div>
+                  <div className="card metric">
+                    <span>
+                      <ShoppingBag size={18} /> Average shop
+                    </span>
+                    <strong>
+                      {money(
+                        Math.round(
+                          state.trips.reduce((sum, t) => sum + t.total, 0) / state.trips.length,
+                        ),
+                      )}
+                    </strong>
+                    <p>From the totals you entered</p>
+                  </div>
+                  <div className="card metric">
+                    <span>
+                      <Wallet size={18} /> Against your budget
+                    </span>
+                    <strong>
+                      {(() => {
+                        const avg = Math.round(
+                          state.trips.reduce((sum, t) => sum + t.total, 0) / state.trips.length,
+                        );
+                        const diff = avg - agent.perShopBudget;
+                        return diff === 0
+                          ? 'On budget'
+                          : `${money(Math.abs(diff))} ${diff > 0 ? 'over' : 'under'}`;
+                      })()}
+                    </strong>
+                    <p>Average shop vs your {money(agent.perShopBudget)} per-shop budget</p>
+                  </div>
+                </div>
+              )}
+              <AccuracyCard />
+              <section className="card history-card">
+                <div className="section-top">
+                  <h3>Your shopping history</h3>
+                  <Pill kind="neutral">{state.trips.length} receipts</Pill>
+                </div>
+                {state.trips.length ? (
+                  <div>
+                    {state.trips.map(t => {
+                      const s = shopIdentity(t.storeId, t.storeName);
+                      return (
+                        <button
+                          className="history-row"
+                          key={t.id}
+                          onClick={() => setHistoryDetail(t)}
+                        >
+                          <StoreLogo store={s} />
+                          <div>
+                            <strong>{s.name}</strong>
+                            <span>
+                              {new Date(t.date + 'T12:00:00').toLocaleDateString('en-CA', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric',
+                              })}{' '}
+                              · {t.receiptId ? 'Receipt attached' : 'Manual entry'}
+                            </span>
+                          </div>
+                          <strong>{money(t.total)}</strong>
+                          <ChevronRight size={17} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <Empty
+                    icon={ReceiptText}
+                    title="No shops recorded yet"
+                    action={
+                      <button className="button secondary" onClick={openReceipt}>
+                        <Upload size={16} /> Record a shop
+                      </button>
+                    }
+                  >
+                    After a shop, enter what you actually paid. Aisle compares that against your
+                    budget — it is the only figure here it does not have to guess at.
+                  </Empty>
+                )}
+              </section>
+              <div className="transparency-note">
+                <ShieldCheck size={21} />
+                <div>
+                  <strong>A receipt proves what you paid.</strong>
+                  <p>
+                    It doesn’t prove what another store would have charged. We’ll only call savings
+                    verified when both sides have reliable, same-day prices for the same products.
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
+          {view === 'account' && (
+            <Account
+              state={state}
+              saveStatus={saveStatus}
+              onPrefs={prefs}
+              onCommit={commit}
+              onEditFood={() => setOnboard(true)}
+              onReplaySetup={() => setOnboard(true)}
+              onLegal={goLegal}
+              appVersion={APP_VERSION}
+            />
+          )}
+          {view === 'legal' && (
+            <Legal docId={legalDoc} onSelect={goLegal} onBack={() => goLegal(null)} />
+          )}
+          {view === 'shop' && (
+            <>
+              <div className="page-heading">
+                <div>
+                  <span className="eyebrow">ONE ITEM AT A TIME</span>
+                  <h1>{active ? `Your shop at ${active.name}` : 'Ready when you are.'}</h1>
+                  <p>Check off what’s in your basket. Your list saves as you go.</p>
+                </div>
+                <button className="button secondary" onClick={() => go('compare')}>
+                  <ArrowLeft size={16} /> Change store
+                </button>
+              </div>
+              {active ? (
+                <div className="list-layout">
+                  <section className="card">
+                    <ShopChecklist
+                      items={state.items}
+                      order={checklistOrder}
+                      onOrderChange={changeChecklistOrder}
+                      lineTotal={id => {
+                        const it = state.items.find(i => i.id === id);
+                        return it ? (lineFor(it, true)?.cents ?? null) : null;
+                      }}
+                      provenance={checklistProvenance}
+                      budget={agent.perShopBudget}
+                      shopName={active.name}
+                      renderItem={i => <ItemRow key={i.id} item={i} shopping />}
+                    />
+                    <div className="list-bottom-note">
+                      <Info size={14} /> Check shelf prices before buying. These are online
+                      catalogue prices, not confirmed branch prices.
+                      {(() => {
+                        const blank = state.items.filter(
+                          i => activeBasket?.lineTotal(i.id) == null,
+                        ).length;
+                        return blank > 0
+                          ? ` ${blank} of ${state.items.length} items show a dash because no catalogue price was collected for them — the running total only covers the rest.`
+                          : '';
+                      })()}
+                    </div>
+                  </section>
+                  <aside>
+                    <section className="card shop-summary">
+                      <div className="shopping-circle">
+                        <ShoppingBag size={32} />
+                      </div>
+                      <h3>
+                        {checked === state.items.length
+                          ? 'Everything’s in the basket.'
+                          : 'You’ve got this.'}
+                      </h3>
+                      <p>
+                        {checked === state.items.length
+                          ? 'After checkout, save the receipt and record what you actually spent.'
+                          : 'Take your time. We’ll keep your place on the list.'}
+                      </p>
+                      <button className="button primary full" onClick={openReceipt}>
+                        <ReceiptText size={16} /> Finish & add receipt
+                      </button>
+                      <button className="text-button" onClick={exportList}>
+                        <Download size={15} /> Export checklist
+                      </button>
+                    </section>
+                  </aside>
+                </div>
+              ) : (
+                <Empty
+                  title="Pick your basket first"
+                  action={
+                    <button className="button primary" onClick={() => go('compare')}>
+                      Compare baskets
+                    </button>
+                  }
+                >
+                  Your shopping checklist will be ready once you choose a basket to shop from.
+                </Empty>
+              )}
+            </>
+          )}
+          <footer className="workspace-footer">
+            <span>
+              <Leaf size={14} /> Made for a more thoughtful shop.
+            </span>
+            <div className="workspace-footer-right">
+              <button onClick={() => setHelp(true)}>
+                Prices in CAD · Check retailer sources <Info size={13} />
+              </button>
+              <button onClick={() => goLegal('terms')}>Terms</button>
+              <button onClick={() => goLegal('privacy')}>Privacy</button>
+              <button onClick={() => goLegal('sources')}>Data sources</button>
+            </div>
+          </footer>
+        </main>
+        <nav className="mobile-nav" aria-label="Main navigation">
+          {nav.map(({id, label, icon: Icon}) => (
+            <button
+              key={id}
+              aria-label={label}
+              aria-current={view === id ? 'page' : undefined}
+              className={view === id ? 'selected' : ''}
+              onClick={() => go(id)}
+            >
+              <Icon size={21} />
+              <span>
+                {id === 'home'
+                  ? 'My week'
+                  : id === 'list'
+                    ? 'My list'
+                    : id === 'compare'
+                      ? 'Baskets'
+                      : 'Spending'}
+              </span>
+            </button>
+          ))}
+          <button
+            aria-label="Account settings"
+            className={view === 'account' || view === 'legal' ? 'selected' : ''}
+            onClick={() => go('account')}
+          >
+            <Settings2 size={21} />
+            <span>You</span>
+          </button>
+        </nav>
+      </div>
 
- const suggestions=personalSuggestions(state);
- return <SidebarProvider style={{"--sidebar-width":"236px"} as CSSProperties}>
-  <Sidebar collapsible="none" className="aisle-sidebar">
-   <SidebarHeader className="brand-wrap"><a href="#home" className="brand" onClick={()=>go("home")} aria-label="Aisle home"><span className="brand-symbol"><ShoppingBasket size={25} strokeWidth={1.8}/></span>aisle<span className="brand-dot">.</span></a><span className="brand-caption">A better way to grocery shop</span></SidebarHeader>
-   <SidebarContent className="nav-content"><p className="nav-label">YOUR SPACE</p><SidebarMenu>{nav.map(({id,label,icon:Icon})=><SidebarMenuItem key={id}><SidebarMenuButton asChild isActive={view===id} className="nav-item"><a href={`#${id}`} onClick={e=>{e.preventDefault();go(id);}}><Icon size={19}/><span>{label}</span>{id==="list"&&<span className="nav-count">{state.items.length}</span>}</a></SidebarMenuButton></SidebarMenuItem>)}</SidebarMenu>
-   {state.activeShop&&<button className="resume-shop" onClick={()=>go("shop")}><ShoppingBag size={18}/><span>Continue your shop</span><ChevronRight size={16}/></button>}
-   <div className="sidebar-note"><span className="note-icon"><HeartHandshake size={23}/></span><h4>A little more in your pocket.</h4><p>Better choices start with a clear view of your whole list.</p><button onClick={()=>setHelp(true)}>The Aisle approach <ArrowUpRight size={15}/></button></div></SidebarContent>
-   <SidebarFooter className="sidebar-footer"><button className={cx("nav-item",view==="account"&&"active")} onClick={()=>go("account")}><Settings2 size={19}/> Account settings</button><button className={cx("nav-item",view==="legal"&&"active")} onClick={()=>goLegal(null)}><Scale size={19}/> Legal &amp; privacy</button><button className="nav-item" onClick={()=>setHelp(true)}><HelpCircle size={19}/> How Aisle works</button><div className="profile"><span className="avatar">{state.prefs.name?state.prefs.name.slice(0,1).toUpperCase():"A"}</span><div><strong>{state.prefs.name||"Your household"}</strong><span>{state.prefs.city||"Burlington"}, Ontario</span></div><button className="icon-button" onClick={()=>go("account")} aria-label="Household settings"><ChevronsUpDown size={16}/></button></div></SidebarFooter>
-  </Sidebar>
-  <div className="app-main">
-  <header className="topbar"><div className="mobile-brand brand"><ShoppingBasket size={24}/> aisle.</div><div className="breadcrumb">Your space <ChevronRight size={13}/> <strong>{nav.find(n=>n.id===view)?.label??(view==="shop"?"Shopping mode":view==="legal"?"Legal & privacy":"Account settings")}</strong></div><div className="topbar-right"><button className="location-button" onClick={()=>go("account")}><MapPin size={16}/><span>{state.prefs.city||"Burlington"}, ON</span><ChevronDown size={14}/></button><span className="top-divider"/><button className="data-badge" onClick={()=>setHelp(true)}><span/> {'Observed prices'} <Info size={13}/></button></div></header>
-   {loadError&&<div className="system-message error"><TriangleAlert size={17}/> We couldn’t load your saved list. <button onClick={()=>void load()}>Try again</button><button onClick={()=>setResetOpen(true)}>Start fresh</button></div>}
-   {savingError&&<div className="system-message error"><TriangleAlert size={17}/>{savingError}<button onClick={()=>persist(ref.current)}>Retry save</button><button onClick={()=>void load()}>Reload saved list</button></div>}
-   {!ready&&!loadError&&<div className="system-message"><LoaderCircle className="spin" size={16}/> Getting your list ready…</div>}
-   <main className="workspace" id="main-content">
-   {view==='home'&&<DueThisWeek state={state} onAdd={addProduct}
-    onDismiss={id=>commit(s=>({...s,dueSnoozed:{...s.dueSnoozed,[id]:new Date().toISOString()}}))}/>}
-   {view==='home'&&<AgentWorkspace state={state} agent={agent} commit={commit} onAdd={addProduct} onList={()=>go('list')} onPreferences={()=>go('account')} onSetup={()=>setOnboard(true)} onCompare={()=>go('compare')}/>}
-   {view==="home"&&suggestions.length>0&&<section className="personal-recommendations"><div className="section-top"><div><h3>Often on your list</h3><p>Picked from your preferences and confirmed choices.</p></div><Pill kind="neutral">Made for you</Pill></div><div className="suggestion-grid">{suggestions.map(({product:p,why})=><div className="suggestion-card" key={p.id}><ProductIcon product={p}/><div><strong>{p.name}</strong><span>{p.brand} · {p.size}</span><small>{why}</small></div><button className="add-product" aria-label={`Add suggested ${p.name}`} onClick={()=>addProduct(p.id)}><Plus size={17}/></button><button className="icon-button" aria-label={`Dismiss suggestion ${p.name}`} onClick={()=>{commit(s=>({...recordChoice(s,"dismissed",p.id),prefs:{...s.prefs,excludedProducts:[...s.prefs.excludedProducts,p.id]}}));toast("Suggestion hidden. You can reset hidden suggestions in preferences.");}}><X size={13}/></button></div>)}</div></section>}
-   {view==="list"&&<>
-    <div className="page-heading"><div><span className="eyebrow">MAKE IT YOURS</span><h1>Your grocery list</h1><p>Keep your favourites. Find room to save.</p></div><div className="heading-actions"><button className="button secondary" onClick={exportList}><Download size={16}/><span>Export list</span></button><button className="button primary" onClick={()=>setCatalogOpen(true)}><Plus size={18}/> Add groceries</button></div></div>
-    <div className="list-layout"><section className="card full-list"><div className="list-title"><input aria-label="List name" value={state.listName} maxLength={80} onChange={e=>{if(e.target.value.trim())commit(s=>({...s,listName:e.target.value}));}}/><span className="saved-label"><CheckCheck size={14}/>{saveStatus}</span></div><div className="list-toolbar"><span>{state.items.length} products · {itemCount} items</span><button className="text-button" onClick={()=>setStartersOpen(true)}><History size={15}/> Start from…</button><button className="text-button" onClick={()=>{setImportMode("paste");setCatalogOpen(true);}}><ClipboardList size={15}/> Paste a list</button><button className="text-button" disabled={!state.items.length} onClick={()=>{commit(st=>({...st,savedLists:snapshotList(st,st.listName||"Saved list",false)}));toast.success("List saved. Reuse it from Start from…");}}><Bookmark size={15}/> Save list</button><button className="icon-button" aria-label="Clear grocery list" onClick={()=>setClearOpen(true)} disabled={!state.items.length}><Trash2 size={16}/></button></div>
-    <div className="category-pills">{["All items",...categories.slice(1).filter(c=>state.items.some(i=>i.productId&&productById[i.productId].category===c)),...(missing?["Unmatched"]:[])].map(c=><button key={c} className={cx("filter-pill",listFilter===c&&"selected")} onClick={()=>setListFilter(c)}>{c}</button>)}</div>
-    {missing>0&&<div className="inline-warning"><Info size={16}/>{missing} {missing===1?"item needs":"items need"} a match before we can recommend a complete basket.</div>}
-    {state.items.length?state.items.filter(i=>listFilter==="All items"||(listFilter==="Unmatched"?!i.productId:i.productId&&productById[i.productId].category===listFilter)).map(i=><ItemRow key={i.id} item={i}/>):<Empty title="Your list is empty" action={<><button className="button primary" onClick={()=>setCatalogOpen(true)}><Plus size={16}/> Add items</button><button className="button secondary" onClick={()=>setStartersOpen(true)}><History size={16}/> Start from a previous list</button></>}>Browse by aisle, paste a list you already have, or reuse a shop you have done before.</Empty>}
-    <button className="list-add" onClick={()=>setCatalogOpen(true)}><Plus size={17}/> Add another item</button><div className="list-bottom-note"><LockKeyhole size={14}/> Lock a product to keep it out of swap suggestions.</div></section>
-    <aside className="list-aside"><AgentBudgetCard/><section className="card list-summary"><h3>Your list at a glance</h3><div><span>List items</span><strong>{state.items.length}</strong></div><div><span>Priced by Aisle</span><strong>{headlineBasket?`${headlineBasket.priced} of ${headlineBasket.total}`:'Not checked yet'}</strong></div><div><span>Baskets compared</span><strong>{agent.baskets.length}</strong></div><div><span>Products locked</span><strong>{state.items.filter(i=>i.locked).length}</strong></div><button className="button primary full" onClick={()=>go("compare")} disabled={!state.items.length}>Compare my list <ArrowRight size={17}/></button><p>Review observed prices and confirm retailer products before comparing.</p></section><div className="quiet-tip"><ShieldCheck size={20}/><p>Your choices stay yours. We ask before changing anything on your list.</p></div></aside></div>
-   </>}
-   {view==="compare"&&<BasketCompare state={state} agent={agent}
-    onShop={beginShop} onList={()=>go('list')} onSetup={()=>setOnboard(true)}
-/>}
-   {view==="spending"&&<>
-    <div className="page-heading"><div><span className="eyebrow">A LITTLE MORE CLARITY</span><h1>Your grocery spending</h1><p>Make sense of your shops, one receipt at a time.</p></div><button className="button primary" onClick={openReceipt}><Plus size={17}/> Add a receipt</button></div>
-    {state.trips.length>0&&<div className="spending-stats"><div className="card metric"><span><Wallet size={18}/> Recorded spending</span><strong>{money(state.trips.reduce((sum,t)=>sum+t.total,0))}</strong><p>Across {state.trips.length} saved {state.trips.length===1?"trip":"trips"}</p></div><div className="card metric"><span><ShoppingBag size={18}/> Average shop</span><strong>{money(Math.round(state.trips.reduce((sum,t)=>sum+t.total,0)/state.trips.length))}</strong><p>From the totals you entered</p></div><div className="card metric"><span><Wallet size={18}/> Against your budget</span><strong>{(()=>{const avg=Math.round(state.trips.reduce((sum,t)=>sum+t.total,0)/state.trips.length);const diff=avg-agent.perShopBudget;return diff===0?"On budget":`${money(Math.abs(diff))} ${diff>0?"over":"under"}`;})()}</strong><p>Average shop vs your {money(agent.perShopBudget)} per-shop budget</p></div></div>}
-    <AccuracyCard/>
-    <section className="card history-card"><div className="section-top"><h3>Your shopping history</h3><Pill kind="neutral">{state.trips.length} receipts</Pill></div>{state.trips.length?<div>{state.trips.map(t=>{const s=shopIdentity(t.storeId,t.storeName);return <button className="history-row" key={t.id} onClick={()=>setHistoryDetail(t)}><StoreLogo store={s}/><div><strong>{s.name}</strong><span>{new Date(t.date+"T12:00:00").toLocaleDateString("en-CA",{day:"numeric",month:"long",year:"numeric"})} · {t.receiptId?"Receipt attached":"Manual entry"}</span></div><strong>{money(t.total)}</strong><ChevronRight size={17}/></button>;})}</div>:<Empty icon={ReceiptText} title="No shops recorded yet" action={<button className="button secondary" onClick={openReceipt}><Upload size={16}/> Record a shop</button>}>After a shop, enter what you actually paid. Aisle compares that against your budget — it is the only figure here it does not have to guess at.</Empty>}</section>
-    <div className="transparency-note"><ShieldCheck size={21}/><div><strong>A receipt proves what you paid.</strong><p>It doesn’t prove what another store would have charged. We’ll only call savings verified when both sides have reliable, same-day prices for the same products.</p></div></div>
-   </>}
-   {view==="account"&&<Account
-    state={state}
-    saveStatus={saveStatus}
-    onPrefs={prefs}
-    onCommit={commit}
-    onEditFood={()=>setOnboard(true)}
-    onReplaySetup={()=>setOnboard(true)}
-    onLegal={goLegal}
-    appVersion={APP_VERSION}
-   />}
-   {view==="legal"&&<Legal docId={legalDoc} onSelect={goLegal} onBack={()=>goLegal(null)}/>}
-   {view==="shop"&&<>
-    <div className="page-heading"><div><span className="eyebrow">ONE ITEM AT A TIME</span><h1>{active?`Your shop at ${active.name}`:"Ready when you are."}</h1><p>Check off what’s in your basket. Your list saves as you go.</p></div><button className="button secondary" onClick={()=>go("compare")}><ArrowLeft size={16}/> Change store</button></div>{active?<div className="list-layout"><section className="card"><ShopChecklist items={state.items} order={checklistOrder} onOrderChange={changeChecklistOrder}
-     lineTotal={id=>{const it=state.items.find(i=>i.id===id);return it?lineFor(it,true)?.cents??null:null;}}
-     provenance={checklistProvenance} budget={agent.perShopBudget}
-     shopName={active.name} renderItem={i=><ItemRow key={i.id} item={i} shopping/>}/><div className="list-bottom-note"><Info size={14}/> Check shelf prices before buying. These are online catalogue prices, not confirmed branch prices.{(()=>{const blank=state.items.filter(i=>activeBasket?.lineTotal(i.id)==null).length;return blank>0?` ${blank} of ${state.items.length} items show a dash because no catalogue price was collected for them — the running total only covers the rest.`:'';})()}</div></section><aside><section className="card shop-summary"><div className="shopping-circle"><ShoppingBag size={32}/></div><h3>{checked===state.items.length?"Everything’s in the basket.":"You’ve got this."}</h3><p>{checked===state.items.length?"After checkout, save the receipt and record what you actually spent.":"Take your time. We’ll keep your place on the list."}</p><button className="button primary full" onClick={openReceipt}><ReceiptText size={16}/> Finish & add receipt</button><button className="text-button" onClick={exportList}><Download size={15}/> Export checklist</button></section></aside></div>:<Empty title="Pick your basket first" action={<button className="button primary" onClick={()=>go("compare")}>Compare baskets</button>}>Your shopping checklist will be ready once you choose a basket to shop from.</Empty>}
-   </>}
-   <footer className="workspace-footer"><span><Leaf size={14}/> Made for a more thoughtful shop.</span><div className="workspace-footer-right"><button onClick={()=>setHelp(true)}>Prices in CAD · Check retailer sources <Info size={13}/></button><button onClick={()=>goLegal("terms")}>Terms</button><button onClick={()=>goLegal("privacy")}>Privacy</button><button onClick={()=>goLegal("sources")}>Data sources</button></div></footer>
-   </main>
-   <nav className="mobile-nav" aria-label="Main navigation">{nav.map(({id,label,icon:Icon})=><button key={id} aria-label={label} aria-current={view===id?"page":undefined} className={view===id?"selected":""} onClick={()=>go(id)}><Icon size={21}/><span>{id==="home"?"My week":id==="list"?"My list":id==="compare"?"Baskets":"Spending"}</span></button>)}<button aria-label="Account settings" className={view==="account"||view==="legal"?"selected":""} onClick={()=>go("account")}><Settings2 size={21}/><span>You</span></button></nav>
-  </div>
+      <Onboarding
+        open={onboard}
+        initial={state.prefs}
+        revisit={state.onboarded}
+        onClose={() => {
+          if (!state.onboarded) commit(s => ({...s, onboarded: true}));
+          setOnboard(false);
+        }}
+        onFinish={finishOnboarding}
+        onPrivacy={() => {
+          setOnboard(false);
+          goLegal('privacy');
+        }}
+      />
 
-  <Onboarding open={onboard} initial={state.prefs} revisit={state.onboarded} onClose={()=>{if(!state.onboarded)commit(s=>({...s,onboarded:true}));setOnboard(false);}} onFinish={finishOnboarding} onPrivacy={()=>{setOnboard(false);goLegal("privacy");}}/>
+      <Dialog
+        open={catalogOpen}
+        onOpenChange={v => {
+          setCatalogOpen(v);
+          if (!v) setMatchingItem(null);
+        }}
+      >
+        <DialogContent className="catalog-modal">
+          <DialogTitle>
+            {matchingItem ? 'Choose the right match' : 'What’s on your list?'}
+          </DialogTitle>
+          <DialogDescription>
+            Browse by department and aisle, search across every item, or paste a list you already
+            have.
+          </DialogDescription>
+          <Tabs value={importMode} onValueChange={setImportMode}>
+            <TabsList className="segment-tabs">
+              <TabsTrigger value="browse">Find groceries</TabsTrigger>
+              <TabsTrigger value="paste" disabled={!!matchingItem}>
+                Paste a list
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="browse">
+              <CategoryBrowser
+                onPick={addProduct}
+                picked={
+                  new Set(state.items.map(i => i.productId).filter((id): id is string => !!id))
+                }
+                mode={matchingItem ? 'match' : 'add'}
+              />
+            </TabsContent>
+            <TabsContent value="paste">
+              <label className="field-label">
+                Your grocery list
+                <textarea
+                  rows={7}
+                  value={paste}
+                  onChange={e => setPaste(e.target.value)}
+                  placeholder={'2 milk\neggs\nbananas\nwhole wheat bread\ncoffee'}
+                />
+              </label>
+              <p className="field-help">
+                One item per line, or separate with commas. Add a quantity before the name. You’ll
+                review brands and sizes next.
+              </p>
+              <button className="button primary full" disabled={!paste.trim()} onClick={addText}>
+                <ListPlus size={18} /> Add to my list
+              </button>
+            </TabsContent>
+          </Tabs>
+          <div className="catalog-footer">
+            <span>{state.items.length} products on your list</span>
+            <button
+              className="button secondary"
+              onClick={() => {
+                setCatalogOpen(false);
+                go('list');
+              }}
+            >
+              Done <Check size={16} />
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-  <Dialog open={catalogOpen} onOpenChange={v=>{setCatalogOpen(v);if(!v)setMatchingItem(null);}}><DialogContent className="catalog-modal"><DialogTitle>{matchingItem?"Choose the right match":"What’s on your list?"}</DialogTitle><DialogDescription>Browse by department and aisle, search across every item, or paste a list you already have.</DialogDescription><Tabs value={importMode} onValueChange={setImportMode}><TabsList className="segment-tabs"><TabsTrigger value="browse">Find groceries</TabsTrigger><TabsTrigger value="paste" disabled={!!matchingItem}>Paste a list</TabsTrigger></TabsList><TabsContent value="browse"><CategoryBrowser onPick={addProduct} picked={new Set(state.items.map(i=>i.productId).filter((id):id is string=>!!id))} mode={matchingItem?"match":"add"}/></TabsContent><TabsContent value="paste"><label className="field-label">Your grocery list<textarea rows={7} value={paste} onChange={e=>setPaste(e.target.value)} placeholder={"2 milk\neggs\nbananas\nwhole wheat bread\ncoffee"}/></label><p className="field-help">One item per line, or separate with commas. Add a quantity before the name. You’ll review brands and sizes next.</p><button className="button primary full" disabled={!paste.trim()} onClick={addText}><ListPlus size={18}/> Add to my list</button></TabsContent></Tabs><div className="catalog-footer"><span>{state.items.length} products on your list</span><button className="button secondary" onClick={()=>{setCatalogOpen(false);go("list");}}>Done <Check size={16}/></button></div></DialogContent></Dialog>
+      <Dialog open={swapsOpen} onOpenChange={setSwapsOpen}>
+        <DialogContent className="swaps-modal">
+          <div className="modal-icon">
+            <Sparkles size={23} />
+          </div>
+          <DialogTitle>Better value, same shop.</DialogTitle>
+          <DialogDescription>
+            Each suggestion is a second catalogue record from the retailer you are already shopping.
+            You approve every change; locked products stay as they are.
+          </DialogDescription>
+          {swaps.length ? (
+            <>
+              <div className="swap-summary">
+                <span>Total off your basket if you take them all</span>
+                <strong>{money(potential)}</strong>
+              </div>
+              <div className="swaps-list">
+                {swaps.map(sw => (
+                  <div className="swap-row" key={sw.item.id}>
+                    <div className="swap-body">
+                      <strong>{sw.to.offer.title}</strong>
+                      <p className="swap-from">
+                        Instead of {sw.from.offer.title} · {sw.retailer}
+                      </p>
+                      <span className="green-text">
+                        {money(sw.saving)} off this line
+                        {sw.item.qty > 1 ? ` (${sw.item.qty} on your list)` : ''}
+                      </span>
+                      {sw.unitNote && <small className="swap-reason">{sw.unitNote}</small>}
+                      <small className="swap-reason">{sw.sizeNote}</small>
+                    </div>
+                    <div className="swap-actions">
+                      <button className="button primary" onClick={() => applySwap(sw)}>
+                        Use this <RefreshCw size={14} />
+                      </button>
+                      <button className="text-button" onClick={() => rejectSwap(sw)}>
+                        Keep mine
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="field-help">
+                Both products were read from the same retailer catalogue, and a suggestion is only
+                made when it gives you at least as much for less. Ingredients and allergens may
+                differ; check the label in the shop.
+              </p>
+            </>
+          ) : (
+            <Empty icon={CheckCircle2} title="Nothing cheaper to offer">
+              {!agent.run
+                ? 'Run a price check and Aisle will look for better value among the offers it collects.'
+                : !state.prefs.substitutions
+                  ? 'Substitutions are turned off in your account settings, so Aisle leaves your choices alone.'
+                  : state.prefs.allergens.length || state.prefs.dietary.length
+                    ? 'Aisle does not suggest alternatives while you have a diet or allergy recorded — a swap it cannot verify is not worth the risk.'
+                    : 'Nothing in the collected catalogues gives you the same amount for less than what is already in your basket.'}
+            </Empty>
+          )}
+        </DialogContent>
+      </Dialog>
 
+      <Dialog open={receiptOpen} onOpenChange={setReceiptOpen}>
+        <DialogContent className="receipt-modal">
+          <DialogTitle>How did your shop go?</DialogTitle>
+          <DialogDescription>
+            Keep the receipt, record what you spent, and build your history.
+          </DialogDescription>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            ref={fileRef}
+            className="sr-only"
+            onChange={e => void upload(e.target.files?.[0])}
+          />
+          <button
+            className={cx('upload-zone', receiptId && 'uploaded')}
+            onClick={() => {
+              if (isDevice)
+                void captureReceipt()
+                  .then(file => {
+                    if (file) void upload(file);
+                  })
+                  .catch(() => toast.error('Could not open the camera. Please try again.'));
+              else fileRef.current?.click();
+            }}
+            disabled={uploading}
+          >
+            {uploading ? (
+              <LoaderCircle className="spin" size={27} />
+            ) : receiptId ? (
+              <CheckCircle2 size={27} />
+            ) : (
+              <Camera size={27} />
+            )}
+            <strong>
+              {uploading
+                ? 'Saving your receipt…'
+                : receiptId
+                  ? receiptName
+                  : 'Attach a receipt photo'}
+            </strong>
+            <span>JPG, PNG or WebP · up to 5 MB · optional</span>
+          </button>
+          <div className="form-grid">
+            <label>
+              Store
+              <Choice
+                label="Receipt store"
+                value={receiptStore}
+                onChange={setReceiptStore}
+                options={receiptStoreOptions}
+              />
+            </label>
+            <label>
+              Shopping date
+              <input
+                type="date"
+                value={receiptDate}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={e => setReceiptDate(e.target.value)}
+              />
+            </label>
+          </div>
+          <label className="field-label">
+            Total paid (CAD)
+            <div className="budget-input">
+              <span>$</span>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                placeholder="0.00"
+                aria-label="Receipt total paid"
+                value={receiptTotal}
+                onChange={e => setReceiptTotal(e.target.value)}
+              />
+            </div>
+          </label>
+          <details className="receipt-line-details">
+            <summary>
+              Add item prices for a closer review <ChevronDown size={14} />
+            </summary>
+            <p>Enter each line total, including the quantity. Leave unpurchased items blank.</p>
+            <div>
+              {state.items.map(i => (
+                <label key={i.id}>
+                  <span>
+                    {i.qty} × {i.name}
+                  </span>
+                  <input
+                    aria-label={`Actual total for ${i.name}`}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={actuals[i.id] ?? ''}
+                    onChange={e => setActuals({...actuals, [i.id]: e.target.value})}
+                  />
+                </label>
+              ))}
+            </div>
+          </details>
+          <div className="receipt-honesty">
+            <Info size={15} />
+            <p>
+              Photos are stored for your reference. Enter totals manually; automatic receipt reading
+              isn’t connected yet. Sample comparisons cannot verify real savings.
+            </p>
+          </div>
+          <button
+            className="button primary full"
+            disabled={uploading || !receiptTotal || !ready}
+            onClick={saveReceipt}
+          >
+            Save shopping trip <Check size={17} />
+          </button>
+        </DialogContent>
+      </Dialog>
 
-  <Dialog open={swapsOpen} onOpenChange={setSwapsOpen}><DialogContent className="swaps-modal"><div className="modal-icon"><Sparkles size={23}/></div><DialogTitle>Better value, same shop.</DialogTitle><DialogDescription>Each suggestion is a second catalogue record from the retailer you are already shopping. You approve every change; locked products stay as they are.</DialogDescription>{swaps.length?<><div className="swap-summary"><span>Total off your basket if you take them all</span><strong>{money(potential)}</strong></div><div className="swaps-list">{swaps.map(sw=><div className="swap-row" key={sw.item.id}><div className="swap-body"><strong>{sw.to.offer.title}</strong><p className="swap-from">Instead of {sw.from.offer.title} · {sw.retailer}</p><span className="green-text">{money(sw.saving)} off this line{sw.item.qty>1?` (${sw.item.qty} on your list)`:''}</span>{sw.unitNote&&<small className="swap-reason">{sw.unitNote}</small>}<small className="swap-reason">{sw.sizeNote}</small></div><div className="swap-actions"><button className="button primary" onClick={()=>applySwap(sw)}>Use this <RefreshCw size={14}/></button><button className="text-button" onClick={()=>rejectSwap(sw)}>Keep mine</button></div></div>)}</div><p className="field-help">Both products were read from the same retailer catalogue, and a suggestion is only made when it gives you at least as much for less. Ingredients and allergens may differ; check the label in the shop.</p></>:<Empty icon={CheckCircle2} title="Nothing cheaper to offer">{!agent.run?'Run a price check and Aisle will look for better value among the offers it collects.':!state.prefs.substitutions?'Substitutions are turned off in your account settings, so Aisle leaves your choices alone.':state.prefs.allergens.length||state.prefs.dietary.length?'Aisle does not suggest alternatives while you have a diet or allergy recorded — a swap it cannot verify is not worth the risk.':'Nothing in the collected catalogues gives you the same amount for less than what is already in your basket.'}</Empty>}</DialogContent></Dialog>
+      <Dialog
+        open={!!historyDetail}
+        onOpenChange={v => {
+          if (!v) setHistoryDetail(null);
+        }}
+      >
+        <DialogContent className="receipt-modal">
+          <DialogTitle>
+            {stores.find(s => s.id === historyDetail?.storeId)?.name} receipt
+          </DialogTitle>
+          <DialogDescription>{historyDetail?.date} · Manually recorded spending</DialogDescription>
+          {historyDetail && (
+            <>
+              <div className="history-total">
+                <span>Actual total paid</span>
+                <strong>{money(historyDetail.total)}</strong>
+              </div>
+              {historyDetail.receiptId && (
+                <button
+                  onClick={() =>
+                    void openReceiptFile(historyDetail.receiptId!).catch(() =>
+                      toast.error('Could not open the receipt.'),
+                    )
+                  }
+                  className="button secondary"
+                >
+                  <FileText size={17} /> View saved receipt <ArrowUpRight size={15} />
+                </button>
+              )}
+              {(historyDetail.lines ?? []).length > 0 && (
+                <div className="receipt-records">
+                  {(historyDetail.lines ?? []).map((p, i) => (
+                    <div key={i}>
+                      <span>
+                        {p.quantity} × {p.name}
+                      </span>
+                      <strong className={p.actual === null ? 'record-blank' : undefined}>
+                        {p.actual === null ? 'no price entered' : money(p.actual)}
+                      </strong>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="field-help">
+                Only your entered amounts are recorded as actual spending. No savings are claimed
+                against the illustrative catalogue.
+              </p>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
-  <Dialog open={receiptOpen} onOpenChange={setReceiptOpen}><DialogContent className="receipt-modal"><DialogTitle>How did your shop go?</DialogTitle><DialogDescription>Keep the receipt, record what you spent, and build your history.</DialogDescription><input type="file" accept="image/jpeg,image/png,image/webp" ref={fileRef} className="sr-only" onChange={e=>void upload(e.target.files?.[0])}/><button className={cx("upload-zone",receiptId&&"uploaded")} onClick={()=>{if(isDevice)void captureReceipt().then(file=>{if(file)void upload(file);}).catch(()=>toast.error("Could not open the camera. Please try again."));else fileRef.current?.click();}} disabled={uploading}>{uploading?<LoaderCircle className="spin" size={27}/>:receiptId?<CheckCircle2 size={27}/>:<Camera size={27}/>}<strong>{uploading?"Saving your receipt…":receiptId?receiptName:"Attach a receipt photo"}</strong><span>JPG, PNG or WebP · up to 5 MB · optional</span></button><div className="form-grid"><label>Store<Choice label="Receipt store" value={receiptStore} onChange={setReceiptStore} options={receiptStoreOptions}/></label><label>Shopping date<input type="date" value={receiptDate} max={new Date().toISOString().slice(0,10)} onChange={e=>setReceiptDate(e.target.value)}/></label></div><label className="field-label">Total paid (CAD)<div className="budget-input"><span>$</span><input type="number" min="0.01" step="0.01" placeholder="0.00" aria-label="Receipt total paid" value={receiptTotal} onChange={e=>setReceiptTotal(e.target.value)}/></div></label><details className="receipt-line-details"><summary>Add item prices for a closer review <ChevronDown size={14}/></summary><p>Enter each line total, including the quantity. Leave unpurchased items blank.</p><div>{state.items.map(i=><label key={i.id}><span>{i.qty} × {i.name}</span><input aria-label={`Actual total for ${i.name}`} type="number" min="0" step="0.01" placeholder="0.00" value={actuals[i.id]??""} onChange={e=>setActuals({...actuals,[i.id]:e.target.value})}/></label>)}</div></details><div className="receipt-honesty"><Info size={15}/><p>Photos are stored for your reference. Enter totals manually; automatic receipt reading isn’t connected yet. Sample comparisons cannot verify real savings.</p></div><button className="button primary full" disabled={uploading||!receiptTotal||!ready} onClick={saveReceipt}>Save shopping trip <Check size={17}/></button></DialogContent></Dialog>
-
-  <Dialog open={!!historyDetail} onOpenChange={v=>{if(!v)setHistoryDetail(null);}}><DialogContent className="receipt-modal"><DialogTitle>{stores.find(s=>s.id===historyDetail?.storeId)?.name} receipt</DialogTitle><DialogDescription>{historyDetail?.date} · Manually recorded spending</DialogDescription>{historyDetail&&<><div className="history-total"><span>Actual total paid</span><strong>{money(historyDetail.total)}</strong></div>{historyDetail.receiptId&&<button onClick={()=>void openReceiptFile(historyDetail.receiptId!).catch(()=>toast.error("Could not open the receipt."))} className="button secondary"><FileText size={17}/> View saved receipt <ArrowUpRight size={15}/></button>}{(historyDetail.lines??[]).length>0&&<div className="receipt-records">{(historyDetail.lines??[]).map((p,i)=><div key={i}><span>{p.quantity} × {p.name}</span><strong className={p.actual===null?'record-blank':undefined}>{p.actual===null?'no price entered':money(p.actual)}</strong></div>)}</div>}<p className="field-help">Only your entered amounts are recorded as actual spending. No savings are claimed against the illustrative catalogue.</p></>}</DialogContent></Dialog>
-
-  <Dialog open={help} onOpenChange={setHelp}><DialogContent className="help-modal"><div className="modal-icon"><ShoppingBasket size={26}/></div><DialogTitle>A clearer way to shop.</DialogTitle><DialogDescription>Aisle helps you compare your whole grocery list and keep control of every choice.</DialogDescription><div className="how-steps">{[{n:"01",t:"Make your list",d:"Add products, choose sizes, and lock the favourites you don’t want to change."},{n:"02",t:"Compare complete baskets",d:"Review retailer products and pack sizes. Only complete, confirmed online baskets can be compared. Missing prices remain visible."},{n:"03",t:"Shop, then reflect",d:"Check off your list and save your receipt. Your spending stays separate from estimated savings."}].map(x=><div key={x.n}><span>{x.n}</span><div><strong>{x.t}</strong><p>{x.d}</p></div></div>)}</div><div className="help-data"><strong>This is a working product preview.</strong><p>The default plan collects limited public online catalogues with source links and expiry times. Check each connection status. Branch prices, branch stock, live routing, automated receipt extraction and LLM services are not connected. The separate sample demo uses illustrative prices and travel estimates. {isDevice?"Your lists, preferences and receipts are stored on this device and work offline. Cloud sync is not connected.":"Your lists, preferences and recorded receipts are saved to your account."} Personalization uses explicit preferences and a small adaptive ranking model, not a continuously running chatbot.</p></div><button className="button primary full" onClick={()=>setHelp(false)}>Got it <Check size={17}/></button><p className="help-legal-links"><button onClick={()=>{setHelp(false);goLegal("privacy");}}>Privacy Policy</button><span aria-hidden="true"> · </span><button onClick={()=>{setHelp(false);goLegal("terms");}}>Terms of Use</button><span aria-hidden="true"> · </span><button onClick={()=>{setHelp(false);goLegal("sources");}}>Data sources</button></p></DialogContent></Dialog>
-  <ShelfPriceCapture open={!!captureItem} onOpenChange={v=>{if(!v)setCaptureItem(null);}}
-   item={captureItem} defaultStoreId={state.activeShop??state.prefs.usualStore}
-   stores={receiptStoreOptions}
-   existing={captureItem?latestShelfPrice(state,captureItem.productId,state.activeShop??undefined):null}
-   onSave={input=>{if(!captureItem)return;
-    commit(st=>recordShelfPrice(st,{item:captureItem,storeId:input.storeId,
-     storeName:shopIdentity(input.storeId).name,priceCents:input.priceCents,
-     packLabel:input.packLabel,note:input.note,photoId:input.photoId}));
-    toast.success(`Saved ${money(input.priceCents)} for ${captureItem.name}. Recorded as your own reading.`);}}
-   onRemove={id=>{const gone=(state.shelfPrices??[]).find(r=>r.id===id);
-    if(gone?.photoId)void deleteShelfPhoto(gone.photoId);
-    commit(st=>removeShelfPrice(st,id));toast('Removed that price.');}}/>
-  <ListStarters open={startersOpen} onOpenChange={setStartersOpen} state={state} onUse={applyStarter}/>
-  <AlertDialog open={resetOpen} onOpenChange={setResetOpen}><AlertDialogContent><AlertDialogTitle>Start fresh?</AlertDialogTitle><AlertDialogDescription>Your saved data cannot be read, so Aisle will replace it with an empty list and default preferences. Anything currently stored on this device is discarded. This cannot be undone.</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={()=>{void (async()=>{try{const blank=initialState();await saveState({...blank,onboarded:true},0).catch(async()=>{await saveState({...blank,onboarded:true},(await loadState()).revision);});setResetOpen(false);window.location.reload();}catch{setResetOpen(false);setSavingError("Aisle could not reset its storage. Reinstalling the app will clear it.");}})();}}>Start fresh</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog><AlertDialog open={clearOpen} onOpenChange={setClearOpen}><AlertDialogContent><AlertDialogTitle>Start with a fresh list?</AlertDialogTitle><AlertDialogDescription>This removes all {state.items.length} products from the current list. Your preferences and past receipts will stay saved.</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel>Keep my list</AlertDialogCancel><AlertDialogAction onClick={()=>{commit(s=>({...s,items:[],activeShop:null}));setListFilter("All items");toast.success("Your list is ready for a fresh start.");}}>Clear list</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-  <Toaster position="bottom-right" theme="light" closeButton/>
- </SidebarProvider>;
+      <Dialog open={help} onOpenChange={setHelp}>
+        <DialogContent className="help-modal">
+          <div className="modal-icon">
+            <ShoppingBasket size={26} />
+          </div>
+          <DialogTitle>A clearer way to shop.</DialogTitle>
+          <DialogDescription>
+            Aisle helps you compare your whole grocery list and keep control of every choice.
+          </DialogDescription>
+          <div className="how-steps">
+            {[
+              {
+                n: '01',
+                t: 'Make your list',
+                d: 'Add products, choose sizes, and lock the favourites you don’t want to change.',
+              },
+              {
+                n: '02',
+                t: 'Compare complete baskets',
+                d: 'Review retailer products and pack sizes. Only complete, confirmed online baskets can be compared. Missing prices remain visible.',
+              },
+              {
+                n: '03',
+                t: 'Shop, then reflect',
+                d: 'Check off your list and save your receipt. Your spending stays separate from estimated savings.',
+              },
+            ].map(x => (
+              <div key={x.n}>
+                <span>{x.n}</span>
+                <div>
+                  <strong>{x.t}</strong>
+                  <p>{x.d}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="help-data">
+            <strong>This is a working product preview.</strong>
+            <p>
+              The default plan collects limited public online catalogues with source links and
+              expiry times. Check each connection status. Branch prices, branch stock, live routing,
+              automated receipt extraction and LLM services are not connected. The separate sample
+              demo uses illustrative prices and travel estimates.{' '}
+              {isDevice
+                ? 'Your lists, preferences and receipts are stored on this device and work offline. Cloud sync is not connected.'
+                : 'Your lists, preferences and recorded receipts are saved to your account.'}{' '}
+              Personalization uses explicit preferences and a small adaptive ranking model, not a
+              continuously running chatbot.
+            </p>
+          </div>
+          <button className="button primary full" onClick={() => setHelp(false)}>
+            Got it <Check size={17} />
+          </button>
+          <p className="help-legal-links">
+            <button
+              onClick={() => {
+                setHelp(false);
+                goLegal('privacy');
+              }}
+            >
+              Privacy Policy
+            </button>
+            <span aria-hidden="true"> · </span>
+            <button
+              onClick={() => {
+                setHelp(false);
+                goLegal('terms');
+              }}
+            >
+              Terms of Use
+            </button>
+            <span aria-hidden="true"> · </span>
+            <button
+              onClick={() => {
+                setHelp(false);
+                goLegal('sources');
+              }}
+            >
+              Data sources
+            </button>
+          </p>
+        </DialogContent>
+      </Dialog>
+      <ShelfPriceCapture
+        open={!!captureItem}
+        onOpenChange={v => {
+          if (!v) setCaptureItem(null);
+        }}
+        item={captureItem}
+        defaultStoreId={state.activeShop ?? state.prefs.usualStore}
+        stores={receiptStoreOptions}
+        existing={
+          captureItem
+            ? latestShelfPrice(state, captureItem.productId, state.activeShop ?? undefined)
+            : null
+        }
+        onSave={input => {
+          if (!captureItem) return;
+          commit(st =>
+            recordShelfPrice(st, {
+              item: captureItem,
+              storeId: input.storeId,
+              storeName: shopIdentity(input.storeId).name,
+              priceCents: input.priceCents,
+              packLabel: input.packLabel,
+              note: input.note,
+              photoId: input.photoId,
+            }),
+          );
+          toast.success(
+            `Saved ${money(input.priceCents)} for ${captureItem.name}. Recorded as your own reading.`,
+          );
+        }}
+        onRemove={id => {
+          const gone = (state.shelfPrices ?? []).find(r => r.id === id);
+          if (gone?.photoId) void deleteShelfPhoto(gone.photoId);
+          commit(st => removeShelfPrice(st, id));
+          toast('Removed that price.');
+        }}
+      />
+      <ListStarters
+        open={startersOpen}
+        onOpenChange={setStartersOpen}
+        state={state}
+        onUse={applyStarter}
+      />
+      <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+        <AlertDialogContent>
+          <AlertDialogTitle>Start fresh?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Your saved data cannot be read, so Aisle will replace it with an empty list and default
+            preferences. Anything currently stored on this device is discarded. This cannot be
+            undone.
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                void (async () => {
+                  try {
+                    const blank = initialState();
+                    await saveState({...blank, onboarded: true}, 0).catch(async () => {
+                      await saveState({...blank, onboarded: true}, (await loadState()).revision);
+                    });
+                    setResetOpen(false);
+                    window.location.reload();
+                  } catch {
+                    setResetOpen(false);
+                    setSavingError(
+                      'Aisle could not reset its storage. Reinstalling the app will clear it.',
+                    );
+                  }
+                })();
+              }}
+            >
+              Start fresh
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
+        <AlertDialogContent>
+          <AlertDialogTitle>Start with a fresh list?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This removes all {state.items.length} products from the current list. Your preferences
+            and past receipts will stay saved.
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep my list</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                commit(s => ({...s, items: [], activeShop: null}));
+                setListFilter('All items');
+                toast.success('Your list is ready for a fresh start.');
+              }}
+            >
+              Clear list
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <Toaster position="bottom-right" theme="light" closeButton />
+    </SidebarProvider>
+  );
 }

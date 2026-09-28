@@ -193,7 +193,7 @@ sort and tree test across every item and writes `docs/ia-study.md`.
 Five synthetic participants each weight a different categorisation cue —
 ingredient, storage, meal occasion, processing, store layout — and navigate
 using only the labels in the tree. A lexicon (`tools/ia-lexicon.mjs`) maps words
-to *concepts* and never to departments, which is what keeps the study from
+to _concepts_ and never to departments, which is what keeps the study from
 marking its own homework: the participant is granted knowledge of what the item
 is, and the labels have to do the rest.
 

@@ -10,9 +10,12 @@
 // language about allergens is removed outright.
 import type {SourcedOffer} from './provenance';
 
-export type Violation={kind:'unverified-figure'|'safety-claim'|'unverified-store'|'fabricated-offer';detail:string};
+export type Violation = {
+  kind: 'unverified-figure' | 'safety-claim' | 'unverified-store' | 'fabricated-offer';
+  detail: string;
+};
 
-export const AGENT_SYSTEM_PROMPT=`You are the matching agent inside Aisle, a grocery price app for Ontario, Canada.
+export const AGENT_SYSTEM_PROMPT = `You are the matching agent inside Aisle, a grocery price app for Ontario, Canada.
 
 Your job is to decide which real retailer products correspond to the items on a household's list, and to explain your reasoning. You are working with tools that return real data collected moments ago.
 
@@ -27,55 +30,73 @@ Absolute rules:
 
 Work in this order: read the profile and list, find stores, collect prices, search the collected offers, propose matches for what genuinely matches, flag what does not, then compute the basket. Be brief.`;
 
-const MONEY=/(?:\$\s?\d[\d,]*(?:\.\d{1,2})?)|(?:\b\d[\d,]*\.\d{2}\s?(?:CAD|cad|dollars)\b)/g;
-const DISTANCE=/\b\d+(?:\.\d+)?\s?(?:km|kilometres|kilometers|miles)\b/gi;
-const SAFETY=/\b(?:allergy[-\s]?safe|safe for (?:your|their|a) (?:allergy|allergies)|allergen[-\s]?free|guaranteed gluten[-\s]?free|suitable for (?:celiac|coeliac))\b/gi;
+const MONEY = /(?:\$\s?\d[\d,]*(?:\.\d{1,2})?)|(?:\b\d[\d,]*\.\d{2}\s?(?:CAD|cad|dollars)\b)/g;
+const DISTANCE = /\b\d+(?:\.\d+)?\s?(?:km|kilometres|kilometers|miles)\b/gi;
+const SAFETY =
+  /\b(?:allergy[-\s]?safe|safe for (?:your|their|a) (?:allergy|allergies)|allergen[-\s]?free|guaranteed gluten[-\s]?free|suitable for (?:celiac|coeliac))\b/gi;
 
-const normalizeFigure=(value:string)=>value.replace(/[^0-9.]/g,'').replace(/^0+(?=\d)/,'');
+const normalizeFigure = (value: string) => value.replace(/[^0-9.]/g, '').replace(/^0+(?=\d)/, '');
 
 /** The complete set of money strings the narrative is permitted to contain. */
-export function allowedFigures(offers:SourcedOffer[],totals:number[]):Set<string>{
- const figures=new Set<string>();
- const add=(cents:number)=>{
-  if(!Number.isFinite(cents))return;
-  figures.add(normalizeFigure((cents/100).toFixed(2)));
-  figures.add(normalizeFigure(String(cents)));
- };
- for(const offer of offers)add(offer.price);
- for(const total of totals)add(total);
- add(0);
- return figures;
+export function allowedFigures(offers: SourcedOffer[], totals: number[]): Set<string> {
+  const figures = new Set<string>();
+  const add = (cents: number) => {
+    if (!Number.isFinite(cents)) return;
+    figures.add(normalizeFigure((cents / 100).toFixed(2)));
+    figures.add(normalizeFigure(String(cents)));
+  };
+  for (const offer of offers) add(offer.price);
+  for (const total of totals) add(total);
+  add(0);
+  return figures;
 }
 
 /** The set of distances the narrative may quote, as returned by discovery. */
-export const allowedDistances=(kms:number[])=>new Set(kms.map(km=>normalizeFigure(km.toFixed(1))));
+export const allowedDistances = (kms: number[]) =>
+  new Set(kms.map(km => normalizeFigure(km.toFixed(1))));
 
-export function reviewNarrative(text:string,figures:Set<string>,distances:Set<string>,offerIds:Set<string>){
- const violations:Violation[]=[];
- let safe=text.replace(SAFETY,match=>{
-  violations.push({kind:'safety-claim',detail:`Removed an allergen-safety claim: "${match}"`});
-  return '[removed: Aisle cannot verify allergen information]';
- });
- safe=safe.replace(MONEY,match=>{
-  if(figures.has(normalizeFigure(match)))return match;
-  violations.push({kind:'unverified-figure',detail:`Removed "${match}", which no collected price or computed total supports`});
-  return '[figure not verified]';
- });
- safe=safe.replace(DISTANCE,match=>{
-  const value=normalizeFigure(match.replace(/[a-z]/gi,''));
-  if(distances.has(value)||distances.has(normalizeFigure(Number(value).toFixed(1))))return match;
-  violations.push({kind:'unverified-store',detail:`Removed "${match}", which the store directory did not return`});
-  return '[distance not verified]';
- });
- // A quoted offer id that is not in the collected pool means the model produced
- // a record that does not exist. That is the failure this whole file exists for.
- for(const quoted of safe.match(/\b[a-z0-9-]+:\d{6,}\b/gi)??[]){
-  if(!offerIds.has(quoted))violations.push({kind:'fabricated-offer',detail:`Referenced offer "${quoted}" was not in the collected results`});
- }
- return {text:safe,violations};
+export function reviewNarrative(
+  text: string,
+  figures: Set<string>,
+  distances: Set<string>,
+  offerIds: Set<string>,
+) {
+  const violations: Violation[] = [];
+  let safe = text.replace(SAFETY, match => {
+    violations.push({kind: 'safety-claim', detail: `Removed an allergen-safety claim: "${match}"`});
+    return '[removed: Aisle cannot verify allergen information]';
+  });
+  safe = safe.replace(MONEY, match => {
+    if (figures.has(normalizeFigure(match))) return match;
+    violations.push({
+      kind: 'unverified-figure',
+      detail: `Removed "${match}", which no collected price or computed total supports`,
+    });
+    return '[figure not verified]';
+  });
+  safe = safe.replace(DISTANCE, match => {
+    const value = normalizeFigure(match.replace(/[a-z]/gi, ''));
+    if (distances.has(value) || distances.has(normalizeFigure(Number(value).toFixed(1))))
+      return match;
+    violations.push({
+      kind: 'unverified-store',
+      detail: `Removed "${match}", which the store directory did not return`,
+    });
+    return '[distance not verified]';
+  });
+  // A quoted offer id that is not in the collected pool means the model produced
+  // a record that does not exist. That is the failure this whole file exists for.
+  for (const quoted of safe.match(/\b[a-z0-9-]+:\d{6,}\b/gi) ?? []) {
+    if (!offerIds.has(quoted))
+      violations.push({
+        kind: 'fabricated-offer',
+        detail: `Referenced offer "${quoted}" was not in the collected results`,
+      });
+  }
+  return {text: safe, violations};
 }
 
 /** Applied to every rationale string a model attaches to a proposed match. */
-export function reviewRationale(text:string,figures:Set<string>){
- return reviewNarrative(text.slice(0,400),figures,new Set(),new Set()).text;
+export function reviewRationale(text: string, figures: Set<string>) {
+  return reviewNarrative(text.slice(0, 400), figures, new Set(), new Set()).text;
 }
