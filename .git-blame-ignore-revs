@@ -1,0 +1,5 @@
+# Pure formatting commits. `git config blame.ignoreRevsFile .git-blame-ignore-revs`
+# (GitHub applies this automatically.)
+
+# Prettier over the whole tree
+323ffb62c800c0d23aaa25d6ffbe8a5026d83933
