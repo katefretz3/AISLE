@@ -1,168 +1,134 @@
 # Aisle — iOS and Android
 
-A mobile grocery planning app with Ontario city selection. Built with React 19, TypeScript, and Capacitor 8.5.2. The iOS and Android projects and their bundled interfaces are included.
+A grocery planning app for Ontario households. React 19, TypeScript, Vite 8 and
+Capacitor 8; the iOS and Android projects are in `ios/` and `android/`.
 
-## What works
+Its governing rule, from the first day: **the app does not make up information
+to have something to show.** A price on screen came from a response Aisle
+received, or the household typed it and it is labelled as theirs. Anything else
+is shown as missing.
 
-- Four-step, phone-first onboarding followed by a brief saving animation: city, household, cadence, budget, shopping priorities, travel, dietary restrictions, protected brands, at least five basket favourites, and optional learning. Revisiting setup preserves the current list unless replacement is explicitly selected.
-- Interactive OpenStreetMap centred on the selected Ontario city, a radius circle, draggable search pin, tap-to-select location, zoom controls, and a keyboard-friendly “Use map centre” action. City, radius, custom search point, and multiple preferred chains persist with the profile.
-- Recognizable PNG logos for 14 chains, with source attribution in `public/images/stores/provenance.json`.
-- A 557-item catalogue organized the way a shop is: 14 departments → 76 aisles → items (Produce → Fruit → Blueberries), with keyword search that understands everyday synonyms (“pop” finds cola, “capsicum” finds bell peppers, “mince” finds ground meat). Items that honestly live in two places, like frozen blueberries, are cross-listed rather than filed once and lost.
-- A picture for every item. `npm run photos` fetches a generic, unbranded photograph per item; `npm run art` draws a flat illustration as the fallback. Nothing ever renders without an image.
-- An information-architecture study (`npm run ia`) that runs a simulated card sort and tree test over the whole catalogue and reports which placements are contested. See `docs/ia-study.md`.
-- A Compare baskets screen that ranks the agent's verified baskets against each other, shows how much of your list each one actually covers, and is where a shop starts from.
-- A shopping checklist ordered the way a shop is walked, with a live running total pinned to the top.
-- Start from a previous list: the last shop is snapshotted automatically, lists can be named and kept, and your usuals are one tap away.
-- Editable grocery lists, paste import, product matching, quantities, brand locks, and sharing.
-- An Account settings screen covering profile, household, budget, location, dietary and allergen preferences, and learning controls, with a separated destructive zone for forgetting or erasing.
-- Legal screens: Terms of Use, Privacy Policy, and Data sources & attribution, written to describe what this app actually does.
-- An on-demand price collection pipeline for two public online catalogues, with CAD verification, source links, freshness, availability, and honest failure states.
-- A tool-using agent that discovers nearby Ontario stores, probes which publish a readable catalogue, collects prices, matches the list and totals it — with an evidence ledger behind every figure and no estimation path. See `AGENTIC_SYSTEM.md`.
-- User-confirmed retailer matches, normalized pack quantities, integer-cent basket totals, and per-shop budget checks. Unknown prices or incompatible units prevent a complete basket.
-- Explicit brand and item locks constrain product matching. Dietary preferences and exclusions constrain replenishment suggestions; ingredient records remain unverified.
-- Adaptive recommendations from explicit favourites, accepted/rejected swaps, and purchases confirmed through shopping checks or entered item prices. Reasons are visible. Behavioural learning is opt-in and can be cleared.
-- Shopping checklists, receipt camera/photo picker integration, receipt image storage, manually entered totals, and spending history.
-- Device storage for profiles, lists, receipts, and learning history. Saved lists and preferences work offline; observed prices expire after 24 hours. A separate labelled sample demo is available. It does not require a hosted webpage to render and does not contain a remote `server.url`.
-- Native Android back-button handling and native share sheets. App icons, launch imagery, iOS usage descriptions, and privacy manifest are included.
+Start with [`docs/HANDOFF.md`](docs/HANDOFF.md) for the current state and what
+is left to do.
 
-## Run the project
+## What it does
 
-Use Node.js 22.13 or newer, then:
+- **Setup** in four steps: city and search area on a map, household, cadence,
+  budget, priorities, dietary and allergen settings, protected brands, and at
+  least five usual items. "Explore first" skips it.
+- **A 557-item catalogue** shaped like a shop (14 departments, 76 aisles), with
+  everyday synonyms in search and dual-home items cross-listed.
+- **Price checks.** A tool-using agent finds mapped grocery stores near the
+  household (OpenStreetMap), works out which publish a readable public
+  catalogue, collects prices, matches them to the list and totals each
+  retailer's basket. Every price carries an evidence id pointing at the HTTP
+  response it came from; anything that fails verification is dropped before any
+  arithmetic. See [`AGENTIC_SYSTEM.md`](AGENTIC_SYSTEM.md).
+- **The last check is kept for 24 hours** on the device and reused on the next
+  launch, for the same search area only. Each price stops being shown when it
+  expires (24 hours after it was read), and the summary says when prices were
+  checked.
+- **Compare baskets**: a complete basket always outranks a partial one, and a
+  basket with gaps is never called the cheapest.
+- **In the shop**: a checklist in walking order with a live running total that
+  counts only what is ticked, and **shelf prices** the household reads off a
+  label (optionally with a photo). Those are stored as the household's own
+  readings, never presented as verified, and deleted after a year.
+- **Spending**: record what you paid per shop, optionally per item, with a
+  receipt photo. That record becomes price history ("paid $3.49 at Metro") and
+  repurchase timing. Estimates are only scored against the till when the whole
+  list was priced.
+- **Account and legal**: one settings screen; Terms, Privacy and Data sources
+  written to describe what the app does. Erase everything resets the saved
+  household and deletes receipt and label photos, the saved check and the
+  directory cache.
+
+Coverage is honest about its ceiling: the big Ontario chains publish no public
+machine-readable price feed, so they appear near you without prices. Online
+catalogue prices are not branch prices. Ingredients are not verified, so this is
+not an allergy-safety tool. Distances are straight-line.
+
+## Run it
+
+Node.js 22.13 or newer.
 
 ```sh
 npm ci
-npm run check    # TypeScript across src, tests, tools and the broker
-npm test         # 36 tests covering the agent and the catalogue
-npm run art      # redraw the fallback illustrations from the taxonomy
-npm run ia       # simulated card sort + tree test over the catalogue
-npm run photos   # fetch real generic photos (needs outbound network)
-npm run build
-npx cap sync
+npm ci --prefix ../server   # the reasoning broker's SDK; the typecheck includes it
+npm run verify              # typecheck, lint, format, unit tests, build
+npm run test:e2e            # browser tests against the production build
+npm run dev                 # local preview
 ```
+
+| Script                  | What it does                                                            |
+| ----------------------- | ----------------------------------------------------------------------- |
+| `npm run check`         | TypeScript across `src`, `tests`, `tools` and `../server`               |
+| `npm run lint`          | ESLint (CI runs it with `--max-warnings 0`)                             |
+| `npm run format:check`  | Prettier                                                                |
+| `npm test`              | 149 unit tests on Node's runner (`tests/*.test.ts`)                     |
+| `npm run test:e2e`      | 11 Playwright tests (`tests/e2e`), 13 runs across phone and desktop     |
+| `npm run release:check` | Refuses a release with placeholder legal details or mismatched versions |
+| `npm run release`       | verify, release check, then `cap sync`                                  |
+| `npm run art`           | Redraw the fallback product illustrations                               |
+| `npm run photos`        | Fetch generic product photos (needs network; see below)                 |
+| `npm run ia`            | Simulated card sort and tree test over the catalogue                    |
+
+The unit tests are written mostly as attempts to get a fabricated price through:
+absent or forged evidence, stale and non-CAD prices, invented figures in
+generated text, offer ids never collected, a saved check edited on disk,
+matches that break a household lock. Each has to fail closed. The browser tests
+answer every outside request with a synthetic fixture or refuse it.
+
+CI (`.github/workflows/ci.yml`) runs verify, a dependency audit and the browser
+tests on every push; the release check runs on `v*` tags.
 
 ### iPhone / iPad
 
-On a Mac with an Xcode version supported by Capacitor 8:
-
-```sh
-npm run ios
-```
-
-Open `ios/App/App.xcodeproj`, let Swift Package Manager resolve packages, choose your Apple development team, select a simulator or connected phone, and run. The project uses Swift Package Manager, not CocoaPods. Replace the provisional bundle ID `ca.aisle.grocery` with an identifier you own before distribution.
+On a Mac with Xcode: `npm run release` (or `npm run build && npx cap sync`), then
+`npm run ios`. The project uses Swift Package Manager. Replace the bundle id
+`ca.aisle.grocery` with one you own before distribution.
 
 ### Android
 
-Install Android Studio, Android SDK 36, and the JDK required by the installed Capacitor/Gradle versions (JDK 21 for Capacitor 8). Then:
+Android Studio, SDK 36 and JDK 21, then `npm run android`. Generate your own
+signing key; none is included.
 
-```sh
-npm run android
-```
+Neither native app has been compiled in this repository's CI or build
+environment (no Xcode, no Android SDK). See the handoff.
 
-Open `android/`, let Gradle sync, select an emulator or connected phone, and run. Generate your own signing key for a Play Store release. No signing keys or credentials are included.
+## The reasoning service (optional)
 
-### Local interface preview
+The app bundles no API key. When `VITE_AISLE_AGENT_ENDPOINT` points at a broker
+you run ([`../server`](../server/README.md)), a model helps match catalogue
+titles to list items and explains the result; it is given no way to produce a
+price, a distance or a total, and generated text is checked afterwards for
+figures that no tool produced. Without a broker, or when the broker fails,
+refuses or runs out of room, the rule-based planner does the matching and the
+prices are identical. The privacy policy lists every field the model receives,
+and a test fails if that list changes without the policy changing.
 
-```sh
-npm run dev
-```
+## Where data goes
 
-Use the browser’s responsive mode. Capacitor supplies browser fallbacks for storage, but camera/share behaviour must be tested on the target operating systems.
+- **Stays on the device**: the household, lists, trips, receipt and label
+  photos, the saved price check, the directory cache. No account, no cloud copy.
+- **Store directory** (Overpass, three public mirrors in turn): a coarse search
+  area, rounded to about 5 km.
+- **Retailer sites**: ordinary requests for public catalogue pages.
+- **Map tiles** (OpenStreetMap): the area being viewed.
+- **Reasoning broker, only if configured**: the list, collected offers, nearby
+  shops and the household profile, including allergies and dietary needs.
+  Section 4 of the privacy policy has the full list.
 
-## The agent
-
-`src/lib/agent/` holds a tool-using agent that discovers Ontario grocery stores
-near the household, works out which of them publish a readable price catalogue,
-collects current prices, matches them to the grocery list, and totals the
-result. `AGENTIC_SYSTEM.md` documents it in full.
-
-Its governing rule: **a number that cannot be traced to a response Aisle
-received is not shown.** Every price carries an evidence id pointing at the HTTP
-response it was parsed from — status, byte count, SHA-256 and timestamp — and a
-verification pass discards anything that fails before any arithmetic runs. There
-is no estimation path.
-
-A language model does the judgement work in the middle: reading the list, and
-deciding whether a catalogue title really is the product that was asked for. It
-is given no way to produce a price, a distance or a total — those come from
-tools — and generated prose is scrubbed afterwards, with any unsupported figure
-removed and recorded as a violation. Hard constraints (locked items, excluded
-products, protected brands, category locks) are enforced inside the tool
-handlers, so a model cannot argue past them. The agent proposes; the household
-confirms.
-
-The app bundles no API key. Model requests go through a broker you run
-(`../server/agent-broker.ts`); copy `.env.example` to `.env` to point at it. With
-no broker configured the agent runs a rule-based planner instead and reports
-`mode: 'deterministic'` — prices and totals are identical either way, only the
-explanation quality changes.
-
-Personalization is derived from the household's own actions: recency-weighted
-brand acceptance, median repurchase intervals, retailer affinity, and a
-confidence level. Allergies and dietary restrictions are explicit only, never
-inferred and never relaxed; with learning off, nothing behavioural is derived at
-all.
-
-The agent is what the main screen shows. `AgentWorkspace` calls `runAgent()` and
-renders the result: a live phase trace, which retailers were readable, each list
-item with its proposed match (or an honest gap and the reason), per-retailer
-baskets, nearby stores with their feed status, and an expandable evidence table
-listing every HTTP response behind the figures — status, size, SHA-256 and time.
-Confirming or withdrawing a match re-totals instantly from the run snapshot,
-without re-collecting.
-
-```ts
-import {runAgent} from '@/lib/agent';
-const run = await runAgent({state});
-// run.baskets, run.unmatched, run.evidence, run.trace, run.warnings, run.violations
-```
-
-## Personalization model
-
-`src/lib/agent/` contains the bounded collect → validate → match → learn → compare workflow. The model uses explicit preferences, recency-weighted brand acceptance, and purchase intervals for replenishment. Quantity calculations normalize mass, volume and count, rounding up retailer packs to cover the requested amount. Unverified sizes cannot complete a basket. See `AGENT_SYSTEM.md` for interfaces and limitations.
-
-This is a small adaptive recommender, and it remains deterministic. No language model is trained here, and none is called on this path. The agent layer above may call one for matching and explanations when a broker is configured, but exact money calculations and hard constraints stay in this deterministic code either way. There is no background loop, purchased-data profiling, or automatic ordering.
-
-Behavioural learning is off by default. Turning it off stops collecting and using behavioural events; the separate Forget control erases those events and learned category preferences. Explicit food preferences remain editable. Allergy information is never inferred.
-
-## Data and integration boundaries
-
-- The default uses limited public online catalogue observations from Goodness Me! and Denninger’s. These are not branch prices, branch stock, full inventories, or checkout totals. Major-chain price feeds are not connected. No in-store destination is inferred from online prices.
-- Nearby-store lookup uses OpenStreetMap through Private.coffee, sending a coarse search area. Failures are visible; map coverage may be incomplete. User radius and preferred chains filter and order returned locations. Routes and travel costs are not connected.
-- Retailer and directory requests use native Capacitor HTTP on iOS/Android. Browser fallback can be limited by CORS. Successful retailer checks are cached for an hour, prices expire after 24 hours, and directory results cache for 24 hours (five minutes after a failure).
-- The separate sample demo retains six illustrative catalogues and travel estimates; they do not enter the observed-price engine.
-- Maps use real geography and require internet access. Map tiles are requested from OpenStreetMap; the viewed map area is therefore visible to the tile provider. Tile attribution remains displayed and offline tile downloading is not implemented. The rest of the sample grocery planner can work offline.
-- Product ingredient and allergen records are not verified. With ingredient restrictions selected, automatic food suggestions and swaps pause. With dietary preferences selected, new suggestions are limited to plain produce and swaps pause. This is not a medical or allergy-safety tool; users still inspect labels.
-- Receipt capture and storage work in the native code; automatic OCR is not connected. Enter totals manually.
-- Native data remains inside the app’s device storage. Cloud synchronization and cross-device sign-in are not connected. The separately hosted web preview uses its own account/guest database. The two data stores do not synchronize.
-- Receipt totals record spending. Real savings cannot be verified until reliable comparison prices exist for the same items, date, and store location.
-- No analytics or external AI services receive personal data from the native build. Retailer servers receive catalogue requests; the directory receives the coarse search area. Adding services requires updating privacy disclosures and consent.
-
-## Validation completed
-
-TypeScript checks across `src`, `tests` and the broker, the 28-test agent suite, and production web bundling all passed in this environment. TypeScript checks and production web bundling passed. Capacitor generated and synchronized both native projects with their plugins. Browser checks covered onboarding, persisted profiles, matching, list edits, basket rankings, dietary restrictions, mobile layouts, shopping checklists, receipt image upload in the hosted implementation, and recorded spending. Pure-logic checks covered quantities, missing prices, brand locks, opt-in learning, constraints, and ranking priorities. The compiled mobile interface also passed a browser-fallback storage check: new list items survived a reload.
-
-The archive is source plus bundled UI assets, not a signed IPA or APK. Native compilation, camera permission behaviour, hardware back-button behaviour, accessibility on real devices, and offline storage across OS restarts still need testing in Xcode/Android Studio and on physical devices. This Linux environment has no Xcode or Android SDK; signed release builds and App Store / Play Store submission were not performed.
-
-## Before a public pilot
-
-1. Obtain reliable retailer/location price data and product ingredients; retain data timestamps and coverage.
-2. Add a production identity/sync service if households need multiple devices. Keep native credentials in Keychain/Keystore rather than source code.
-3. Test iOS and Android devices, accessibility, offline recovery, image sizes, and app lifecycle.
-4. Provide user-facing privacy/support information under your business identity, verify platform disclosures, and sign release builds.
-
-Official build guidance: https://capacitorjs.com/docs/getting-started
-
-`sync-shared.mjs` is an optional developer helper for copying updated screens from the separately maintained Aisle web project. The source included here is self-contained and does not need that project to build.
-
-The new engine passed 16 focused tests, including quantities across different packs, unverified currency, stale prices, brand constraints, opt-in learning and location filtering. The agent layer adds 36 tests (`npm test`), written mostly as attempts to get a fabricated price through the pipeline: offers with absent or forged evidence, stale and non-CAD prices, invented figures in generated prose, offer ids that were never collected, and matches that break a household lock. Each is confirmed to fail closed. Eight of those cover catalogue integrity: unique ids, every item's artwork present on disk, every legacy product id still resolving so saved lists survive, and dietary rules constraining food without suppressing household goods. Those tests use synthetic fixtures against a stub reader; live collection against real retailers and the assisted path against a real broker still need runtime verification on target devices.
-
-The interface was checked in Chromium at desktop and phone widths: onboarding, the department → aisle → item browser, catalogue search, and a full agent run. This sandbox has no outbound network, so that run exercised the honest-failure path — every item reported as unpriced, with no invented figures — rather than live collection. The normalizer processed 590 real price records captured from the two public retailers on 19 September 2026. Hosted preview outbound collection and directory requests were unavailable during testing; end-to-end live collection and native networking still require target-runtime verification.
+On a native build, retailer and directory requests go through Capacitor HTTP
+with the `USER_AGENT` in `src/lib/agent/net.ts`; set `VITE_AISLE_CONTACT_URL` to
+add a contact page to it. In a browser, CORS limits which retailers can be read.
 
 ## Product photographs
 
 `npm run photos` fetches one generic, unbranded photograph per catalogue item
-and writes `public/images/photos/<id>.jpg` (square, 512px), an attribution file,
-and a manifest the app reads. Each item's `photo` field in the taxonomy is a
+and writes `public/images/photos/<id>.png` (exactly 512 × 512, fitted without
+cropping on a transparent surround), a credits file, and a manifest the app
+reads. `--verify` re-checks every file. Each item's `photo` field in the taxonomy is a
 brand-free search phrase — "hazelnut spread" rather than "Nutella", "sandwich
 cookies" rather than "Oreo" — and results whose title or creator looks like
 branding or packaging are rejected.
@@ -177,9 +143,9 @@ npm run photos -- --only=blueberries,milk --force # redo specific items
 Any item without a photo keeps its generated illustration, so a partial or
 interrupted run is always safe and no screen ever shows a gap.
 
-**This has not been run against the live APIs.** The sandbox this was built in
-blocks outbound requests to image hosts at the egress proxy (HTTP 403 for
-Openverse, Wikimedia and Open Food Facts alike), so the pipeline is verified up
+**This has not been run against the live APIs.** The environment this was built
+in blocks outbound requests to image hosts at the egress proxy (HTTP 403 for
+Openverse, Wikimedia and Open Food Facts alike; rechecked 28 September 2026), so the pipeline is verified up
 to the network boundary and no further: argument handling, brand rejection,
 cropping, attribution, manifest writing and the app's photo-first fallback all
 work, but no photograph has actually been downloaded. Run it on a networked

@@ -1,159 +1,203 @@
-# Handoff checklist
+# Handoff
 
-State of the codebase at commit `f4d834a`, from a full diagnostic pass on 28 Sept 2026.
-Everything below was measured, not assumed; the method is noted where it matters.
+State of `claude/grocery-matching-agent-pk59q1` on 28 September 2026, after
+working through every item of the previous checklist (commit `0d8690f`).
+Everything in "What was run" was measured on this branch; the method is noted
+where it matters. The history of each fix is in the commit named beside it.
 
 ## What was run
 
-| Check                                                                               | Result                                                                 |
-| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `tsc --noEmit` (src, tests, tools, `../server`)                                     | clean                                                                  |
-| `npm test`                                                                          | 105 / 105 pass                                                         |
-| `vite build`                                                                        | clean; one 890 KB chunk (247 KB gzip)                                  |
-| `npm audit --omit=dev`                                                              | 0 vulnerabilities                                                      |
-| First-run onboarding through the real UI (name → city → prefs → 5 staples → finish) | passes; the 5-staple gate refuses with a message                       |
-| Reload after onboarding                                                             | state persists, onboarding does not reappear                           |
-| Corrupt `household.json`                                                            | shows "couldn't load your saved list"; the file is **not** overwritten |
-| Console / page errors, 6 views × 2 widths                                           | none (the only noise is blocked third-party requests in this sandbox)  |
-| Horizontal overflow, 6 views × 2 widths                                             | none                                                                   |
-| axe-core (serious + critical), 6 views × 2 widths                                   | **12 of 12 fail** — see A1–A3                                          |
-| Touch targets ≥ 44 px, 6 mobile views                                               | **6 of 6 fail** — see A4                                               |
+| Check                                                                    | Result                                                                         |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| `npm run verify` (tsc, ESLint `--max-warnings 0`, Prettier, unit, build) | clean                                                                          |
+| `npm test`                                                               | **149 / 149** (was 105)                                                        |
+| `npm run test:e2e` (production build, phone + desktop)                   | **13 / 13 runs pass**, 1 skipped by design (touch targets are phone-only)      |
+| axe-core WCAG 2.1 A/AA, 7 views × 2 widths, populated household          | **0 violations** (was 418 failing nodes)                                       |
+| Text under 12 px, 6 mobile views                                         | **0 of 520** text runs (was 32 %)                                              |
+| 44 × 44 tap area, hit-tested, every control on 7 mobile views            | **all pass** (a toast briefly covers the footer; excluded)                     |
+| Sideways scroll, 7 views × 2 widths                                      | none                                                                           |
+| `npm audit` (app and `../server`)                                        | 0 vulnerabilities                                                              |
+| `vite build`                                                             | main chunk 875 KB / 242 KB gzip (was 928 / 258); Leaflet, Account, Legal split |
+| `npm run release:check`                                                  | **fails, as it should**: the six operator placeholders (see R2)                |
+| `npx cap sync`                                                           | both platforms sync                                                            |
 
-Not verifiable in the cloud environment: native iOS/Android builds, real-device camera, live retailer/Overpass responses (every third-party host is blocked here), App Store submission. All retailer behaviour in tests and screenshots comes from stubbed responses running the real agent code.
+Not verifiable here: native iOS/Android builds (no Xcode, no Android SDK), a
+real device, live retailer or Overpass responses, and product photos. Every
+third-party host is refused by this environment's network policy; see R6.
+All retailer behaviour in the tests runs the real agent against synthetic
+fixtures.
 
----
+## What changed since the last handoff
 
-## P0 — blocks any public release
-
-### R1. Broker is open to the internet
-
-`server/agent-broker.ts` sets `Access-Control-Allow-Origin` to `*` when `ALLOWED_ORIGIN` is unset, has no authentication and no rate limit, and sits in front of a paid API key. Anyone who finds the URL can spend the key. Only matters once `VITE_AISLE_AGENT_ENDPOINT` is set, but it must be fixed before that happens.
-
-- Refuse to start (or answer 503) when `ALLOWED_ORIGIN` is unset instead of defaulting to `*`.
-- Add per-IP rate limiting and a daily spend cap.
-- Add tests: the file has none.
-
-### R2. Legal placeholders
-
-`src/lib/legal.ts` `OPERATOR` has six fields still starting `PLACEHOLDER`: legal name, contact email, privacy email, postal address, website, effective date. The Terms and Privacy screens already print a warning while any remain. Nothing else about the legal text needs to change — it was written to describe what the app does — but it needs review by someone qualified before publishing.
-
-### R3. Privacy policy describes data that does not exist
-
-It lists "cached retailer prices, which expire after 24 hours". There is no cache: `use-agent-run.ts` keeps the last run in memory only, so prices are re-collected every session. Either build the cache (see F1) or delete the sentence. The README repeats the claim.
-
-### R4. Native permission strings
-
-`ios/App/App/Info.plist` `NSCameraUsageDescription` and `NSPhotoLibraryUsageDescription` mention only receipts. The camera is now also used for shelf-label photos. App Store review compares the string to actual use. Update both, and re-read `PrivacyInfo.xcprivacy` against the shelf-price and photo storage added since it was written.
-
-### R5. Native builds have never been run
-
-`npx cap copy` succeeds, but neither project has been built or launched. Version is `1.0` / versionCode `1`. Do a clean device build on both platforms before anything else in this list is trusted on native.
-
----
-
-## A — Accessibility (measured with axe-core 4.x and computed styles)
-
-### A1. Colour contrast fails on every screen
-
-128 failing text nodes across 27 distinct colour pairs. Worst: `#9ba690` on `#f6f8f4` at **2.38 : 1** (30 nodes, 10 px), `#9aaa8c` on white at 2.46 : 1, `#75816a` on white at 4.11 : 1. The cause is one design decision: muted green-grey text throughout `globals.css`. Fix by darkening the muted-text token(s) to ≥ 4.5 : 1 and replacing the ~20 hard-coded hexes with tokens. Re-run `node` + axe to confirm.
-
-### A2. Text is too small
-
-Of 508 text runs on mobile, 32 % are under 12 px and only 15 % reach 14 px. The list screen is half 10–11 px. Set a floor (12 px for secondary, 14–16 px for body), and check it survives iOS Dynamic Type.
-
-### A3. Unnamed controls
-
-- The icon-only **Export list** button on the list screen has no accessible name (its label is hidden by `.heading-actions .secondary>span{display:none}` on mobile). Add `aria-label`.
-- The list-screen `Progress` has no accessible name. Give the component a required `aria-label` prop.
-
-### A4. Touch targets
-
-Correction to an earlier statement: touch targets were reported as handled, and they are for the checklist, toasts and map controls, but **not** elsewhere. Measured on mobile: the header location button (89 × 16) and the "Observed prices" badge (83 × 24) on every screen; on the list screen the lock (31 × 30), quantity −/+ (25 × 29) and remove buttons on every row, and clear-list (24 × 44). About 50 controls on that one screen. Extend the pseudo-element hit-area pattern already used in `globals.css`.
+| Item                                                   | Outcome                                                                                                                                                                                                                                                                                                                                                                                                         | Commit               |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| R1 broker open to the internet                         | Rebuilt on the Anthropic SDK. Refuses to run without `ALLOWED_ORIGINS`, per-client rate limit, daily token budget, custom tools only (server tools would bill the key), upstream error bodies never echoed, current model allow-list. App loop now treats `refusal` and `max_tokens` as failures and falls back to the planner. 19 tests.                                                                       | `286dd8b`            |
+| R2 legal placeholders                                  | `npm run release:check` / `npm run release` refuse a build while any remain, while the bundle carries placeholder text or anything key-shaped, or when native versions disagree with `package.json`. Runs in CI on `v*` tags. **The values themselves are still for you to fill in.**                                                                                                                           | `dc35203`            |
+| R3 privacy policy described a cache that did not exist | The cache now exists (F1) and the policy describes it exactly.                                                                                                                                                                                                                                                                                                                                                  | `f2a8f44`            |
+| R4 permission strings                                  | iOS strings cover shelf labels; Android gets the backported photo picker. **Found while checking:** the privacy policy said the model never receives location, health information or history. It receives allergies, dietary needs, city, radius, budget, repurchase timing and nearby addresses. Sections 4 and 13 now list every field, and a test fails if the fields change without the policy changing.    | `b449f6d`            |
+| F1 prices not remembered                               | Last check saved on device, reused for the same area only, deleted 24 h after the check; every offer re-gated through `faultsOf` on load and as it expires; an expired line says so; a summary that may quote a dropped price is withdrawn; the summary shows when prices were checked. **Found while doing it:** receipt images were never deleted (not with their trip, not by Erase everything). Fixed.      | `f2a8f44`            |
+| F2 two store lists                                     | Five chains added to `catalog.stores`; a test holds both lists to the same ids and names; the directory matches shops through `chainFor`.                                                                                                                                                                                                                                                                       | `5eb0b5c`            |
+| F3 one Overpass mirror                                 | Three mirrors, tried in order.                                                                                                                                                                                                                                                                                                                                                                                  | `5eb0b5c`            |
+| F4 identity strings                                    | One `USER_AGENT`; a contact URL only if `VITE_AISLE_CONTACT_URL` is set. ~260 lines of unused sample-market code removed with it.                                                                                                                                                                                                                                                                               | `5eb0b5c`            |
+| F6 "Find my best shop"                                 | Now "Save and check prices".                                                                                                                                                                                                                                                                                                                                                                                    | `9a3971b`            |
+| F7 dark mode                                           | Not built (see F7 below). Dark-mode phones no longer get a half-dark UI.                                                                                                                                                                                                                                                                                                                                        | `9a3971b`            |
+| A1–A4                                                  | See the table above.                                                                                                                                                                                                                                                                                                                                                                                            | `b059f21`            |
+| —                                                      | **Found by the new browser tests:** on a phone, in a production build, the setup dialog and the Add groceries sheet rendered half off-screen. The CSS minifier merged away the override Tailwind v4's centring needed. Fixed; the e2e suite runs against the production build for this reason.                                                                                                                  | `214a873`            |
+| H1 monolith                                            | Nested components hoisted out (they re-mounted on every render, so keyboard focus was lost after one key press; a test now covers it). Save/load in `use-household.ts`; spending view and help dialog in their own files. 2,307 → 1,714 lines. **Found:** onboarding's save-conflict recovery could never run; fixed. Stale copy corrected (help dialog claimed a sample demo, accounts, and no model service). | `d696731`, `f8c6176` |
+| H2 lint, format, CI                                    | ESLint 9, Prettier, editorconfig, `.nvmrc`, `engines`, CI with two jobs.                                                                                                                                                                                                                                                                                                                                        | `2afac4b`…`711331a`  |
+| H3 browser tests outside the repo                      | `tests/e2e` (Playwright) and `tests/persistence.test.ts` (in-memory Filesystem).                                                                                                                                                                                                                                                                                                                                | `91cb2ec`            |
+| H4 documentation drift                                 | README rewritten, `AGENT_SYSTEM.md` deleted, `AGENTIC_SYSTEM.md` and `server/README.md` current.                                                                                                                                                                                                                                                                                                                | this commit          |
+| H5 dead code / H7 updates                              | Done.                                                                                                                                                                                                                                                                                                                                                                                                           | `5a8be56`            |
+| H6 bundle and assets                                   | Account and Legal lazy; the 2.2 MB onboarding PNG is a 55 KB WebP.                                                                                                                                                                                                                                                                                                                                              | `9a3971b`            |
 
 ---
 
-## F — Functional gaps
+## Still open: release blockers
 
-### F1. Prices are not remembered between sessions
+### R2. Operator details and legal review
 
-The last agent run lives in memory only. Reopening the app shows nothing until the user runs a check again, and offline shows nothing at all. Persist the last `AgentRun` (offers and their evidence rows) with its existing `expiresAt`, drop expired offers on load, and re-verify with `faultsOf` after reading — a stored price must clear the same gate as a fresh one. This also resolves R3.
+Fill in the six `OPERATOR` fields in `src/lib/legal.ts` (legal name, contact
+email, privacy email, postal address, website, effective date), then have the
+Terms and Privacy Policy reviewed by someone qualified. The release check will
+pass once they are real. Nothing was invented for them.
 
-### F2. Two store registries
+### R5. Native builds and a device pass
 
-`catalog.ts` `stores` (14, branding for receipts) and `agent/registry.ts` `CHAINS` (19, feed policy) are separate lists. Five chains are only in `CHAINS`: `goodnessme`, `independent`, `sobeys`, `giant-tiger`, `tnt`. **Goodness Me! — one of only two readable chains — has no logo and is missing from the receipt store picker.** Derive one from the other, or merge them.
+Neither app has been compiled. This environment has no Xcode and no Android
+SDK (Java and Gradle are present). On a Mac and with Android Studio:
 
-### F3. Overpass depends on one volunteer mirror
+- `npm run release`, then build and launch both projects.
+- On a device: camera and photo prompts show the new strings; the Android 11–12
+  photo picker; haptics on ticking an item; the Android back button; saved
+  state, the saved price check and photos surviving an app restart and an OS
+  kill; a price check over native HTTP (no CORS there) with the new User-Agent.
+- VoiceOver and TalkBack over setup, the list and the checklist. axe cannot
+  judge reading order or announcements.
+- Dynamic Type / font scaling: sizes are in px and rem and have not been tried
+  at large accessibility sizes.
 
-`places.ts` calls only `overpass.private.coffee`. Add fallback endpoints and a shorter timeout. The store directory already degrades honestly when it fails, but every failure loses the nearby-store list.
+### R6. Network access for the photo pipeline
 
-### F4. Third-party identity strings
+`api.openverse.org`, `commons.wikimedia.org`, `upload.wikimedia.org` and
+`world.openfoodfacts.org` are refused (HTTP 403) by this environment's network
+policy, rechecked today. Allow them in the environment's network settings, or
+run `npm run photos` on a machine that can reach them (Pexels and Unsplash need
+keys). Read a sample of the results: the pipeline rejects branded titles but
+cannot tell whether a photo shows the right food. Credits go to
+`public/images/photos/credits.json` and must be shown on the Data sources screen
+before photos ship; that screen does not list them yet.
 
-Three different `User-Agent`s are sent (`Aisle/1.0`, `AislePriceResearch/1.0`, `AisleOntario/1.0`); two of them carry `aisle-burlington.katefretz.chatgpt.site`, a domain inherited from the original project. Overpass's usage policy expects a working contact. Replace with one exported constant in `net.ts` and use it everywhere.
+### R7. Store privacy labels
 
-### F5. Product images are still illustrations
+`PrivacyInfo.xcprivacy` declares no collected data. That is accurate while no
+broker is configured. With a broker, list items and the household profile
+(including allergies) go to your server and on to Anthropic. Whether that is
+"collected" for Apple's and Google's labels depends on retention you control.
+Decide it and update the manifest and the Play data-safety form to match.
 
-See "Photo pipeline" below.
+### R8. Deploying the broker
 
-### F6. Onboarding copy
-
-The final step's button reads **"Find my best shop"**. Given that only 2 of 19 chains can be priced, that overpromises; the rest of the app is careful not to. Also reconsider the hard gate of five staples before a user can enter.
-
-### F7. No dark mode.
-
----
-
-## H — Codebase health for the next editor
-
-### H1. `src/app/aisle-app.tsx` is a monolith
-
-465 lines but 27 of them are over 400 characters, the longest 2,419. Diffs are unreadable and merges will conflict. Split into per-view components and hooks (`useListActions`, `useReceipt`, `useShop`), then run a formatter over the whole tree.
-
-### H2. No lint, formatter or CI
-
-None of `.eslintrc`, Prettier, `.editorconfig`, `.github/`, `.nvmrc` exist. `package.json` has no `engines` field though the README requires Node ≥ 22.13. Add ESLint (react-hooks rules — the app already carries five `eslint-disable` comments for exhaustive-deps that nothing checks), Prettier, and a workflow running `check`, `test` and `build`.
-
-### H3. The browser verification lives outside the repo
-
-The Playwright drivers used to verify this work (onboarding, persistence, corrupt-state recovery, receipt → due-this-week, shelf capture, photo round-trip) were run from scratch space and are not committed. Port them to `tests/e2e/` with the stubbed retailer/Overpass fixtures they use, so regressions in UI behaviour are caught. Also unit-test `persistence.ts` (revision conflicts, the atomic rename) by injecting a fake Filesystem; today only the browser runs exercise it.
-
-### H4. Documentation drift
-
-- `README.md`: says "36 tests" (now 105), still describes "a separate labelled sample demo" (line 132) that was retired, repeats the 24 h expiry claim.
-- `AGENT_SYSTEM.md` (59 lines) and `AGENTIC_SYSTEM.md` (184) cover overlapping ground and disagree. `AGENT_SYSTEM.md` line 9 still refers to hash-generated demo prices. Keep `AGENTIC_SYSTEM.md`, delete the other.
-- Add a short section on shelf prices and receipt-derived history — neither is documented.
-
-### H5. Dead code and dependencies
-
-- `@base-ui/react`, `@shadcn/react` — unused; remove.
-- `@capacitor/haptics` — installed natively, never called; use it or remove it.
-- `sync-shared.mjs` — a one-off migration script from the original zip; delete.
-- `swapConfidence` in `catalog.ts` — unused since the demo was retired.
-- Unused exports in the shadcn `ui/` files are normal for that library and can stay.
-
-### H6. Bundle and assets
-
-One 890 KB chunk (247 KB gzip). Lazy-load Account, Legal and the catalogue browser; the taxonomy (168 KB source) is needed at onboarding, so split by route rather than by data. `public/images/grocery-bag.png` is 2.2 MB and ships in both native bundles — recompress it.
-
-### H7. Dependency updates
-
-Patch/minor: React 19.3, Vite 8.3, Tailwind 4.3, sharp 0.35.5, lucide 1.48. Hold TypeScript 7 (major).
+- Set `ALLOWED_ORIGINS` (`capacitor://localhost`, `https://localhost`, plus any
+  web origin), `ANTHROPIC_API_KEY`, and optionally `RATE_LIMIT_PER_MINUTE` and
+  `DAILY_TOKEN_BUDGET`.
+- Replace `MemoryStore` with a shared store (Workers KV, a Durable Object,
+  Redis). In-memory counters are per instance, so serverless limits are
+  per-isolate, not global.
+- Two defaults changed with the move to the SDK. The default model is now
+  `claude-opus-5-5` (was `claude-sonnet-5`); `VITE_AISLE_AGENT_MODEL` overrides
+  it. **Server-side refusal fallbacks are on** for Opus and Sonnet
+  (`fallbacks: 'default'`), so a request the safety classifier declines by
+  mistake is retried on another model and billed. Set `fallbacks: false` in
+  `MODELS` to turn that off.
+- The origin check is not authentication. If abuse appears, add app attestation
+  (App Attest / Play Integrity) in front of it.
 
 ---
 
-## Photo pipeline
+## Still open: product and design
 
-`tools/fetch-product-photos.mjs` was rewritten to the brief: PNG, every file exactly 512 × 512, fitted with `contain` so nothing is cropped, transparent surround, `--verify` re-checking format, size and non-blank, exiting non-zero on failure. It was proven over all 557 items against a local mirror. **No real photographs are in the repo**: every image host returned HTTP 403 from this environment's network policy. The manifest is empty, so every item shows its illustration.
+### F7. Dark mode
 
-To finish: allow `api.openverse.org`, `api.pexels.com` and `api.unsplash.com` (or run from a machine that can reach them), then `npm run photos`. Read a sample of the results before accepting them — the pipeline rejects branded titles but cannot judge whether a photograph is actually of the right food. Credits are written to `public/images/photos/credits.json` and must be surfaced in the Data sources screen before release.
+Not built. `globals.css` has about 400 hard-coded hex colours, so the first step
+is moving them onto tokens; a dark palette is then a second set of token values.
+Until then the `dark:` variant is tied to a `.dark` class nothing sets, so
+dark-mode phones get the light UI consistently.
+
+### F8. Body text size
+
+The 12 px floor holds everywhere, but 85 % of text runs are 12–13 px and 15 %
+reach 14 px. The previous checklist asked for 14–16 px body text. That is a
+typography pass over the whole design, not a find-and-replace; do it together
+with F7.
+
+### F9. The five-staple gate
+
+Setup still requires five usual items. "Explore first" skips setup entirely, so
+nobody is locked out, but someone who wants to set a budget without choosing
+staples cannot. A product decision.
+
+### F10. Coverage
+
+Two small retailers publish a readable catalogue; the 17 other Ontario chains in
+the registry do not. The app says so everywhere and never estimates. Real
+coverage needs licensed retailer feeds or partnerships. This is the product's
+ceiling, not a bug.
+
+### F11. Receipt reading
+
+Totals and per-item prices are typed in. Automatic receipt reading is not
+built, and the app says so.
+
+---
+
+## Still open: codebase health
+
+### H1. The rest of the split
+
+`src/app/aisle-app.tsx` is 1,714 lines. What is left inside it, in order of
+size: the list view (~190 lines), the receipt dialog (~170), the shop view
+(~115), the catalogue dialog (~60) and the swaps dialog (~60). The pattern is
+set: `views/spending-view.tsx` for a view, `ItemRowContext` in `item-row.tsx`
+for passing actions, `use-household.ts` for state. Extract with
+`npm run test:e2e` running; the suite caught two real bugs during this pass.
+
+### H6. The remaining bundle
+
+875 KB is mostly React DOM and the 557-item taxonomy, which setup needs. A
+vendor chunk would help caching, not first load. Lazy-loading the catalogue
+browser is the next candidate.
+
+### H8. Test gaps
+
+The browser suite does not yet cover recording a receipt, capturing a shelf
+price, ticking through a shop to the finish, Account edits, or legal navigation.
+The broker tests use a fake SDK client, so a real request to the API has not
+been made from this code; do one against a staging key before launch.
+
+### H9. Things the next editor should know
+
+- `@playwright/test` is pinned to 1.56.1 and `playwright-core` is overridden to
+  match, so `@axe-core/playwright` does not pull in a second copy. CI installs
+  the matching Chromium with `npx playwright install`.
+- `uuid` is overridden to ^11 to clear an advisory in `@capacitor/cli`'s
+  `xcode` dependency; `cap sync` was checked with it.
+- Seven `eslint-disable` comments remain, all for `exhaustive-deps`. Three have
+  a reason written beside them. The four in `aisle-app.tsx` (the memoised
+  active and headline baskets, the swaps, and the receipt store list) do not;
+  review them during the H1 split, since a missing dependency there would show
+  a stale total.
+- Phone-width dialog overrides in `globals.css` and `onboarding.css` zero
+  `--tw-translate-x/y` as well as `translate`. Keep that when adding new
+  full-screen dialogs, or they will render off-screen in production builds only.
+- TypeScript 7 (major) was held back.
 
 ---
 
 ## Suggested order
 
-1. R1, R2, R3, R4 — small and independent, and gate everything public.
-2. H2 — CI first, so the rest of the work is checked.
-3. H1 + H3 — split the monolith with the e2e suite in place to catch regressions.
-4. A1–A4 — one design pass over `globals.css`.
-5. F1, F2, F4 — user-visible correctness.
-6. R5 — native device builds once the above is stable.
-7. Photos, dark mode, bundle splitting.
+1. R2: fill in the operator details and get the review started (it takes the longest).
+2. R5: native builds and the device pass.
+3. R8: deploy the broker with a shared store, if the assisted mode is wanted at launch.
+4. R6 and R7: photos and store labels.
+5. H1 remainder and H8, with the e2e suite running.
+6. F7 + F8 together as one design pass.

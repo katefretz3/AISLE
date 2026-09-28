@@ -132,19 +132,24 @@ Two rules hold without exception:
 ## Keys and the broker
 
 The app holds no API key. Model requests go to a broker you run
-(`server/agent-broker.ts`, a plain `(Request) => Response` handler for
-Cloudflare Workers, Deno Deploy or Node behind your own TLS) which attaches the
-key server-side, pins the model to an allow-list and caps tokens.
+([`../server/agent-broker.ts`](../server/README.md)), a Fetch-API handler for
+Cloudflare Workers, Deno Deploy or Node, which calls the Messages API through
+the official Anthropic SDK with a key that never leaves the server. It refuses
+to run without an origin allow-list, rate-limits each client, stops at a daily
+token budget, forwards only the app's own custom tools, and never echoes an
+upstream error body. The server README has the details.
 
 ```sh
 VITE_AISLE_AGENT_ENDPOINT=https://your-broker.example.com/agent
-VITE_AISLE_AGENT_MODEL=claude-sonnet-5
+VITE_AISLE_AGENT_MODEL=claude-opus-5-5   # the default; claude-sonnet-5-5 and claude-haiku-4-5 are also allowed
 ```
 
 With no endpoint set, `runAgent` runs the rule-based planner and reports
-`mode: 'deterministic'`. If the broker fails mid-run it degrades to the same
-planner and records a warning. **Accuracy does not depend on the model being
-available** — only the quality of matching and explanation does.
+`mode: 'deterministic'`. If the broker fails, declines the request (a
+`refusal` stop reason) or is cut off (`max_tokens`) mid-run, the run degrades to
+the same planner and records a warning; a declined or truncated reply is never
+shown as an answer. **Accuracy does not depend on the model being available**:
+only the quality of matching and explanation does.
 
 ## Network safety
 
@@ -173,12 +178,14 @@ Being direct about the ceiling, because the honest-data rule cuts both ways:
 ## Running the tests
 
 ```sh
-npm run check   # TypeScript across src, tests and the broker
-npm test        # 28 tests covering the agent
+npm run check     # TypeScript across src, tests, tools and the broker
+npm test          # 149 unit tests, including the agent, broker and saved check
+npm run test:e2e  # browser tests; a fixture retailer, no real network
 ```
 
-The suite is written mostly as attempts to smuggle a fabricated price through
-the pipeline — offers with no evidence, forged evidence ids, stale and non-CAD
-prices, invented figures in generated prose, offer ids that were never
-collected, matches that break a lock — and confirms each one fails. Fixtures are
-clearly synthetic and never loaded by the application.
+The agent tests are written mostly as attempts to smuggle a fabricated price
+through the pipeline (offers with no evidence, forged evidence ids, stale and
+non-CAD prices, invented figures in generated prose, offer ids that were never
+collected, matches that break a lock, a saved check edited on disk) and confirm
+each one fails. Fixtures are clearly synthetic and never loaded by the
+application.
