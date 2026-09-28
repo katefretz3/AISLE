@@ -17,7 +17,9 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "verify": "npm run check && npm run lint && npm run format:check && npm test && npm run build"
+    "verify": "npm run check && npm run lint && npm run format:check && npm test && npm run build",
+    "release:check": "node tools/release-check.mjs",
+    "release": "npm run verify && npm run release:check && cap sync"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",

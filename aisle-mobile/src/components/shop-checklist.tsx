@@ -72,6 +72,7 @@ export default function ShopChecklist({
           </div>
         </div>
         <Progress
+          aria-label="Share of the budget in your basket"
           value={budget > 0 ? Math.min(100, Math.max(0, (tally.inBasket / budget) * 100)) : 0}
           className={remaining < 0 ? 'budget-progress over-budget' : 'budget-progress'}
         />

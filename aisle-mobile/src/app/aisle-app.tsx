@@ -142,9 +142,10 @@ import {
   referencedPhotoIds,
 } from '@/lib/shelf-prices';
 import {valueSwaps, totalSaving, type ValueSwap} from '@/lib/value-swaps';
+// One version number: the release check holds iOS and Android to this too.
+import {version as APP_VERSION} from '../../package.json';
 
 type View = 'home' | 'list' | 'compare' | 'spending' | 'account' | 'legal' | 'shop';
-const APP_VERSION = '1.0.0';
 const nav = [
   {id: 'home', label: 'My week', icon: Home},
   {id: 'list', label: 'My grocery list', icon: ClipboardList},
@@ -1060,7 +1061,11 @@ export default function AisleApp() {
           <strong>{known ? money(spent) : '\u2014'}</strong>
           <span>of {money(budget)}</span>
         </div>
-        <Progress value={pct} className={cx('budget-progress', over > 0 && 'over-budget')} />
+        <Progress
+          value={pct}
+          aria-label="Share of this shop's budget used"
+          className={cx('budget-progress', over > 0 && 'over-budget')}
+        />
         <p>
           {!state.items.length ? (
             'Add groceries to your list and Aisle can tell you what the shop should cost.'
@@ -1357,7 +1362,12 @@ export default function AisleApp() {
                   <p>Keep your favourites. Find room to save.</p>
                 </div>
                 <div className="heading-actions">
-                  <button className="button secondary" onClick={exportList}>
+                  {/* The label is hidden on narrow screens, so the name is set here. */}
+                  <button
+                    className="button secondary"
+                    aria-label="Export list"
+                    onClick={exportList}
+                  >
                     <Download size={16} />
                     <span>Export list</span>
                   </button>
