@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'claude/**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Typecheck, lint, format, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: aisle-mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: aisle-mobile/.nvmrc
+          cache: npm
+          cache-dependency-path: aisle-mobile/package-lock.json
+
+      - run: npm ci
+
+      # Covers src, tests, tools and ../server/agent-broker.ts.
+      - name: Typecheck
+        run: npm run check
+
+      - name: Lint
+        run: npx eslint . --max-warnings 0
+
+      - name: Formatting
+        run: npm run format:check
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # The app must never ship a remote server.url: it would load whatever
+      # that host serves inside the native shell.
+      - name: No remote server.url in Capacitor config
+        run: |
+          if grep -q "server" capacitor.config.ts && grep -qE "url\s*:" capacitor.config.ts; then
+            echo "capacitor.config.ts sets server.url"; exit 1
+          fi
+
+      - name: Dependency audit
+        run: npm audit --audit-level=moderate
