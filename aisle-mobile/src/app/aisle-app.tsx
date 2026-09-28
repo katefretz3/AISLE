@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-  type CSSProperties,
-} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState, type CSSProperties} from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -29,14 +21,12 @@ import {
   LoaderCircle,
   LockKeyhole,
   MapPin,
-  Minus,
   Plus,
   ReceiptText,
   Settings2,
   ShieldCheck,
   ShoppingBasket,
   ShoppingBag,
-  SlidersHorizontal,
   Sparkles,
   Store as StoreIcon,
   Trash2,
@@ -50,7 +40,7 @@ import {
   FileText,
   HeartHandshake,
 } from 'lucide-react';
-import {Scale, History, Bookmark, Target, Tag} from 'lucide-react';
+import {Scale, History, Bookmark} from 'lucide-react';
 import {
   Sidebar,
   SidebarProvider,
@@ -72,15 +62,6 @@ import {
   AlertDialogFooter,
 } from '@/components/ui/alert-dialog';
 import {Tabs, TabsList, TabsTrigger, TabsContent} from '@/components/ui/tabs';
-import {Checkbox} from '@/components/ui/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {Progress} from '@/components/ui/progress';
 import {Toaster} from '@/components/ui/sonner';
 import {toast} from 'sonner';
 import Onboarding from './onboarding';
@@ -109,20 +90,17 @@ import {
   sweepReceipts,
   eraseStoredFiles,
   deleteShelfPhoto,
-  tapFeedback,
 } from '@/lib/persistence';
 import {
   personalSuggestions,
   recordChoice,
   starterList,
   productById,
-  productImagePath,
   stores,
   categories,
   money,
   initialState,
   parseList,
-  type Product,
   type Store,
   type UserState,
   type ListItem,
@@ -130,20 +108,21 @@ import {
   type Trip,
   type TripLine,
 } from '@/lib/catalog';
-import {priceHistory, accuracy} from '@/lib/shopping-history';
+import {priceHistory} from '@/lib/shopping-history';
 import {
   recordShelfPrice,
   removeShelfPrice,
   latestShelfPrice,
   resolveLinePrice,
   tallyProvenance,
-  shelfPriceAgeDays,
-  isStale,
   referencedPhotoIds,
 } from '@/lib/shelf-prices';
 import {valueSwaps, totalSaving, type ValueSwap} from '@/lib/value-swaps';
 // One version number: the release check holds iOS and Android to this too.
 import {version as APP_VERSION} from '../../package.json';
+import {cx, newId, ProductIcon, Pill, Choice, Empty} from './parts';
+import {ItemRow, type ItemRowContext} from './item-row';
+import {AccuracyCard, BudgetCard} from './home-cards';
 
 type View = 'home' | 'list' | 'compare' | 'spending' | 'account' | 'legal' | 'shop';
 const nav = [
@@ -152,50 +131,6 @@ const nav = [
   {id: 'compare', label: 'Compare baskets', icon: StoreIcon},
   {id: 'spending', label: 'My spending', icon: BarChart3},
 ] as const;
-function newId() {
-  return Array.from(crypto.getRandomValues(new Uint8Array(16)), b =>
-    b.toString(16).padStart(2, '0'),
-  ).join('');
-}
-const cx = (...v: (string | false | null | undefined)[]) => v.filter(Boolean).join(' ');
-function ProductIcon({product, small = false}: {product?: Product | null; small?: boolean}) {
-  return (
-    <span className={cx('product-art', small && 'small', !product && 'unknown')}>
-      <img src={productImagePath(product?.id)} alt="" loading="lazy" decoding="async" />
-    </span>
-  );
-}
-
-function Pill({children, kind = 'green'}: {children: ReactNode; kind?: string}) {
-  return <span className={`pill pill-${kind}`}>{children}</span>;
-}
-function Choice({
-  value,
-  onChange,
-  options,
-  label,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  options: {value: string; label: string}[];
-  label: string;
-}) {
-  return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger aria-label={label} className="choice">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {options.map(o => (
-          <SelectItem value={o.value} key={o.value}>
-            {o.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
-
 export default function AisleApp() {
   const [state, setState] = useState<UserState>(initialState);
   const ref = useRef(state),
@@ -807,323 +742,22 @@ export default function AisleApp() {
     return () => abort.abort();
   }, []);
 
-  function Empty({
-    icon: Icon = ShoppingBasket,
-    title,
-    children,
-    action,
-  }: {
-    icon?: typeof ShoppingBasket;
-    title: string;
-    children: ReactNode;
-    action?: ReactNode;
-  }) {
-    return (
-      <div className="empty-state">
-        <span className="empty-icon">
-          <Icon />
-        </span>
-        <h3>{title}</h3>
-        <p>{children}</p>
-        {action}
-      </div>
-    );
-  }
-  function ItemRow({
-    item,
-    compact = false,
-    shopping = false,
-  }: {
-    item: ListItem;
-    compact?: boolean;
-    shopping?: boolean;
-  }) {
-    const p = item.productId ? productById[item.productId] : null;
-    const resolved = lineFor(item, shopping);
-    const price = resolved?.cents ?? null;
-    const observed = resolved?.source === 'observed' ? resolved.shelf! : null;
-    const unitText =
-      shopping && resolved?.source === 'collected'
-        ? (activeBasket?.unitPrice(item.id) ?? null)
-        : null;
-    const paid = item.productId ? (paidHistory.get(item.productId) ?? null) : null;
-    // At most one line under the price. While shopping, the unit price of the
-    // offer in front of you wins; what you paid before only fills the gap where
-    // no price was collected at all.
-    const secondary = observed ? (
-      // A price the household typed is always marked as theirs, wherever it shows.
-      <small className="item-observed">
-        you saw this{isStale(observed) ? ` · ${shelfPriceAgeDays(observed)} days ago` : ''}
-      </small>
-    ) : shopping ? (
-      unitText ? (
-        <small className="item-unit">{unitText}</small>
-      ) : paid && price === null ? (
-        <small className="item-paid">paid {money(Math.round(paid.last.unitCents))} last time</small>
-      ) : null
-    ) : paid ? (
-      <small className="item-paid">
-        paid {money(Math.round(paid.last.unitCents))} at {paid.last.storeName}
-      </small>
-    ) : null;
-    return (
-      <div className={cx('item-row', item.checked && 'is-checked')}>
-        {shopping && (
-          <Checkbox
-            aria-label={`Mark ${item.name} as bought`}
-            checked={item.checked}
-            onCheckedChange={v => {
-              if (v === true) tapFeedback();
-              updateItem(item.id, {checked: v === true});
-            }}
-            className="item-check"
-          />
-        )}
-        <ProductIcon product={p} small={compact} />
-        <div className="item-copy">
-          <strong>{item.name}</strong>
-          <span>{p ? `${p.brand} · ${p.size}` : 'Not matched to a catalogue item'}</span>
-        </div>
-        {!compact && !shopping && (
-          <button
-            className={cx('icon-button lock-button', item.locked && 'is-locked')}
-            aria-label={`${item.locked ? 'Unlock' : 'Lock'} ${item.name}`}
-            title={item.locked ? 'Exact product locked' : 'Keep this exact product'}
-            onClick={() => updateItem(item.id, {locked: !item.locked})}
-          >
-            <LockKeyhole size={15} />
-          </button>
-        )}
-        {!compact && !shopping && (
-          <div className="quantity">
-            <button
-              aria-label={`Decrease ${item.name} quantity`}
-              disabled={item.qty === 1}
-              onClick={() => updateItem(item.id, {qty: item.qty - 1})}
-            >
-              <Minus size={13} />
-            </button>
-            <span>{item.qty}</span>
-            <button
-              aria-label={`Increase ${item.name} quantity`}
-              disabled={item.qty >= 99}
-              onClick={() => updateItem(item.id, {qty: item.qty + 1})}
-            >
-              <Plus size={13} />
-            </button>
-          </div>
-        )}
-        {compact || shopping ? <span className="item-quantity">×{item.qty}</span> : null}
-        {shopping ? (
-          <button
-            type="button"
-            className={cx(
-              'item-price is-capture',
-              observed && 'is-observed',
-              price == null && 'is-empty',
-            )}
-            aria-label={
-              price != null
-                ? `Change the price recorded for ${item.name}`
-                : `Add the shelf price for ${item.name}`
-            }
-            onClick={() => setCaptureItem(item)}
-          >
-            {price != null ? (
-              money(price)
-            ) : (
-              <span className="item-price-add">
-                <Tag size={13} /> price
-              </span>
-            )}
-            {secondary}
-          </button>
-        ) : (
-          <span className="item-price">
-            {price != null ? money(price) : '—'}
-            {secondary}
-          </span>
-        )}
-        {!p && !compact && (
-          <button
-            className="text-button"
-            onClick={() => {
-              setMatchingItem(item.id);
-              setImportMode('browse');
-              setCatalogOpen(true);
-            }}
-          >
-            Match
-          </button>
-        )}
-        {!compact && !shopping && (
-          <button
-            className="icon-button remove"
-            aria-label={`Remove ${item.name}`}
-            onClick={() => removeItem(item)}
-          >
-            <X size={16} />
-          </button>
-        )}
-      </div>
-    );
-  }
-  /**
-   * How Aisle's estimate compared with the till.
-   *
-   * Only whole-list estimates are scored. `predicted` is the subtotal of what
-   * Aisle could price, so on a shop where it priced 4 of 12 items, putting it
-   * beside the receipt total would manufacture an error that says nothing about
-   * the estimate. Those trips are counted and named instead.
-   */
-  function AccuracyCard() {
-    const scored = accuracy(state.trips);
-    const partial = state.trips.length - scored.comparable.length;
-    if (!state.trips.length) return null;
-    return (
-      <section className="card accuracy-card">
-        <div className="section-top">
-          <div>
-            <h3>
-              <Target size={17} /> How close Aisle got
-            </h3>
-            <p>
-              Only shops where Aisle had a price for every item on your list can be scored against
-              the receipt.
-            </p>
-          </div>
-        </div>
-        {scored.comparable.length && scored.meanDifference !== null ? (
-          <>
-            <div className="accuracy-headline">
-              <strong>
-                {scored.meanDifference === 0
-                  ? 'Spot on'
-                  : `${money(Math.abs(scored.meanDifference))} ${scored.meanDifference > 0 ? 'more' : 'less'} than estimated`}
-              </strong>
-              <span>
-                on average across {scored.comparable.length} fully priced{' '}
-                {scored.comparable.length === 1 ? 'shop' : 'shops'}
-              </span>
-            </div>
-            <ul className="accuracy-rows">
-              {scored.comparable.slice(0, 4).map(({trip, predicted, actual, difference}) => (
-                <li key={trip.id}>
-                  <span>
-                    {shopIdentity(trip.storeId, trip.storeName).name} ·{' '}
-                    {new Date(trip.date + 'T12:00:00').toLocaleDateString('en-CA', {
-                      day: 'numeric',
-                      month: 'short',
-                    })}
-                  </span>
-                  <span className="accuracy-figures">
-                    <small>est. {money(predicted)}</small>
-                    <strong>{money(actual)}</strong>
-                    <em className={difference > 0 ? 'warning-text' : 'green-text'}>
-                      {difference === 0
-                        ? 'exact'
-                        : `${difference > 0 ? '+' : '−'}${money(Math.abs(difference))}`}
-                    </em>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </>
-        ) : (
-          <p className="accuracy-empty">
-            No shop has been fully priced yet, so there is nothing honest to score.{' '}
-            {partial > 0 &&
-              `${partial} recorded ${partial === 1 ? 'shop' : 'shops'} had items Aisle could not price.`}
-          </p>
-        )}
-      </section>
-    );
-  }
+  // Everything a list row needs, in one object so rows can live outside this
+  // component (see parts.tsx for why that matters).
+  const rowCtx: ItemRowContext = {
+    lineFor,
+    unitPrice: itemId => activeBasket?.unitPrice(itemId) ?? null,
+    paidHistory,
+    updateItem,
+    removeItem,
+    capturePrice: setCaptureItem,
+    matchItem: item => {
+      setMatchingItem(item.id);
+      setImportMode('browse');
+      setCatalogOpen(true);
+    },
+  };
 
-  function AgentBudgetCard() {
-    const budget = agent.perShopBudget;
-    // The checklist counts prices the household read off a shelf, so this has to
-    // as well — two screens answering "what will this shop cost" with different
-    // numbers is worse than either answer on its own. The split is stated below.
-    const spent = listTotal.cents;
-    const known = listTotal.collected + listTotal.observed;
-    const pct = budget > 0 ? Math.min(100, Math.round((spent / budget) * 100)) : 0;
-    const over = Math.max(0, spent - budget);
-    return (
-      <section className="card budget-card">
-        <div className="section-top">
-          <h3>This shop&rsquo;s budget</h3>
-          <button className="icon-button" aria-label="Edit budget" onClick={() => go('account')}>
-            <SlidersHorizontal size={17} />
-          </button>
-        </div>
-        <div className="budget-numbers">
-          <strong>{known ? money(spent) : '\u2014'}</strong>
-          <span>of {money(budget)}</span>
-        </div>
-        <Progress
-          value={pct}
-          aria-label="Share of this shop's budget used"
-          className={cx('budget-progress', over > 0 && 'over-budget')}
-        />
-        <p>
-          {!state.items.length ? (
-            'Add groceries to your list and Aisle can tell you what the shop should cost.'
-          ) : !known ? (
-            'No prices yet. Run a price check, or add what you saw on the shelf while you shop.'
-          ) : listTotal.unpriced > 0 ? (
-            <>
-              {money(spent)} for{' '}
-              <strong>
-                {known} of {state.items.length}
-              </strong>{' '}
-              items
-              {listTotal.observed > 0 && (
-                <>
-                  {' '}
-                  — {listTotal.observed} of{' '}
-                  {listTotal.observed === 1 ? 'them a price' : 'those prices'} you entered yourself
-                </>
-              )}
-              . The rest have no price, so this is not your whole shop.
-            </>
-          ) : over > 0 ? (
-            <>
-              <span className="warning-text">{money(over)} over budget</span>
-              {listTotal.observed > 0 ? (
-                <>
-                  , counting {listTotal.observed} {listTotal.observed === 1 ? 'price' : 'prices'}{' '}
-                  you entered.
-                </>
-              ) : (
-                '.'
-              )}{' '}
-              Compare baskets or trim the list.
-            </>
-          ) : (
-            <>
-              <span className="green-text">{money(budget - spent)} to spare</span>, with every item
-              priced
-              {listTotal.observed > 0 && <> ({listTotal.observed} from what you saw in the shop)</>}
-              .
-            </>
-          )}
-        </p>
-        {swaps.length > 0 && (
-          <button className="budget-link" onClick={() => setSwapsOpen(true)}>
-            <Sparkles size={16} />{' '}
-            {swaps.length === 1 ? 'One cheaper option' : `${swaps.length} cheaper options`} worth{' '}
-            {money(potential)} <ArrowRight size={16} />
-          </button>
-        )}
-        {agent.baskets.length > 1 && (
-          <button className="budget-link" onClick={() => go('compare')}>
-            <Sparkles size={16} /> Compare {agent.baskets.length} baskets <ArrowRight size={16} />
-          </button>
-        )}
-      </section>
-    );
-  }
   // A receipt can be recorded against a bundled chain or a retailer the agent
   // discovered, so every lookup has to tolerate both and neither.
   // Retailers you can record a receipt against: the bundled chains, plus any
@@ -1467,7 +1101,7 @@ export default function AisleApp() {
                             ? !i.productId
                             : i.productId && productById[i.productId].category === listFilter),
                       )
-                      .map(i => <ItemRow key={i.id} item={i} />)
+                      .map(i => <ItemRow key={i.id} item={i} ctx={rowCtx} />)
                   ) : (
                     <Empty
                       title="Your list is empty"
@@ -1497,7 +1131,17 @@ export default function AisleApp() {
                   </div>
                 </section>
                 <aside className="list-aside">
-                  <AgentBudgetCard />
+                  <BudgetCard
+                    budget={agent.perShopBudget}
+                    items={state.items.length}
+                    total={listTotal}
+                    swapCount={swaps.length}
+                    swapSaving={potential}
+                    basketCount={agent.baskets.length}
+                    onEditBudget={() => go('account')}
+                    onSwaps={() => setSwapsOpen(true)}
+                    onCompare={() => go('compare')}
+                  />
                   <section className="card list-summary">
                     <h3>Your list at a glance</h3>
                     <div>
@@ -1602,7 +1246,10 @@ export default function AisleApp() {
                   </div>
                 </div>
               )}
-              <AccuracyCard />
+              <AccuracyCard
+                trips={state.trips}
+                shopName={trip => shopIdentity(trip.storeId, trip.storeName).name}
+              />
               <section className="card history-card">
                 <div className="section-top">
                   <h3>Your shopping history</h3>
@@ -1708,7 +1355,7 @@ export default function AisleApp() {
                       provenance={checklistProvenance}
                       budget={agent.perShopBudget}
                       shopName={active.name}
-                      renderItem={i => <ItemRow key={i.id} item={i} shopping />}
+                      renderItem={i => <ItemRow key={i.id} item={i} ctx={rowCtx} shopping />}
                     />
                     <div className="list-bottom-note">
                       <Info size={14} /> Check shelf prices before buying. These are online
