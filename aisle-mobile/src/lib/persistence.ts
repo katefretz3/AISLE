@@ -2,6 +2,7 @@ import {Capacitor} from '@capacitor/core';
 import {Filesystem,Directory,Encoding} from '@capacitor/filesystem';
 import {Camera,CameraResultType,CameraSource} from '@capacitor/camera';
 import {Share} from '@capacitor/share';
+import {Haptics,ImpactStyle} from '@capacitor/haptics';
 import {initialState,normalizeState,type UserState} from './catalog';
 import {MAX_PHOTO_EDGE,TARGET_PHOTO_BYTES,orphanPhotoIds,photoRejection,scaledSize} from './photo';
 export const isDevice=Capacitor.isNativePlatform();
@@ -154,4 +155,12 @@ export async function captureShelfPhoto():Promise<File|null>{
   const blob=await (await fetch(photo.webPath)).blob();
   return new File([blob],`shelf-${new Date().toISOString().slice(0,10)}.jpg`,{type:blob.type||'image/jpeg'});
  }catch(e){if(/cancel/i.test(String(e)))return null;throw e;}
+}
+
+/** A light tap when something is ticked off in the shop, so the person holding
+ *  the trolley does not have to look down to know it registered. Silent on the
+ *  web and on devices without a haptic engine. */
+export function tapFeedback(){
+ if(!isDevice)return;
+ void Haptics.impact({style:ImpactStyle.Light}).catch(()=>{});
 }

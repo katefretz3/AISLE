@@ -27,7 +27,7 @@ import DueThisWeek from '@/components/due-this-week';
 import ShelfPriceCapture from '@/components/shelf-price-capture';
 import Account from './account';
 import Legal from './legal';
-import {loadState,saveState,uploadReceipt,openReceiptFile,captureReceipt,shareList,isDevice,sweepShelfPhotos,deleteShelfPhoto} from "@/lib/persistence";
+import {loadState,saveState,uploadReceipt,openReceiptFile,captureReceipt,shareList,isDevice,sweepShelfPhotos,deleteShelfPhoto,tapFeedback} from "@/lib/persistence";
 import {personalSuggestions,recordChoice,starterList,products,productById,productImagePath,stores,categories,money,initialState,parseList,type Product,type Store,type UserState,type ListItem,type Preferences,type Trip,type TripLine} from "@/lib/catalog";
 import {priceHistory,accuracy} from '@/lib/shopping-history';
 import {recordShelfPrice,removeShelfPrice,latestShelfPrice,resolveLinePrice,tallyProvenance,shelfPriceAgeDays,isStale,referencedPhotoIds} from '@/lib/shelf-prices';
@@ -258,7 +258,7 @@ export default function AisleApp(){
      :paid&&price===null?<small className="item-paid">paid {money(Math.round(paid.last.unitCents))} last time</small>:null)
    :(paid?<small className="item-paid">paid {money(Math.round(paid.last.unitCents))} at {paid.last.storeName}</small>:null);
   return <div className={cx("item-row",item.checked&&"is-checked")}>
-  {shopping&&<Checkbox aria-label={`Mark ${item.name} as bought`} checked={item.checked} onCheckedChange={v=>updateItem(item.id,{checked:v===true})} className="item-check"/>}
+  {shopping&&<Checkbox aria-label={`Mark ${item.name} as bought`} checked={item.checked} onCheckedChange={v=>{if(v===true)tapFeedback();updateItem(item.id,{checked:v===true});}} className="item-check"/>}
   <ProductIcon product={p} small={compact}/><div className="item-copy"><strong>{item.name}</strong><span>{p?`${p.brand} · ${p.size}`:"Not matched to a catalogue item"}</span></div>
   {!compact&&!shopping&&<button className={cx("icon-button lock-button",item.locked&&"is-locked")} aria-label={`${item.locked?"Unlock":"Lock"} ${item.name}`} title={item.locked?"Exact product locked":"Keep this exact product"} onClick={()=>updateItem(item.id,{locked:!item.locked})}><LockKeyhole size={15}/></button>}
   {!compact&&!shopping&&<div className="quantity"><button aria-label={`Decrease ${item.name} quantity`} disabled={item.qty===1} onClick={()=>updateItem(item.id,{qty:item.qty-1})}><Minus size={13}/></button><span>{item.qty}</span><button aria-label={`Increase ${item.name} quantity`} disabled={item.qty>=99} onClick={()=>updateItem(item.id,{qty:item.qty+1})}><Plus size={13}/></button></div>}

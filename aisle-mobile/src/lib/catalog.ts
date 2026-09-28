@@ -246,12 +246,6 @@ export function personalSuggestions(state:UserState,now=Date.now()){
   return {product:p,score,why};
  }).filter(p=>p.score>0&&p.why).sort((a,b)=>b.score-a.score).slice(0,4);
 }
-export function swapConfidence(state:UserState,category:string){
- if(!state.prefs.learning)return {probability:.5,count:0};
- const choices=state.events.filter(e=>e.category===category&&["accepted_swap","kept_brand"].includes(e.action));
- const accept=choices.filter(e=>e.action==="accepted_swap").length;
- return {probability:(accept+1)/(choices.length+2),count:choices.length};
-}
 export function starterList(prefs:Preferences):ListItem[]{
  const ids=prefs.favouriteProducts.length?prefs.favouriteProducts:prefs.allergens.length?[]:initialState().items.map(i=>i.productId!).filter(id=>allowedSuggestion(productById[id],prefs));
  return ids.filter(id=>productById[id]&&!prefs.excludedProducts.includes(id)).map((id,i)=>({id:`setup-${i}`,productId:id,name:productById[id].name,qty:1,checked:false,locked:prefs.preferredBrands.includes(productById[id].brand)}));
