@@ -3324,6 +3324,11 @@ h1 {
     left: 0 !important;
     transform: none !important;
     translate: none !important;
+    /* The production CSS minifier folds transform + translate into one
+       transform and drops the translate longhand, which is how Tailwind v4
+       centres dialogs. Zeroing its variables survives minification. */
+    --tw-translate-x: 0 !important;
+    --tw-translate-y: 0 !important;
     border-radius: 0 !important;
     border: 0 !important;
     display: block !important;
@@ -4369,6 +4374,11 @@ html {
     left: 0 !important;
     transform: none !important;
     translate: none !important;
+    /* The production CSS minifier folds transform + translate into one
+       transform and drops the translate longhand, which is how Tailwind v4
+       centres dialogs. Zeroing its variables survives minification. */
+    --tw-translate-x: 0 !important;
+    --tw-translate-y: 0 !important;
     padding-top: max(16px, env(safe-area-inset-top)) !important;
     padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
   }

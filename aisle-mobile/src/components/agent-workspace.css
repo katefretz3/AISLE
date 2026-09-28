@@ -340,7 +340,13 @@
   font-size: 0.76rem;
   font-style: normal;
   color: var(--muted-foreground);
-  opacity: 0.9;
+}
+/* The retailer link is a line of small text; on touch screens it gets a full
+   44px row so it can be tapped without hitting its neighbours. */
+@media (pointer: coarse) {
+  .agent-offer-copy a {
+    min-height: 44px;
+  }
 }
 .agent-offer-decide {
   display: flex;

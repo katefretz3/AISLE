@@ -733,7 +733,7 @@
 }
 .setup-loading > p {
   font-size: 13px;
-  color: #6b7d64;
+  color: #56664f;
 }
 @keyframes setup-breathe {
   50% {
@@ -942,6 +942,11 @@
     left: 0 !important;
     transform: none !important;
     translate: none !important;
+    /* The production CSS minifier folds transform + translate into one
+       transform and drops the translate longhand, which is how Tailwind v4
+       centres dialogs. Zeroing its variables survives minification. */
+    --tw-translate-x: 0 !important;
+    --tw-translate-y: 0 !important;
     border-radius: 0 !important;
     grid-template-columns: minmax(0, 1fr);
   }
