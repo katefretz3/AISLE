@@ -26,6 +26,10 @@ await build({
     alias: {
       '@': fileURLToPath(new URL('../src', import.meta.url)),
       '@capacitor/core': fileURLToPath(new URL('./stubs/capacitor.ts', import.meta.url)),
+      '@capacitor/filesystem': fileURLToPath(new URL('./stubs/filesystem.ts', import.meta.url)),
+      '@capacitor/camera': fileURLToPath(new URL('./stubs/device-plugins.ts', import.meta.url)),
+      '@capacitor/share': fileURLToPath(new URL('./stubs/device-plugins.ts', import.meta.url)),
+      '@capacitor/haptics': fileURLToPath(new URL('./stubs/device-plugins.ts', import.meta.url)),
     },
   },
   // The broker's SDK is installed in ../server, not here, so it is bundled

@@ -18,5 +18,13 @@
     "types": ["vite/client"],
     "allowJs": true
   },
-  "include": ["src", "tests", "tools", "../server", "vite.config.ts", "capacitor.config.ts"]
+  "include": [
+    "src",
+    "tests",
+    "tools",
+    "../server",
+    "vite.config.ts",
+    "capacitor.config.ts",
+    "playwright.config.ts"
+  ]
 }

@@ -12,3 +12,5 @@ ios/App/build/
 *.mobileprovision
 .env*
 !.env.example
+test-results/
+playwright-report/
