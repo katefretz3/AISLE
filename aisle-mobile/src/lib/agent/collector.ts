@@ -1,4 +1,4 @@
-import {SOURCES, type Offer, type Pack, type SourceResult} from './types';
+import type {Offer, Pack} from './types';
 export function parsePack(value: string): Pack | null {
   const text = value.toLowerCase().replace(/,/g, '');
   const m = text.match(/(?:(\d+)\s*[x×]\s*)?(\d+(?:\.\d+)?)\s*(kg|g|ml|l|lb|oz)\b/);
@@ -104,79 +104,4 @@ export function blockedByRobots(robots: string, paths: string[]): boolean {
       new RegExp('^' + rule.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replaceAll('*', '.*')).test(path),
     ),
   );
-}
-export type TextFetcher = (url: string) => Promise<string>;
-export const fetchText: TextFetcher = async url => {
-  const response = await fetch(url, {
-    signal: AbortSignal.timeout(12000),
-    redirect: 'manual',
-    headers: {
-      Accept: 'application/json,text/plain',
-      'User-Agent': 'AislePriceResearch/1.0 (+https://aisle-burlington.katefretz.chatgpt.site)',
-    },
-  });
-  if (!response.ok) throw new Error(`Retailer returned HTTP ${response.status}`);
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error('Empty retailer response');
-  let size = 0;
-  const decoder = new TextDecoder();
-  let text = '';
-  for (;;) {
-    const {value, done} = await reader.read();
-    if (done) break;
-    size += value.byteLength;
-    if (size > 4_000_000) {
-      await reader.cancel();
-      throw new Error('Catalogue response exceeded limit');
-    }
-    text += decoder.decode(value, {stream: true});
-  }
-  return text + decoder.decode();
-};
-// These are fixed, reviewed public catalogue endpoints. No user-controlled URLs,
-// private retailer endpoints, credential forwarding, recursive crawling or checkout.
-export async function collectSource(
-  source: (typeof SOURCES)[number],
-  read: TextFetcher = fetchText,
-  now = new Date(),
-): Promise<SourceResult> {
-  try {
-    const robots = await read(source.origin + '/robots.txt');
-    if (blockedByRobots(robots, source.paths))
-      throw new Error('Catalogue collection is disallowed by the retailer');
-    const storefront = await read(source.origin + '/');
-    const currency = storefront.match(/Shopify\.currency\s*=\s*(\{[^;]+\})/);
-    if (!currency || JSON.parse(currency[1]).active !== source.currency)
-      throw new Error('Retailer currency could not be verified as CAD');
-    const offers: Offer[] = [];
-    for (const path of source.paths)
-      offers.push(...normalizeProducts(JSON.parse(await read(source.origin + path)), source, now));
-    const unique = [...new Map(offers.map(o => [o.id, o])).values()];
-    if (!unique.length) throw new Error('No valid product prices were returned');
-    return {
-      id: source.id,
-      name: source.name,
-      url: source.origin,
-      status: 'ready',
-      message:
-        'Public online catalogue sample; store stock, delivery area and checkout charges are not confirmed.',
-      checkedAt: now.toISOString(),
-      offers: unique,
-    };
-  } catch (error) {
-    console.warn(
-      `Price source ${source.id} unavailable`,
-      error instanceof Error ? error.message : 'Unknown error',
-    );
-    return {
-      id: source.id,
-      name: source.name,
-      url: source.origin,
-      status: 'unavailable',
-      message:
-        'This catalogue could not be read. Please try again later or check the retailer directly.',
-      checkedAt: now.toISOString(),
-      offers: [],
-    };
-  }
 }

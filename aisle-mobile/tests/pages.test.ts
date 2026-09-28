@@ -184,8 +184,8 @@ test('a trip records its shop name so history survives an unknown source', () =>
   // spending screen for anyone who shopped at a discovered retailer.
   const trip: Trip = {
     id: 't1',
-    storeId: 'goodnessme',
-    storeName: 'Goodness Me!',
+    storeId: 'https://corner-grocer.example.ca',
+    storeName: 'Corner Grocer',
     date: '2026-09-20',
     total: 4250,
     predicted: 0,
@@ -200,13 +200,17 @@ test('a trip records its shop name so history survives an unknown source', () =>
   );
   // The screen resolves the chain, then the recorded name, then the raw id.
   const resolved = stores.find(s => s.id === trip.storeId)?.name ?? trip.storeName ?? trip.storeId;
-  assert.equal(resolved, 'Goodness Me!');
+  assert.equal(resolved, 'Corner Grocer');
 
   // A trip saved before this field existed still resolves to something showable.
   const legacy: Trip = {...trip, storeName: undefined};
   const legacyResolved =
     stores.find(s => s.id === legacy.storeId)?.name ?? legacy.storeName ?? legacy.storeId;
-  assert.equal(legacyResolved, 'goodnessme', 'falls back to the id rather than throwing');
+  assert.equal(
+    legacyResolved,
+    'https://corner-grocer.example.ca',
+    'falls back to the id rather than throwing',
+  );
 
   const bundled: Trip = {...trip, storeId: 'metro', storeName: undefined};
   assert.equal(stores.find(s => s.id === bundled.storeId)?.name, 'Metro');

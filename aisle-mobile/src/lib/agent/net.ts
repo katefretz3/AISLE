@@ -59,7 +59,21 @@ export function assertReadable(url: string, guard: OriginGuard) {
 }
 
 const MAX_BYTES = 4_000_000;
-const AGENT = 'AisleOntario/1.0 (+https://github.com/katefretz3/AISLE; grocery price research)';
+/**
+ * The one User-Agent Aisle sends, to retailers and to the store directory.
+ * Overpass and polite crawling both ask for a way to reach the operator, so a
+ * contact URL is appended when the build sets VITE_AISLE_CONTACT_URL. None is
+ * made up when it is not set. Browsers ignore this header; the native HTTP
+ * layer sends it.
+ */
+export const USER_AGENT = userAgent(
+  ((import.meta as unknown as {env?: Record<string, string | undefined>}).env ?? {})
+    .VITE_AISLE_CONTACT_URL,
+);
+export function userAgent(contact: string | undefined): string {
+  const url = contact && /^https:\/\/[^\s;()]+$/.test(contact) ? contact : '';
+  return `AisleOntario/1.0 (grocery price research${url ? `; +${url}` : ''})`;
+}
 
 /** Capacitor HTTP on device, fetch in the browser; identical limits on both. */
 export function createReader(guard: OriginGuard, timeoutMs = 12000): Reader {
@@ -68,7 +82,7 @@ export function createReader(guard: OriginGuard, timeoutMs = 12000): Reader {
     const method = init.method ?? 'GET';
     const headers = {
       Accept: 'application/json,text/plain,*/*',
-      'User-Agent': AGENT,
+      'User-Agent': USER_AGENT,
       ...init.headers,
     };
     const fetchedAt = new Date().toISOString();

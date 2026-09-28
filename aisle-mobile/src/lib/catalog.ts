@@ -279,6 +279,49 @@ export const stores: Store[] = [
     text: '#675340',
     url: 'https://denningers.com',
   },
+  // The chains below had a registry entry but no store here, so they could not
+  // be chosen as a go-to store, picked for a receipt or shown with a mark.
+  // Neutral tiles: the colours are Aisle's, not a claim about the brand's.
+  {
+    id: 'independent',
+    name: 'Your Independent Grocer',
+    short: 'YIG',
+    color: '#eef1ea',
+    text: '#3c4a33',
+    url: 'https://www.yourindependentgrocer.ca',
+  },
+  {
+    id: 'sobeys',
+    name: 'Sobeys',
+    short: 'S',
+    color: '#eef1ea',
+    text: '#3c4a33',
+    url: 'https://www.sobeys.com',
+  },
+  {
+    id: 'giant-tiger',
+    name: 'Giant Tiger',
+    short: 'GT',
+    color: '#eef1ea',
+    text: '#3c4a33',
+    url: 'https://www.gianttiger.com',
+  },
+  {
+    id: 'tnt',
+    name: 'T&T Supermarket',
+    short: 'T&T',
+    color: '#eef1ea',
+    text: '#3c4a33',
+    url: 'https://www.tntsupermarket.com',
+  },
+  {
+    id: 'goodnessme',
+    name: 'Goodness Me!',
+    short: 'GM',
+    color: '#eef1ea',
+    text: '#3c4a33',
+    url: 'https://goodnessme.ca',
+  },
 ];
 // Products come from the taxonomy (Department → Aisle → Item), so the catalogue,
 // the category browser and the generated artwork can never drift apart.

@@ -324,7 +324,13 @@ export async function deleteLastRun(): Promise<void> {
 
 /** Everything "Erase everything" promises beyond the saved state itself. */
 export async function eraseStoredFiles(): Promise<void> {
-  await Promise.all([sweepReceipts([], 0), sweepShelfPhotos([], 0), deleteLastRun()]);
+  const {deletePlacesCache} = await import('./agent-client');
+  await Promise.all([
+    sweepReceipts([], 0),
+    sweepShelfPhotos([], 0),
+    deleteLastRun(),
+    deletePlacesCache(),
+  ]);
 }
 
 /** Take a photo of a shelf label. Returns null when the person backs out. */

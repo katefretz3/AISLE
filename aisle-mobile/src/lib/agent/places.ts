@@ -1,4 +1,6 @@
-import {stores, type Preferences} from '../catalog';
+import type {Preferences} from '../catalog';
+import {chainFor} from './registry';
+import {USER_AGENT} from './net';
 import {cityLocation} from '../locations';
 export type GroceryPlace = {
   id: string;
@@ -46,21 +48,68 @@ export function nearbyPlaces(result: PlaceResult, prefs: Preferences) {
     );
 }
 export type PlaceFetcher = (query: string) => Promise<unknown>;
-const readPlaces: PlaceFetcher = async query => {
-  const r = await fetch('https://overpass.private.coffee/api/interpreter', {
+export type OverpassPost = (url: string, body: string) => Promise<{status: number; text: string}>;
+
+/**
+ * Public Overpass instances, tried in order. One instance being down, rate
+ * limiting or timing out used to mean "no shops near you"; now the next one is
+ * asked. All serve the same OpenStreetMap data.
+ */
+export const OVERPASS_ENDPOINTS = [
+  'https://overpass.private.coffee/api/interpreter',
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+];
+const MAX_DIRECTORY_BYTES = 2_000_000;
+
+export function overpassReader(
+  post: OverpassPost,
+  endpoints: string[] = OVERPASS_ENDPOINTS,
+): PlaceFetcher {
+  return async query => {
+    const body = new URLSearchParams({data: query}).toString();
+    let last = 'No store directory answered';
+    for (const url of endpoints) {
+      try {
+        const r = await post(url, body);
+        if (r.status === 400) throw new Error('The store directory rejected the query');
+        if (r.status !== 200) {
+          last = `Store directory returned HTTP ${r.status}`;
+          continue;
+        }
+        if (r.text.length > MAX_DIRECTORY_BYTES) {
+          last = 'Store directory response too large';
+          continue;
+        }
+        const parsed = JSON.parse(r.text) as {remark?: string};
+        // A server-side timeout still answers 200, with a remark and partial data.
+        if (!parsed || parsed.remark) {
+          last = 'Store directory returned incomplete results';
+          continue;
+        }
+        return parsed;
+      } catch (e) {
+        // A malformed query fails the same way everywhere; stop there.
+        if (e instanceof Error && /rejected the query/.test(e.message)) throw e;
+        last = e instanceof Error ? e.message : 'Store directory unreachable';
+      }
+    }
+    throw new Error(last);
+  };
+}
+
+/** Browser transport. Native builds pass CapacitorHttp instead (agent-client). */
+const fetchPost: OverpassPost = async (url, body) => {
+  const r = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': 'Aisle/1.0 (+https://aisle-burlington.katefretz.chatgpt.site)',
-    },
-    body: new URLSearchParams({data: query}),
+    headers: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': USER_AGENT},
+    body,
     signal: AbortSignal.timeout(20000),
   });
-  if (!r.ok) throw new Error(`Store directory returned HTTP ${r.status}`);
-  const text = await r.text();
-  if (text.length > 2000000) throw new Error('Store directory response too large');
-  return JSON.parse(text);
+  return {status: r.status, text: await r.text()};
 };
+const readPlaces = overpassReader(fetchPost);
+
 export async function collectPlaces(
   area: {lat: number; lng: number},
   read: PlaceFetcher = readPlaces,
@@ -82,7 +131,6 @@ export async function collectPlaces(
     };
     if (!body || body.remark) throw new Error('Store directory returned incomplete results');
     if (!Array.isArray(body.elements)) throw new Error('Store directory format changed');
-    const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
     const places = body.elements.slice(0, 400).flatMap(e => {
       const tags = e.tags ?? {},
         name = tags.name ?? tags.brand,
@@ -96,11 +144,7 @@ export async function collectPlaces(
         !Number.isFinite(e.id)
       )
         return [];
-      const match = stores.find(
-        s =>
-          normalize(name).includes(normalize(s.name)) ||
-          normalize(tags.brand ?? '') === normalize(s.name),
-      );
+      const match = chainFor(name, tags.brand ?? '');
       // `website` is retained so feed discovery has a real, mapped address to probe
       // rather than a domain guessed from the store's name.
       const website = tags.website ?? tags['brand:website'] ?? tags['contact:website'];

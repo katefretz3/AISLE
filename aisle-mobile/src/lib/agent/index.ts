@@ -91,15 +91,8 @@ export {
   type ReadResult,
 } from './net';
 
-// The existing bounded pipeline stays available and unchanged.
-export {buildPlan, matchOffer, requiredPacks, type AgentPlan} from './engine';
-export {
-  collectSource,
-  normalizeProducts,
-  parsePack,
-  robotsDisallows,
-  blockedByRobots,
-} from './collector';
+export {matchOffer, requiredPacks} from './engine';
+export {normalizeProducts, parsePack, robotsDisallows, blockedByRobots} from './collector';
 export {
   collectPlaces,
   nearbyPlaces,
@@ -108,4 +101,4 @@ export {
   type GroceryPlace,
   type PlaceResult,
 } from './places';
-export {SOURCES, type Offer, type MarketSnapshot, type SourceResult, type Pack} from './types';
+export {type Offer, type Pack} from './types';
