@@ -145,6 +145,18 @@ const nav = [
 export default function AisleApp() {
   const household = useHousehold();
   const appearance = useAppearance();
+  // Toasts come down from the top on a phone, clear of the tab bar and of the
+  // controls a thumb is using; bottom-right on a wide screen.
+  const [phone, setPhone] = useState(
+    () => typeof matchMedia === 'function' && matchMedia('(max-width: 760px)').matches,
+  );
+  useEffect(() => {
+    if (typeof matchMedia !== 'function') return;
+    const query = matchMedia('(max-width: 760px)');
+    const update = () => setPhone(query.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
   const {state, ready, loadError, saveStatus, savingError, setSavingError, commit} = household;
   // The MCP tool reads the latest run without re-subscribing on every change.
   const agentRef = useRef<{run: typeof agent.run; baskets: typeof agent.baskets}>(null);
@@ -834,14 +846,25 @@ export default function AisleApp() {
             </strong>
           </div>
           <div className="topbar-right">
-            <button className="location-button" onClick={() => go('account')}>
+            <button
+              className="location-button"
+              aria-label={`Search area: ${state.prefs.city || 'Burlington'}, Ontario. Change in settings`}
+              onClick={() => go('account')}
+            >
               <MapPin size={16} />
-              <span>{state.prefs.city || 'Burlington'}, ON</span>
+              <span>{state.prefs.city || 'Burlington'}</span>
+              <span className="location-province">, ON</span>
               <ChevronDown size={14} />
             </button>
             <span className="top-divider" />
-            <button className="data-badge" onClick={() => setHelp(true)}>
-              <span /> {'Observed prices'} <Info size={13} />
+            <button
+              className="data-badge"
+              aria-label="How Aisle gets its prices"
+              onClick={() => setHelp(true)}
+            >
+              <span className="data-dot" />
+              <span className="data-badge-label">Observed prices</span>
+              <Info size={15} />
             </button>
           </div>
         </header>
@@ -1267,35 +1290,50 @@ export default function AisleApp() {
             </div>
           </footer>
         </main>
-        <nav className="mobile-nav" aria-label="Main navigation">
-          {nav.map(({id, label, icon: Icon}) => (
-            <button
-              key={id}
-              aria-label={label}
-              aria-current={view === id ? 'page' : undefined}
-              className={view === id ? 'selected' : ''}
-              onClick={() => go(id)}
-            >
-              <Icon size={21} />
-              <span>
-                {id === 'home'
-                  ? 'My week'
-                  : id === 'list'
-                    ? 'My list'
-                    : id === 'compare'
-                      ? 'Baskets'
-                      : 'Spending'}
-              </span>
-            </button>
-          ))}
-          <button
-            aria-label="Account settings"
-            className={view === 'account' || view === 'legal' ? 'selected' : ''}
-            onClick={() => go('account')}
-          >
-            <Settings2 size={21} />
-            <span>You</span>
+        {state.activeShop && view !== 'shop' && (
+          // A shop in progress is one tap away from anywhere, the way a music
+          // app keeps the current track above its tab bar.
+          <button className="shop-pill" onClick={() => go('shop')}>
+            <ShoppingBag size={18} />
+            <span>
+              <strong>Continue your shop</strong>
+              <small>
+                {checked} of {state.items.length} picked up
+              </small>
+            </span>
+            <ChevronRight size={18} />
           </button>
+        )}
+        <nav className="mobile-nav" aria-label="Main navigation">
+          {(
+            [
+              {id: 'home', label: 'Week', icon: Home},
+              {id: 'list', label: 'List', icon: ClipboardList},
+              {id: 'compare', label: 'Prices', icon: StoreIcon},
+              {id: 'spending', label: 'Spending', icon: BarChart3},
+              {id: 'account', label: 'You', icon: Settings2},
+            ] as const
+          ).map(({id, label, icon: Icon}) => {
+            const selected = view === id || (id === 'account' && view === 'legal');
+            return (
+              <button
+                key={id}
+                aria-current={selected ? 'page' : undefined}
+                className={selected ? 'selected' : ''}
+                onClick={() => go(id)}
+              >
+                <span className="tab-icon">
+                  <Icon size={22} strokeWidth={selected ? 2.2 : 1.8} />
+                  {id === 'list' && state.items.length > 0 && (
+                    <span className="tab-badge" aria-hidden="true">
+                      {state.items.length > 99 ? '99+' : state.items.length}
+                    </span>
+                  )}
+                </span>
+                <span className="tab-label">{label}</span>
+              </button>
+            );
+          })}
         </nav>
       </div>
 
@@ -1712,7 +1750,11 @@ export default function AisleApp() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <Toaster position="bottom-right" theme={appearance.theme} closeButton />
+      <Toaster
+        position={phone ? 'top-center' : 'bottom-right'}
+        theme={appearance.theme}
+        closeButton
+      />
     </SidebarProvider>
   );
 }

@@ -29,13 +29,13 @@
 }
 .compare-spread strong {
   display: block;
-  font-size: 1rem;
+  font-size: 1.0625rem;
   letter-spacing: -0.015em;
   color: var(--accent-foreground);
 }
 .compare-spread p {
   margin: 5px 0 0;
-  font-size: 0.86rem;
+  font-size: 0.9225rem;
   line-height: 1.55;
   color: var(--muted-foreground);
 }
@@ -72,14 +72,14 @@
   border-radius: 999px;
   background: var(--primary);
   color: var(--primary-foreground);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 .compare-card h3 {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1.0125rem;
   font-weight: 650;
   color: var(--muted-foreground);
 }
@@ -93,7 +93,7 @@
 }
 .compare-sub {
   margin: 0;
-  font-size: 0.83rem;
+  font-size: 0.8925rem;
   color: var(--muted-foreground);
 }
 
@@ -122,7 +122,7 @@
 }
 .compare-facts dt {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 650;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -130,7 +130,7 @@
 }
 .compare-facts dd {
   margin: 3px 0 0;
-  font-size: 0.88rem;
+  font-size: 0.9425rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--foreground);
@@ -150,7 +150,7 @@
   padding: 10px 12px;
   border-radius: 10px;
   background: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   line-height: 1.5;
   color: var(--muted-foreground);
 }
@@ -174,7 +174,7 @@
 }
 .compare-note p {
   margin: 0;
-  font-size: 0.84rem;
+  font-size: 0.9025rem;
   line-height: 1.6;
   color: var(--muted-foreground);
   max-width: 78ch;
@@ -198,7 +198,7 @@
 }
 .compare-section-head p {
   margin: 5px 0 0;
-  font-size: 0.84rem;
+  font-size: 0.9025rem;
   color: var(--muted-foreground);
 }
 .compare-stores {
@@ -229,16 +229,16 @@
 }
 .compare-store-copy strong {
   display: block;
-  font-size: 0.9rem;
+  font-size: 0.9625rem;
   color: var(--foreground);
 }
 .compare-store-copy small {
   display: block;
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   color: var(--muted-foreground);
 }
 .compare-km {
-  font-size: 0.82rem;
+  font-size: 0.8825rem;
   font-variant-numeric: tabular-nums;
   color: var(--muted-foreground);
 }
@@ -272,13 +272,13 @@
 }
 .coverage-copy strong {
   display: block;
-  font-size: 0.9rem;
+  font-size: 0.9625rem;
   color: var(--foreground);
 }
 .coverage-copy small {
   display: block;
   margin-top: 2px;
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   line-height: 1.5;
   color: var(--muted-foreground);
 }
@@ -327,7 +327,7 @@
 .compare-empty p {
   margin: 0;
   max-width: 66ch;
-  font-size: 0.9rem;
+  font-size: 0.9625rem;
   line-height: 1.62;
   color: var(--muted-foreground);
 }

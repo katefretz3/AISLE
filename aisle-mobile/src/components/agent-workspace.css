@@ -20,7 +20,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -36,7 +36,7 @@
 .agent-hero p {
   margin: 0;
   max-width: 56ch;
-  font-size: 0.94rem;
+  font-size: 1.0025rem;
   line-height: 1.6;
   color: var(--fg-d6ece0);
 }
@@ -76,7 +76,7 @@
 }
 .agent-stats dt {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -107,7 +107,7 @@
   border-radius: 999px;
   background: var(--muted);
   color: var(--muted-foreground);
-  font-size: 0.82rem;
+  font-size: 0.8825rem;
 }
 .agent-phases li span {
   width: 7px;
@@ -146,7 +146,7 @@
   display: inline-block;
   padding: 5px 11px;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -161,7 +161,7 @@
 }
 .agent-summary p {
   margin: 12px 0 0;
-  font-size: 0.94rem;
+  font-size: 1.0025rem;
   line-height: 1.62;
   color: var(--foreground);
 }
@@ -169,7 +169,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.85rem;
+  font-size: 0.9125rem;
   color: var(--muted-foreground);
 }
 .agent-warning {
@@ -181,7 +181,7 @@
   border-radius: 12px;
   background: var(--muted);
   color: var(--muted-foreground);
-  font-size: 0.85rem !important;
+  font-size: 0.9125rem !important;
 }
 .agent-warning svg {
   flex: 0 0 auto;
@@ -194,7 +194,7 @@
   gap: 10px;
   padding: 13px 16px;
   border-radius: 14px;
-  font-size: 0.9rem;
+  font-size: 0.9625rem;
   background: color-mix(in srgb, var(--destructive) 10%, var(--card));
   color: var(--destructive);
 }
@@ -234,7 +234,7 @@
 .agent-block-head p {
   margin: 5px 0 0;
   max-width: 72ch;
-  font-size: 0.85rem;
+  font-size: 0.9125rem;
   line-height: 1.55;
   color: var(--muted-foreground);
 }
@@ -244,7 +244,7 @@
   border-radius: var(--radius-lg);
   background: var(--muted);
   color: var(--muted-foreground);
-  font-size: 0.9rem;
+  font-size: 0.9625rem;
 }
 
 /* matched lines ------------------------------------------------------------*/
@@ -275,13 +275,13 @@
 }
 .agent-line-copy strong {
   display: block;
-  font-size: 0.97rem;
+  font-size: 1.0325rem;
   color: var(--foreground);
 }
 .agent-line-copy small {
   display: block;
   margin-top: 2px;
-  font-size: 0.79rem;
+  font-size: 0.8525rem;
   color: var(--muted-foreground);
 }
 .agent-line-offers {
@@ -313,19 +313,19 @@
   min-width: 0;
 }
 .agent-offer-copy strong {
-  font-size: 1.02rem;
+  font-size: 1.0825rem;
   font-variant-numeric: tabular-nums;
   color: var(--foreground);
 }
 .agent-offer-copy span {
-  font-size: 0.79rem;
+  font-size: 0.8525rem;
   color: var(--muted-foreground);
 }
 .agent-offer-copy a {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.79rem;
+  font-size: 0.8525rem;
   color: var(--primary);
   text-decoration: none;
   overflow: hidden;
@@ -337,7 +337,7 @@
   text-decoration: underline;
 }
 .agent-offer-copy em {
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   font-style: normal;
   color: var(--muted-foreground);
 }
@@ -362,7 +362,7 @@
   border: 1px solid var(--border);
   background: var(--card);
   color: var(--foreground);
-  font-size: 0.81rem;
+  font-size: 0.8725rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
@@ -384,7 +384,7 @@
   gap: 9px;
   align-items: flex-start;
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.9125rem;
   line-height: 1.55;
   color: var(--muted-foreground);
 }
@@ -414,7 +414,7 @@
 }
 .agent-card h3 {
   margin: 0;
-  font-size: 0.93rem;
+  font-size: 0.9925rem;
   color: var(--muted-foreground);
   font-weight: 600;
 }
@@ -429,7 +429,7 @@
 }
 .agent-card p {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.8625rem;
   color: var(--muted-foreground);
 }
 .agent-card-note {
@@ -471,23 +471,23 @@
 }
 .agent-stores strong {
   display: block;
-  font-size: 0.9rem;
+  font-size: 0.9625rem;
   color: var(--foreground);
 }
 .agent-stores small {
   display: block;
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   color: var(--muted-foreground);
 }
 .agent-km {
-  font-size: 0.82rem;
+  font-size: 0.8825rem;
   font-variant-numeric: tabular-nums;
   color: var(--muted-foreground);
 }
 .agent-feed {
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 650;
   letter-spacing: 0.03em;
 }
@@ -521,11 +521,11 @@
   display: block;
   margin-bottom: 4px;
   color: var(--foreground);
-  font-size: 0.9rem;
+  font-size: 0.9625rem;
 }
 .agent-note p {
   margin: 0;
-  font-size: 0.84rem;
+  font-size: 0.9025rem;
   line-height: 1.58;
 }
 
@@ -539,7 +539,7 @@
 .agent-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8rem;
+  font-size: 0.8625rem;
 }
 .agent-table th {
   text-align: left;
@@ -547,7 +547,7 @@
   font-weight: 650;
   color: var(--muted-foreground);
   border-bottom: 1px solid var(--border);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -568,14 +568,14 @@
 .agent-rejected,
 .agent-foot {
   margin: 14px 0 0;
-  font-size: 0.82rem;
+  font-size: 0.8825rem;
   line-height: 1.55;
   color: var(--muted-foreground);
 }
 .agent-violations {
   margin: 12px 0 0;
   padding-left: 20px;
-  font-size: 0.82rem;
+  font-size: 0.8825rem;
   color: var(--destructive);
 }
 .agent-trace {
@@ -594,7 +594,7 @@
   align-items: baseline;
   padding: 9px 0;
   border-bottom: 1px solid var(--border);
-  font-size: 0.83rem;
+  font-size: 0.8925rem;
   color: var(--muted-foreground);
 }
 .agent-trace-phase {
@@ -602,7 +602,7 @@
   border-radius: 999px;
   background: var(--secondary);
   color: var(--secondary-foreground);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 650;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -614,7 +614,7 @@
 }
 .agent-trace-ms {
   font-variant-numeric: tabular-nums;
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
 }
 .agent-demo {
   align-self: flex-start;
@@ -699,12 +699,12 @@
 }
 .agent-blocked strong {
   display: block;
-  font-size: 0.96rem;
+  font-size: 1.0225rem;
   color: var(--foreground);
 }
 .agent-blocked p {
   margin: 6px 0 0;
-  font-size: 0.87rem;
+  font-size: 0.9325rem;
   line-height: 1.6;
   color: var(--muted-foreground);
   max-width: 72ch;
@@ -722,7 +722,7 @@
   border-radius: 999px;
   background: var(--card);
   border: 1px solid var(--border);
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   color: var(--muted-foreground);
 }
 
@@ -753,13 +753,13 @@
 }
 .agent-gap-head strong {
   display: block;
-  font-size: 0.96rem;
+  font-size: 1.0225rem;
   color: var(--foreground);
 }
 .agent-gap-head p {
   margin: 6px 0 0;
   max-width: 72ch;
-  font-size: 0.87rem;
+  font-size: 0.9325rem;
   line-height: 1.6;
   color: var(--muted-foreground);
 }
@@ -776,7 +776,7 @@
   border-radius: 999px;
   background: var(--card);
   border: 1px solid var(--border);
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   color: var(--muted-foreground);
 }
 .agent-gap-actions {
@@ -791,7 +791,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 0.8rem;
+  font-size: 0.8625rem;
 }
 .agent-gap-detail {
   margin: 0;
@@ -805,13 +805,13 @@
   padding: 8px 0;
 }
 .agent-gap-detail dt {
-  font-size: 0.82rem;
+  font-size: 0.8825rem;
   font-weight: 600;
   color: var(--foreground);
 }
 .agent-gap-detail dd {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.8625rem;
   line-height: 1.55;
   color: var(--muted-foreground);
 }
@@ -819,7 +819,7 @@
 /* Unit price. The number a shopper actually compares, so it sits directly under
    the pack size it was derived from. */
 .agent-unit {
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
   color: var(--muted-foreground);
 }

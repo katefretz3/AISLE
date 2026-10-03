@@ -119,8 +119,8 @@ export default function SpendingView({
               </button>
             }
           >
-            After a shop, enter what you actually paid. Aisle compares that against your budget — it
-            is the only figure here it does not have to guess at.
+            After a shop, enter what you actually paid. Aisle compares that against your budget. It
+            is the one figure here that comes straight from you.
           </Empty>
         )}
       </section>

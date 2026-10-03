@@ -32,7 +32,7 @@
 }
 .checklist-running-label {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 650;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -53,7 +53,7 @@
 }
 .checklist-remaining {
   display: block;
-  font-size: 1rem;
+  font-size: 1.0625rem;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
   color: var(--primary);
@@ -64,7 +64,7 @@
 .checklist-running-right small {
   display: block;
   margin-top: 2px;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--muted-foreground);
 }
 .checklist-running-foot {
@@ -74,7 +74,7 @@
   justify-content: space-between;
   gap: 8px;
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   color: var(--muted-foreground);
 }
 .checklist-unpriced {
@@ -96,7 +96,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 0.84rem;
+  font-size: 0.9025rem;
   font-weight: 600;
   color: var(--muted-foreground);
 }
@@ -116,7 +116,7 @@
   border-radius: 999px;
   background: none;
   font: inherit;
-  font-size: 0.79rem;
+  font-size: 0.8525rem;
   font-weight: 600;
   color: var(--muted-foreground);
   cursor: pointer;
@@ -143,7 +143,7 @@
   gap: 10px;
   margin: 0;
   padding: 10px 4px 8px;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -232,7 +232,7 @@
 .checklist-rows .item-unit {
   display: block;
   margin-top: 2px;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--muted-foreground);
@@ -243,7 +243,7 @@
 .checklist-rows .item-paid {
   display: block;
   margin-top: 2px;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--primary);
@@ -255,13 +255,13 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--primary);
 }
 .checklist-rows .item-observed {
   display: block;
   margin-top: 2px;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: var(--primary);
 }
