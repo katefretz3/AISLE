@@ -2,13 +2,14 @@ import React from 'react';
 import {createRoot} from 'react-dom/client';
 import {Capacitor} from '@capacitor/core';
 import {App} from '@capacitor/app';
-import {StatusBar, Style} from '@capacitor/status-bar';
+import {StatusBar} from '@capacitor/status-bar';
+import {applyTheme, readAppearance, resolveTheme} from './lib/appearance';
 import AisleApp from './app/aisle-app';
 import ErrorBoundary from './components/error-boundary';
 import './app/globals.css';
+applyTheme(resolveTheme(readAppearance()));
 if (Capacitor.isNativePlatform()) {
   document.body.classList.add('is-native');
-  void StatusBar.setStyle({style: Style.Dark}).catch(() => {});
   void StatusBar.setOverlaysWebView({overlay: false}).catch(() => {});
   // Let the first back action close an open sheet/dialog before leaving a screen.
   void App.addListener('backButton', () => {

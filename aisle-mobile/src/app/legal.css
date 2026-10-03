@@ -274,13 +274,13 @@
   align-items: flex-start;
   padding: 16px 18px;
   border-radius: var(--radius-lg);
-  background: color-mix(in srgb, #b8860b 9%, var(--card));
-  border: 1px solid color-mix(in srgb, #b8860b 34%, transparent);
+  background: color-mix(in srgb, var(--bg-b8860b) 9%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--bd-b8860b) 34%, transparent);
 }
 .legal-placeholder svg {
   flex: 0 0 auto;
   margin-top: 1px;
-  color: #8a6508;
+  color: var(--fg-8a6508);
 }
 .legal-placeholder strong {
   display: block;

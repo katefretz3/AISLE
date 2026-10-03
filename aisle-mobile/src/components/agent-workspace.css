@@ -12,8 +12,8 @@
   align-items: start;
   padding: 28px;
   border-radius: var(--radius-xl);
-  background: linear-gradient(140deg, var(--primary) 0%, #1d6350 62%, #2b7d61 100%);
-  color: #fff;
+  background: linear-gradient(140deg, var(--brand-1) 0%, var(--brand-2) 62%, var(--brand-3) 100%);
+  color: var(--fg-ffffff);
   box-shadow: var(--shadow-lg);
 }
 .agent-eyebrow {
@@ -24,21 +24,21 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #bfe3cf;
+  color: var(--fg-bfe3cf);
 }
 .agent-hero h1 {
   margin: 12px 0 10px;
   font-size: clamp(1.55rem, 3.2vw, 2.15rem);
   line-height: 1.15;
   letter-spacing: -0.02em;
-  color: #fff;
+  color: var(--fg-ffffff);
 }
 .agent-hero p {
   margin: 0;
   max-width: 56ch;
   font-size: 0.94rem;
   line-height: 1.6;
-  color: #d6ece0;
+  color: var(--fg-d6ece0);
 }
 .agent-hero-actions {
   display: flex;
@@ -47,15 +47,15 @@
   margin-top: 20px;
 }
 .agent-hero .button.primary {
-  background: #fff;
+  background: var(--bg-ffffff);
   color: var(--primary);
 }
 .agent-hero .button.primary:hover:not(:disabled) {
-  background: #eef6f1;
+  background: var(--bg-eef6f1);
 }
 .agent-hero .button.ghost {
   background: rgba(255, 255, 255, 0.14);
-  color: #fff;
+  color: var(--fg-ffffff);
   border: 1px solid rgba(255, 255, 255, 0.28);
 }
 .agent-hero .button.ghost:hover {
@@ -80,14 +80,14 @@
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: #a9d2bd;
+  color: var(--fg-a9d2bd);
 }
 .agent-stats dd {
   margin: 5px 0 0;
   font-size: 1.5rem;
   font-weight: 650;
   letter-spacing: -0.02em;
-  color: #fff;
+  color: var(--fg-ffffff);
 }
 
 /* progress -----------------------------------------------------------------*/

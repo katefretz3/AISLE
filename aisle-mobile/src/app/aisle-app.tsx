@@ -131,6 +131,7 @@ import {cx, newId, ProductIcon, Pill, Choice, Empty, ViewLoading} from './parts'
 import {ItemRow, type ItemRowContext} from './item-row';
 import {BudgetCard} from './home-cards';
 import {useHousehold} from './use-household';
+import {useAppearance} from '@/lib/appearance';
 import SpendingView from './views/spending-view';
 import HelpDialog from './help-dialog';
 
@@ -143,6 +144,7 @@ const nav = [
 ] as const;
 export default function AisleApp() {
   const household = useHousehold();
+  const appearance = useAppearance();
   const {state, ready, loadError, saveStatus, savingError, setSavingError, commit} = household;
   // The MCP tool reads the latest run without re-subscribing on every change.
   const agentRef = useRef<{run: typeof agent.run; baskets: typeof agent.baskets}>(null);
@@ -1161,6 +1163,8 @@ export default function AisleApp() {
                   agent.forget();
                   void eraseStoredFiles();
                 }}
+                appearance={appearance.appearance}
+                onAppearance={appearance.choose}
                 appVersion={APP_VERSION}
               />
             </Suspense>
@@ -1708,7 +1712,7 @@ export default function AisleApp() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <Toaster position="bottom-right" theme="light" closeButton />
+      <Toaster position="bottom-right" theme={appearance.theme} closeButton />
     </SidebarProvider>
   );
 }

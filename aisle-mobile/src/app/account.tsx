@@ -23,12 +23,15 @@ import {
   Heart,
   LockKeyhole,
   MapPin,
+  Moon,
   Pin,
   ReceiptText,
   RotateCcw,
   Scale,
   ShieldCheck,
+  Smartphone,
   Sparkles,
+  Sun,
   Tag,
   Trash2,
   User,
@@ -68,6 +71,7 @@ import {
 } from '@/lib/catalog';
 import {cadenceDays, perShopBudget} from '@/lib/agent';
 import {DOCUMENTS} from '@/lib/legal';
+import type {Appearance} from '@/lib/appearance';
 import './account.css';
 
 type Props = {
@@ -81,6 +85,8 @@ type Props = {
   /** Delete what lives outside the saved state: receipt and label images and
    *  the last price check. */
   onErase: () => void;
+  appearance: Appearance;
+  onAppearance: (next: Appearance) => void;
   appVersion: string;
 };
 
@@ -108,6 +114,8 @@ export default function Account({
   onReplaySetup,
   onLegal,
   onErase,
+  appearance,
+  onAppearance,
   appVersion,
 }: Props) {
   const p = state.prefs;
@@ -212,6 +220,29 @@ export default function Account({
           />
           <span className="field-help">Used only to greet you in the app.</span>
         </label>
+        <fieldset className="field">
+          <legend className="field-title">Appearance</legend>
+          <div className="account-segment">
+            {(
+              [
+                {id: 'system', label: 'System', icon: Smartphone},
+                {id: 'light', label: 'Light', icon: Sun},
+                {id: 'dark', label: 'Dark', icon: Moon},
+              ] as const
+            ).map(t => (
+              <button
+                key={t.id}
+                type="button"
+                aria-pressed={appearance === t.id}
+                onClick={() => onAppearance(t.id)}
+              >
+                <t.icon size={17} />
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <span className="field-help">System follows your phone's light or dark setting.</span>
+        </fieldset>
         <p className="account-note">
           <ShieldCheck size={16} />
           <span>

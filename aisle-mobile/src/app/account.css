@@ -366,7 +366,7 @@
 .account-chip.is-allergen.selected {
   background: var(--destructive);
   border-color: var(--destructive);
-  color: #fff;
+  color: var(--fg-ffffff);
 }
 
 .account-taglist {
@@ -401,7 +401,7 @@
 }
 .account-taglist button:hover {
   background: var(--destructive);
-  color: #fff;
+  color: var(--destructive-foreground);
 }
 .account-empty {
   margin: 0;
@@ -552,7 +552,7 @@
 }
 .button.danger {
   background: var(--destructive);
-  color: #fff;
+  color: var(--destructive-foreground);
   border-color: var(--destructive);
   flex: 0 0 auto;
 }
@@ -570,7 +570,7 @@
 }
 [data-slot='alert-dialog-action'].is-destructive {
   background: var(--destructive) !important;
-  color: #fff !important;
+  color: var(--destructive-foreground) !important;
 }
 
 /* Footer -------------------------------------------------------------------*/
@@ -675,4 +675,29 @@
   font-size: 0.76rem;
   line-height: 1.65;
   color: var(--muted-foreground);
+}
+
+/* Appearance: three short choices, always side by side. */
+.account-segment {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 4px;
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+}
+.account-segment button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+.account-segment button[aria-pressed='true'] {
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--shadow-sm);
 }
