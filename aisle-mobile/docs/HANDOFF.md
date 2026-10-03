@@ -1,25 +1,27 @@
 # Handoff
 
-State of `claude/grocery-matching-agent-pk59q1` on 28 September 2026, after
-working through every item of the previous checklist (commit `0d8690f`).
+State of `claude/grocery-matching-agent-pk59q1` on 3 October 2026: the
+previous checklist (commit `0d8690f`) worked through, then a design pass
+(tokens and dark mode, type scale, phone layout, home, sheets, list; see
+"Design pass" below).
 Everything in "What was run" was measured on this branch; the method is noted
 where it matters. The history of each fix is in the commit named beside it.
 
 ## What was run
 
-| Check                                                                    | Result                                                                         |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| `npm run verify` (tsc, ESLint `--max-warnings 0`, Prettier, unit, build) | clean                                                                          |
-| `npm test`                                                               | **149 / 149** (was 105)                                                        |
-| `npm run test:e2e` (production build, phone + desktop)                   | **13 / 13 runs pass**, 1 skipped by design (touch targets are phone-only)      |
-| axe-core WCAG 2.1 A/AA, 7 views × 2 widths, populated household          | **0 violations** (was 418 failing nodes)                                       |
-| Text under 12 px, 6 mobile views                                         | **0 of 520** text runs (was 32 %)                                              |
-| 44 × 44 tap area, hit-tested, every control on 7 mobile views            | **all pass** (a toast briefly covers the footer; excluded)                     |
-| Sideways scroll, 7 views × 2 widths                                      | none                                                                           |
-| `npm audit` (app and `../server`)                                        | 0 vulnerabilities                                                              |
-| `vite build`                                                             | main chunk 875 KB / 242 KB gzip (was 928 / 258); Leaflet, Account, Legal split |
-| `npm run release:check`                                                  | **fails, as it should**: the six operator placeholders (see R2)                |
-| `npx cap sync`                                                           | both platforms sync                                                            |
+| Check                                                                    | Result                                                                               |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `npm run verify` (tsc, ESLint `--max-warnings 0`, Prettier, unit, build) | clean                                                                                |
+| `npm test`                                                               | **152 / 152** (was 105)                                                              |
+| `npm run test:e2e` (production build, phone + desktop)                   | **20 / 20 runs pass** (16 tests), 1 skipped by design (touch targets are phone-only) |
+| axe-core WCAG 2.1 A/AA, 7 views × 2 widths, populated household          | **0 violations** (was 418 failing nodes)                                             |
+| Text under 12 px, 6 mobile views                                         | **0 of 520** text runs (was 32 %)                                                    |
+| 44 × 44 tap area, hit-tested, every control on 7 mobile views            | **all pass** (a toast briefly covers the footer; excluded)                           |
+| Sideways scroll, 7 views × 2 widths                                      | none                                                                                 |
+| `npm audit` (app and `../server`)                                        | 0 vulnerabilities                                                                    |
+| `vite build`                                                             | main chunk 875 KB / 242 KB gzip (was 928 / 258); Leaflet, Account, Legal split       |
+| `npm run release:check`                                                  | **fails, as it should**: the six operator placeholders (see R2)                      |
+| `npx cap sync`                                                           | both platforms sync                                                                  |
 
 Not verifiable here: native iOS/Android builds (no Xcode, no Android SDK), a
 real device, live retailer or Overpass responses, and product photos. Every
@@ -51,6 +53,27 @@ fixtures.
 | H6 bundle and assets                                   | Account and Legal lazy; the 2.2 MB onboarding PNG is a 55 KB WebP.                                                                                                                                                                                                                                                                                                                                              | `9a3971b`            |
 
 ---
+
+## Design pass
+
+Applied on top of the checklist, modelled on platform guidance (Apple HIG,
+Material 3) and on reference apps for each flow, borrowing patterns, not
+anyone's look.
+
+| Change                                                                                                                                         | Where                                              |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Every colour is a token (438 of them, by role: `--fg-*`, `--bg-*`, `--bd-*`), with a dark value for each; the core palette is set by hand      | `src/app/palette.css`, end of `globals.css`        |
+| Dark mode, and Account › Profile › Appearance: System, Light, Dark. Applied before first paint; drives the native status bar                   | `src/lib/appearance.ts`, `index.html`              |
+| Platform typeface (San Francisco / Roboto); every size in rem, one step larger at the small end; follows the phone's text size                 | `globals.css`                                      |
+| Phone layer: compact sticky top bar, stacked headings, Material 3-style tab bar (Week, List, Prices, Spending, You), "Continue your shop" pill | end of `globals.css`, `aisle-app.tsx`              |
+| Home leads with the answer ("$4.49 at Fixture Grocer, for 1 of 6 items"); facts and evidence under "How we know"                               | `components/agent-workspace.tsx`                   |
+| Task dialogs are bottom sheets on phones, with swipe-down to close                                                                             | end of `globals.css`, `src/lib/sheet-gesture.ts`   |
+| List: "Your usuals" tiles (only items with a household reason), sections in walking order, action chips                                        | `src/app/views/list-view.tsx`, `src/lib/usuals.ts` |
+
+Bugs found during the pass and fixed: every dialog's close button had been
+pushed out of sight (iPhone users had no visible way out of Add groceries);
+checkbox outlines were under 3:1; a `.dark` button class would have clashed
+with a dark-mode class, so the theme is a `data-theme` attribute.
 
 ## Still open: release blockers
 
@@ -116,19 +139,18 @@ Decide it and update the manifest and the Play data-safety form to match.
 
 ## Still open: product and design
 
-### F7. Dark mode
+### F7. Dark mode: done, then tune by eye
 
-Not built. `globals.css` has about 400 hard-coded hex colours, so the first step
-is moving them onto tokens; a dark palette is then a second set of token values.
-Until then the `dark:` variant is tied to a `.dark` class nothing sets, so
-dark-mode phones get the light UI consistently.
+Built in the design pass. The derived dark values in `src/app/palette.css`
+pass axe everywhere but were generated, not designed; a designer should walk
+the screens in dark mode and adjust tokens there (never the stylesheets).
 
-### F8. Body text size
+### F8. Body text size: done, with one thing to check on a device
 
-The 12 px floor holds everywhere, but 85 % of text runs are 12–13 px and 15 %
-reach 14 px. The previous checklist asked for 14–16 px body text. That is a
-typography pass over the whole design, not a find-and-replace; do it together
-with F7.
+Body text is now 16px on the web and 17px on iPhone, and everything scales
+with the phone's text-size setting. Nobody has yet looked at the largest
+accessibility sizes on a real iPhone; expect some headings to need wrapping
+rules there.
 
 ### F9. The five-staple gate
 
@@ -154,9 +176,10 @@ built, and the app says so.
 
 ### H1. The rest of the split
 
-`src/app/aisle-app.tsx` is 1,714 lines. What is left inside it, in order of
-size: the list view (~190 lines), the receipt dialog (~170), the shop view
-(~115), the catalogue dialog (~60) and the swaps dialog (~60). The pattern is
+`src/app/aisle-app.tsx` is 1,591 lines. What is left inside it, in order of
+size: the receipt dialog (~170 lines), the shop view (~115), the catalogue
+dialog (~60) and the swaps dialog (~60). The list view moved out in the
+design pass. The pattern is
 set: `views/spending-view.tsx` for a view, `ItemRowContext` in `item-row.tsx`
 for passing actions, `use-household.ts` for state. Extract with
 `npm run test:e2e` running; the suite caught two real bugs during this pass.
@@ -200,4 +223,4 @@ been made from this code; do one against a staging key before launch.
 3. R8: deploy the broker with a shared store, if the assisted mode is wanted at launch.
 4. R6 and R7: photos and store labels.
 5. H1 remainder and H8, with the e2e suite running.
-6. F7 + F8 together as one design pass.
+6. A designer's review of dark mode and large text sizes on real devices (F7, F8).

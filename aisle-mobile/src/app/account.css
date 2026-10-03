@@ -188,7 +188,7 @@
   font-size: 1.0625rem;
   color: var(--foreground);
 }
-.account-identity span {
+.account-identity div > span {
   display: block;
   margin-top: 2px;
   font-size: 0.8825rem;

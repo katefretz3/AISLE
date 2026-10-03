@@ -1144,3 +1144,29 @@
     align-items: center;
   }
 }
+
+/* Phone footer: the primary action gets the width it needs; the privacy link
+   sits on its own line underneath. */
+@media (max-width: 760px) {
+  .setup-footer-actions {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      'left primary'
+      'link link';
+    gap: 8px 12px;
+    align-items: center;
+  }
+  .setup-footer-actions > :first-child {
+    grid-area: left;
+  }
+  .setup-footer-actions > .setup-privacy-link {
+    grid-area: link;
+    justify-self: center;
+  }
+  .setup-footer-actions > .button.primary {
+    grid-area: primary;
+    width: 100%;
+    min-height: 50px;
+  }
+}

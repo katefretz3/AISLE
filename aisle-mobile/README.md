@@ -38,6 +38,8 @@ is left to do.
   receipt photo. That record becomes price history ("paid $3.49 at Metro") and
   repurchase timing. Estimates are only scored against the till when the whole
   list was priced.
+- **Light and dark**, following the phone or set in Account, and text that
+  follows the phone's text-size setting.
 - **Account and legal**: one settings screen; Terms, Privacy and Data sources
   written to describe what the app does. Erase everything resets the saved
   household and deletes receipt and label photos, the saved check and the
@@ -65,8 +67,8 @@ npm run dev                 # local preview
 | `npm run check`         | TypeScript across `src`, `tests`, `tools` and `../server`               |
 | `npm run lint`          | ESLint (CI runs it with `--max-warnings 0`)                             |
 | `npm run format:check`  | Prettier                                                                |
-| `npm test`              | 149 unit tests on Node's runner (`tests/*.test.ts`)                     |
-| `npm run test:e2e`      | 11 Playwright tests (`tests/e2e`), 13 runs across phone and desktop     |
+| `npm test`              | 152 unit tests on Node's runner (`tests/*.test.ts`)                     |
+| `npm run test:e2e`      | 16 Playwright tests (`tests/e2e`), 20 runs across phone and desktop     |
 | `npm run release:check` | Refuses a release with placeholder legal details or mismatched versions |
 | `npm run release`       | verify, release check, then `cap sync`                                  |
 | `npm run art`           | Redraw the fallback product illustrations                               |

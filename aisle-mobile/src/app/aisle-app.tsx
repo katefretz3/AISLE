@@ -844,8 +844,10 @@ export default function AisleApp() {
               onClick={() => go('account')}
             >
               <MapPin size={16} />
-              <span>{state.prefs.city || 'Burlington'}</span>
-              <span className="location-province">, ON</span>
+              <span>
+                {state.prefs.city || 'Burlington'}
+                <span className="location-province">, ON</span>
+              </span>
               <ChevronDown size={14} />
             </button>
             <span className="top-divider" />

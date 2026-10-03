@@ -4040,6 +4040,10 @@ h1 {
   --input: #d7e0d3;
   --ring: #5f9c6f;
 
+  /* Checkbox outlines need 3:1 against the card to read as controls
+     (WCAG 1.4.11); the input border is deliberately softer than that. */
+  --control-border: #7d8a83;
+
   /* The brand's deep green, for surfaces that carry white text (the home
      hero). It stays deep in dark mode, where --primary turns to mint. */
   --brand-1: #125643;
@@ -4800,6 +4804,7 @@ html {
   --popover-foreground: #e3ebe6;
   --primary: #8fd1ad;
   --primary-foreground: #0b1a14;
+  --control-border: #7f8f88;
   --brand-1: #0f3d31;
   --brand-2: #14493b;
   --brand-3: #1c5a47;
@@ -5153,4 +5158,15 @@ html {
   .shelf-modal {
     animation: none !important;
   }
+}
+
+/* While a shop is running its pill sits above the tab bar; leave room for it. */
+@media (max-width: 760px) {
+  .app-main:has(.shop-pill) .workspace {
+    padding-bottom: calc(172px + env(safe-area-inset-bottom));
+  }
+}
+
+[data-slot='checkbox']:not([data-state='checked']) {
+  border-color: var(--control-border);
 }
