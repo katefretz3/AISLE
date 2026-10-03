@@ -1,12 +1,13 @@
 'use client';
-// Legal screens: Terms of Use, Privacy Policy, Data sources & attribution.
+// Legal screens: Terms of Use, Privacy Policy, Data sources, Accessibility.
 //
-// Long-form reading inside a product that is otherwise all cards and controls.
-// The chrome is deliberately quieter than the rest of the app: one column, a
-// generous measure, and no decoration competing with the text. Everything comes
-// from src/lib/legal.ts, so the contents list can never drift from the body.
+// Long-form reading inside a product that is otherwise all cards and controls,
+// so the chrome is quieter here: one column, a comfortable measure, and nothing
+// competing with the text. Everything comes from src/lib/legal.ts, so the
+// contents list can never drift from the body.
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {
+  Accessibility,
   ArrowLeft,
   ArrowUpRight,
   ChevronRight,
@@ -27,11 +28,17 @@ import {
 } from '@/lib/legal';
 import './legal.css';
 
-const ICONS = {terms: Scale, privacy: ShieldCheck, sources: FileText} as const;
+const ICONS = {
+  terms: Scale,
+  privacy: ShieldCheck,
+  sources: FileText,
+  accessibility: Accessibility,
+} as const;
 const BLURB = {
   terms: 'The agreement for using Aisle',
   privacy: 'What happens to information about you',
   sources: 'Where the data comes from, and its licences',
+  accessibility: 'How the app works with assistive technology',
 } as const;
 
 /** `**bold**` is the only markup the documents use. */
@@ -73,12 +80,10 @@ function Index({onSelect, onBack}: {onSelect: (id: string) => void; onBack: () =
     <div className="legal-screen">
       <div className="page-heading">
         <div>
-          <span className="eyebrow">THE SMALL PRINT, PLAINLY</span>
-          <h1>Legal &amp; privacy</h1>
+          <h1>Legal and privacy</h1>
           <p>
-            Written to describe what this app actually does, rather than to cover every eventuality
-            in the abstract. If something here does not match what you see in the app, the app is
-            the bug.
+            The terms for using Aisle, what happens to your information, where the data comes from,
+            and how the app works with assistive technology.
           </p>
         </div>
         <button className="button secondary" onClick={onBack}>
@@ -93,8 +98,8 @@ function Index({onSelect, onBack}: {onSelect: (id: string) => void; onBack: () =
           const Icon = ICONS[doc.id];
           return (
             <button key={doc.id} className="legal-card" onClick={() => onSelect(doc.id)}>
-              <span className="legal-card-icon">
-                <Icon size={21} />
+              <span className="legal-card-icon" aria-hidden="true">
+                <Icon size={22} />
               </span>
               <span className="legal-card-copy">
                 <strong>{doc.title}</strong>
@@ -183,10 +188,12 @@ function Document({
           <button className="text-button legal-back" onClick={onBack}>
             <ArrowLeft size={15} /> All legal pages
           </button>
-          <span className="eyebrow">
-            <Icon size={13} /> {doc.title.toUpperCase()}
-          </span>
-          <h1>{doc.title}</h1>
+          <h1>
+            <span className="legal-doc-icon" aria-hidden="true">
+              <Icon size={22} />
+            </span>
+            {doc.title}
+          </h1>
           <p>{doc.summary}</p>
           <p className="legal-updated">
             Last updated {doc.lastUpdated} · Effective {OPERATOR.effectiveDate}

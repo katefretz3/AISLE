@@ -1,0 +1,297 @@
+/* Aisle design tokens. The one place colour, type, space, shape and depth are
+ * decided; docs/DESIGN.md explains how to use them.
+ *
+ * Every colour is named for its job, never its value. Dark mode redefines the
+ * same names, so a rule written once works in both. Text pairs are chosen to
+ * clear WCAG 2.2 AA on every surface they appear on (4.5:1 for text, 3:1 for
+ * field outlines, icons and focus rings).
+ */
+/* Fraunces itself is loaded from main.tsx, where Vite can bundle its files. */
+
+:root {
+  color-scheme: light;
+
+  /* -- surfaces, from the page up ------------------------------------------ */
+  --canvas: #f4f1ea; /* the page: warm oat, so white cards lift off it */
+  --surface: #ffffff; /* cards, sheets, the tab bar */
+  --surface-2: #f7f5f0; /* quiet fills inside a card */
+  --surface-3: #ede9e0; /* tracks, pressed states, segmented controls */
+  --line: #e7e2d8; /* hairlines */
+  --line-strong: #d3ccbe;
+  --card-edge: rgb(16 36 28 / 0.06); /* the faint edge a raised card keeps */
+  --field-line: #8b8579; /* inputs and checkboxes: 3:1 against white */
+  --scrim: rgb(11 25 20 / 0.45);
+
+  /* -- text ------------------------------------------------------------------ */
+  --ink: #16201b;
+  --ink-2: #48534d; /* supporting text */
+  --ink-3: #5f6863; /* meta: sizes, times, counts */
+
+  /* -- brand --------------------------------------------------------------- */
+  --brand: #0f5a44; /* evergreen: primary actions, links, selection */
+  --brand-press: #0b4736;
+  --on-brand: #ffffff;
+  --brand-ink: #0f5a44;
+  --brand-2: #2b7055; /* icons and secondary brand text */
+  --brand-tint: #e2eee5; /* tonal buttons, selected chips */
+  --brand-tint-2: #cfe3d5;
+  --brand-line: #9cc8ae;
+
+  /* The signature surface: deep evergreen panels that carry white text in
+     both themes (the home summary, the shop in progress, setup's side panel). */
+  --hero: #0b3b2e;
+  --hero-2: #12513f;
+  --on-hero: #ffffff;
+  --on-hero-2: #cfe3d8;
+  --lime: #c9ec70; /* the accent: one bright action on a hero, meters */
+  --on-lime: #0b3b2e;
+
+  /* -- status ---------------------------------------------------------------- */
+  --warn: #8f5400;
+  --warn-tint: #fbf0da;
+  --warn-line: #e9d2a6;
+  --danger: #b3261e;
+  --on-danger: #ffffff;
+  --danger-tint: #fbe6e3;
+  --info: #1d5b91;
+  --info-tint: #e4eef8;
+
+  /* -- departments: a tint to sit on and an ink to draw with ----------------- */
+  --dept-produce: #e5f2da;
+  --dept-produce-ink: #2d6a1e;
+  --dept-dairy: #e2eefa;
+  --dept-dairy-ink: #1d5a93;
+  --dept-meat: #fae3df;
+  --dept-meat-ink: #a0301f;
+  --dept-deli: #fce9d6;
+  --dept-deli-ink: #8e4911;
+  --dept-bakery: #f8ecd3;
+  --dept-bakery-ink: #7b5512;
+  --dept-pantry: #f5e7db;
+  --dept-pantry-ink: #85421c;
+  --dept-breakfast: #fef0c7;
+  --dept-breakfast-ink: #775700;
+  --dept-snacks: #fce4ee;
+  --dept-snacks-ink: #9c2358;
+  --dept-frozen: #dff0f7;
+  --dept-frozen-ink: #155e80;
+  --dept-beverages: #efe6fa;
+  --dept-beverages-ink: #5f3297;
+  --dept-household: #e6eaf4;
+  --dept-household-ink: #3e4b70;
+  --dept-personal: #f7e4f3;
+  --dept-personal-ink: #83306f;
+  --dept-baby: #fdeadf;
+  --dept-baby-ink: #94401f;
+  --dept-pet: #f0e8dc;
+  --dept-pet-ink: #6d4c2a;
+
+  /* -- depth ------------------------------------------------------------------ */
+  --shadow-tint: #10241c;
+  --e-1: 0 1px 1px rgb(16 36 28 / 0.04), 0 2px 6px -1px rgb(16 36 28 / 0.06);
+  --e-2:
+    0 1px 2px rgb(16 36 28 / 0.05), 0 6px 16px -4px rgb(16 36 28 / 0.08),
+    0 18px 36px -18px rgb(16 36 28 / 0.18);
+  --e-3: 0 2px 8px rgb(16 36 28 / 0.08), 0 28px 60px -16px rgb(16 36 28 / 0.28);
+  --e-hero: 0 2px 4px rgb(11 59 46 / 0.12), 0 22px 44px -18px rgb(11 59 46 / 0.55);
+  --e-inset: inset 0 1px 0 rgb(255 255 255 / 0.6);
+  --glass: rgb(255 255 255 / 0.84);
+
+  /* -- shape ------------------------------------------------------------------ */
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+
+  /* -- space: a 4px grid ------------------------------------------------------ */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --gutter: 20px; /* page side margin on a phone */
+  --section: 32px; /* between sections of a page */
+  --card-pad: 20px;
+  --tap: 44px; /* iOS minimum; 48px on touch screens below */
+
+  /* -- type ------------------------------------------------------------------- */
+  --font-display: 'Fraunces Variable', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --t-hero: 2.75rem;
+  --t-display: 2.125rem; /* page titles */
+  --t-title: 1.375rem; /* section titles */
+  --t-headline: 1.0625rem; /* card titles, row names */
+  --t-body: 1rem;
+  --t-callout: 0.9375rem;
+  --t-footnote: 0.8125rem;
+  --t-caption: 0.75rem; /* badges only */
+
+  /* -- the shadcn/Tailwind names, pointed at the tokens above ----------------- */
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: var(--on-brand);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-3);
+  --accent: var(--brand-tint);
+  --accent-foreground: var(--brand-ink);
+  --destructive: var(--danger);
+  --destructive-foreground: var(--on-danger);
+  --border: var(--line);
+  --input: var(--field-line);
+  --ring: var(--brand);
+  --control-border: var(--field-line);
+  --chart-1: var(--brand);
+  --chart-2: var(--lime);
+  --chart-3: #e1b577;
+  --chart-4: var(--brand-line);
+  --chart-5: #c77c67;
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--ink-2);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--on-brand);
+  --sidebar-accent: var(--brand-tint);
+  --sidebar-accent-foreground: var(--brand-ink);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--brand);
+  --radius: var(--r-sm);
+  --radius-sm: var(--r-xs);
+  --radius-md: var(--r-sm);
+  --radius-lg: var(--r-md);
+  --radius-xl: var(--r-lg);
+  --shadow-sm: var(--e-1);
+  --shadow-md: var(--e-2);
+  --shadow-lg: var(--e-3);
+}
+
+@media (pointer: coarse), (max-width: 760px) {
+  :root {
+    /* Android's minimum is 48dp; it also clears iOS's 44pt. */
+    --tap: 48px;
+  }
+}
+@media (max-width: 360px) {
+  :root {
+    --gutter: 16px;
+    --card-pad: 16px;
+  }
+}
+@media (min-width: 761px) {
+  :root {
+    --gutter: 32px;
+    --section: 40px;
+    --card-pad: 24px;
+    --t-display: 2.625rem;
+    --t-hero: 3.25rem;
+  }
+}
+
+/* Dark: surfaces get lighter as they rise, text is never pure white, and the
+   brand turns to mint so it keeps its contrast. Hero panels stay evergreen. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --canvas: #0b110f;
+  --surface: #131b18;
+  --surface-2: #19231f;
+  --surface-3: #222d28;
+  --line: #26312c;
+  --line-strong: #33403a;
+  --card-edge: #22302a;
+  --field-line: #75837c;
+  --scrim: rgb(0 0 0 / 0.6);
+
+  --ink: #edf2ee;
+  --ink-2: #b9c4be;
+  --ink-3: #95a19a;
+
+  --brand: #86d3ac;
+  --brand-press: #9eddbc;
+  --on-brand: #06140e;
+  --brand-ink: #8fd8b3;
+  --brand-2: #74c29b;
+  --brand-tint: #16302a;
+  --brand-tint-2: #1d3d33;
+  --brand-line: #2e5a48;
+
+  --hero: #0f3a2d;
+  --hero-2: #165442;
+  --on-hero: #ffffff;
+  --on-hero-2: #c3dacd;
+
+  --warn: #f2c46b;
+  --warn-tint: #2e2412;
+  --warn-line: #4a3b1c;
+  --danger: #ff8a80;
+  --on-danger: #1f0c08;
+  --danger-tint: #3a1a17;
+  --info: #8dc3f2;
+  --info-tint: #13263a;
+
+  --dept-produce: #1a2a15;
+  --dept-produce-ink: #a8da8e;
+  --dept-dairy: #13243a;
+  --dept-dairy-ink: #9cc7f2;
+  --dept-meat: #331814;
+  --dept-meat-ink: #f3a496;
+  --dept-deli: #33210f;
+  --dept-deli-ink: #f0b47a;
+  --dept-bakery: #2f2511;
+  --dept-bakery-ink: #e6c37c;
+  --dept-pantry: #30200f;
+  --dept-pantry-ink: #e8ae86;
+  --dept-breakfast: #2f2608;
+  --dept-breakfast-ink: #f0cd6b;
+  --dept-snacks: #351524;
+  --dept-snacks-ink: #f29bc0;
+  --dept-frozen: #0f2a35;
+  --dept-frozen-ink: #8fd0ec;
+  --dept-beverages: #24183a;
+  --dept-beverages-ink: #c9a8f2;
+  --dept-household: #1a2033;
+  --dept-household-ink: #afbbe0;
+  --dept-personal: #31152c;
+  --dept-personal-ink: #e6a1d6;
+  --dept-baby: #34190f;
+  --dept-baby-ink: #f2ae8e;
+  --dept-pet: #2a2117;
+  --dept-pet-ink: #d7b791;
+
+  --shadow-tint: #000000;
+  --e-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --e-2: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 28px -12px rgb(0 0 0 / 0.6);
+  --e-3: 0 2px 8px rgb(0 0 0 / 0.5), 0 28px 60px -16px rgb(0 0 0 / 0.75);
+  --e-hero: 0 2px 4px rgb(0 0 0 / 0.4), 0 22px 44px -18px rgb(0 0 0 / 0.8);
+  --e-inset: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --glass: rgb(19 27 24 / 0.84);
+  --chart-3: #c9a46a;
+  --chart-5: #d98f7b;
+}
+
+/* People who ask the system for more contrast get firmer text and edges. */
+@media (prefers-contrast: more) {
+  :root:not([data-theme='dark']) {
+    --ink-2: #333c37;
+    --ink-3: #414a45;
+    --line: #b9b2a4;
+    --line-strong: #8b8579;
+    --field-line: #5b574f;
+  }
+  :root[data-theme='dark'] {
+    --ink-2: #d6dfda;
+    --ink-3: #bac6bf;
+    --line: #4a5751;
+    --line-strong: #66746d;
+    --field-line: #9aa8a1;
+  }
+}

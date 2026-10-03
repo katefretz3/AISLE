@@ -13,36 +13,33 @@ import {
 import {
   ArrowLeft,
   ArrowUpRight,
-  BarChart3,
+  Camera,
   Check,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
-  ChevronsUpDown,
-  ClipboardList,
+  CircleUser,
   Download,
+  FileText,
   HelpCircle,
-  Home,
+  House,
   Info,
-  Leaf,
+  ListChecks,
   ListPlus,
   LoaderCircle,
   MapPin,
   Plus,
   ReceiptText,
-  Settings2,
-  ShoppingBasket,
+  RefreshCw,
+  Scale,
   ShoppingBag,
+  ShoppingBasket,
   Sparkles,
   Store as StoreIcon,
-  X,
-  Camera,
-  CheckCircle2,
   TriangleAlert,
-  RefreshCw,
-  FileText,
-  HeartHandshake,
+  Wallet,
+  X,
 } from 'lucide-react';
-import {Scale} from 'lucide-react';
 import {
   Sidebar,
   SidebarProvider,
@@ -121,7 +118,8 @@ import {
 import {valueSwaps, totalSaving, type ValueSwap} from '@/lib/value-swaps';
 // One version number: the release check holds iOS and Android to this too.
 import {version as APP_VERSION} from '../../package.json';
-import {cx, newId, ProductIcon, Pill, Choice, Empty, ViewLoading} from './parts';
+import {ProductArt} from '@/components/product-art';
+import {cx, newId, Choice, Empty, ViewLoading} from './parts';
 import {ItemRow, type ItemRowContext} from './item-row';
 import {} from './home-cards';
 import {useHousehold} from './use-household';
@@ -131,11 +129,13 @@ import ListView from './views/list-view';
 import HelpDialog from './help-dialog';
 
 type View = 'home' | 'list' | 'compare' | 'spending' | 'account' | 'legal' | 'shop';
+// One set of names for the main places, shared by the sidebar and the tab bar.
 const nav = [
-  {id: 'home', label: 'My week', icon: Home},
-  {id: 'list', label: 'My grocery list', icon: ClipboardList},
-  {id: 'compare', label: 'Compare baskets', icon: StoreIcon},
-  {id: 'spending', label: 'My spending', icon: BarChart3},
+  {id: 'home', label: 'Home', icon: House},
+  {id: 'list', label: 'List', icon: ListChecks},
+  {id: 'compare', label: 'Prices', icon: StoreIcon},
+  {id: 'spending', label: 'Spending', icon: Wallet},
+  {id: 'account', label: 'Account', icon: CircleUser},
 ] as const;
 export default function AisleApp() {
   const household = useHousehold();
@@ -198,8 +198,8 @@ export default function AisleApp() {
   // cannot read, this is the only price any of their items will ever carry.
   const paidHistory = useMemo(() => priceHistory(state.trips), [state.trips]);
 
-  // Photos and receipts are dropped by several routes — a price removed by hand
-  // or aged out, a trip deleted, everything erased — and each would otherwise
+  // Photos and receipts are dropped by several routes (a price removed by hand
+  // or aged out, a trip deleted, everything erased), and each would otherwise
   // leave its image behind. Reconcile whenever the set of referenced ids changes.
   const photoKeep = useMemo(() => [...referencedPhotoIds(state)].sort().join(','), [state]);
   const receiptKeep = useMemo(
@@ -439,7 +439,7 @@ export default function AisleApp() {
     });
   }
   /** Taking a suggestion records the cheaper offer as this item's choice at that
-   *  retailer. It never edits the list itself — the household asked for the
+   *  retailer. It never edits the list itself: the household asked for the
    *  product, not for a different one. */
   function applySwap(swap: ValueSwap) {
     commit(s => {
@@ -619,7 +619,7 @@ export default function AisleApp() {
     toast.success('Shopping trip saved to your spending history.');
   }
   function exportList() {
-    const content = `${state.listName}\n\n${state.items.map(i => `${i.checked ? '[x]' : '[ ]'} ${i.qty} × ${i.name}${i.productId ? ` — ${productById[i.productId].brand}, ${productById[i.productId].size}` : ' — match needed'}`).join('\n')}\n\nAisle grocery list. Refer to retailer sources for current prices.`;
+    const content = `${state.listName}\n\n${state.items.map(i => `${i.checked ? '[x]' : '[ ]'} ${i.qty} × ${i.name}${i.productId ? ` (${productById[i.productId].brand}, ${productById[i.productId].size})` : ' (match needed)'}`).join('\n')}\n\nFrom Aisle. Check each shop for current prices.`;
     void shareList(content)
       .then(() => toast.success(isDevice ? 'List ready to share' : 'Shopping list downloaded'))
       .catch(() => toast.error('Could not share the list.'));
@@ -636,8 +636,8 @@ export default function AisleApp() {
     go('home');
     toast.success(
       merged
-        ? 'Your Aisle is ready. It was merged with a newer copy of your list saved elsewhere.'
-        : 'Your Aisle is ready. Your preferences are saved.',
+        ? 'Saved. It was merged with a newer copy of your list saved elsewhere.'
+        : 'Saved. Your list is ready.',
     );
   }
   useEffect(() => {
@@ -741,19 +741,21 @@ export default function AisleApp() {
       <Sidebar collapsible="none" className="aisle-sidebar">
         <SidebarHeader className="brand-wrap">
           <a href="#home" className="brand" onClick={() => go('home')} aria-label="Aisle home">
-            <span className="brand-symbol">
-              <ShoppingBasket size={25} strokeWidth={1.8} />
+            <span className="brand-symbol" aria-hidden="true">
+              <ShoppingBasket strokeWidth={2} />
             </span>
-            aisle<span className="brand-dot">.</span>
+            aisle
           </a>
-          <span className="brand-caption">A better way to grocery shop</span>
         </SidebarHeader>
         <SidebarContent className="nav-content">
-          <p className="nav-label">YOUR SPACE</p>
           <SidebarMenu>
             {nav.map(({id, label, icon: Icon}) => (
               <SidebarMenuItem key={id}>
-                <SidebarMenuButton asChild isActive={view === id} className="nav-item">
+                <SidebarMenuButton
+                  asChild
+                  isActive={view === id || (id === 'account' && view === 'legal')}
+                  className="nav-item"
+                >
                   <a
                     href={`#${id}`}
                     onClick={e => {
@@ -776,67 +778,36 @@ export default function AisleApp() {
               <ChevronRight size={16} />
             </button>
           )}
-          <div className="sidebar-note">
-            <span className="note-icon">
-              <HeartHandshake size={23} />
-            </span>
-            <h4>A little more in your pocket.</h4>
-            <p>Better choices start with a clear view of your whole list.</p>
-            <button onClick={() => setHelp(true)}>
-              The Aisle approach <ArrowUpRight size={15} />
-            </button>
-          </div>
         </SidebarContent>
         <SidebarFooter className="sidebar-footer">
-          <button
-            className={cx('nav-item', view === 'account' && 'active')}
-            onClick={() => go('account')}
-          >
-            <Settings2 size={19} /> Account settings
-          </button>
           <button
             className={cx('nav-item', view === 'legal' && 'active')}
             onClick={() => goLegal(null)}
           >
-            <Scale size={19} /> Legal &amp; privacy
+            <Scale size={19} /> Legal and privacy
           </button>
           <button className="nav-item" onClick={() => setHelp(true)}>
-            <HelpCircle size={19} /> How Aisle works
+            <HelpCircle size={19} /> How prices work
           </button>
           <div className="profile">
-            <span className="avatar">
+            <span className="avatar" aria-hidden="true">
               {state.prefs.name ? state.prefs.name.slice(0, 1).toUpperCase() : 'A'}
             </span>
             <div>
               <strong>{state.prefs.name || 'Your household'}</strong>
               <span>{state.prefs.city || 'Burlington'}, Ontario</span>
             </div>
-            <button
-              className="icon-button"
-              onClick={() => go('account')}
-              aria-label="Household settings"
-            >
-              <ChevronsUpDown size={16} />
-            </button>
           </div>
         </SidebarFooter>
       </Sidebar>
       <div className="app-main">
         <header className="topbar">
-          <div className="mobile-brand brand">
-            <ShoppingBasket size={24} /> aisle.
-          </div>
-          <div className="breadcrumb">
-            Your space <ChevronRight size={13} />{' '}
-            <strong>
-              {nav.find(n => n.id === view)?.label ??
-                (view === 'shop'
-                  ? 'Shopping mode'
-                  : view === 'legal'
-                    ? 'Legal & privacy'
-                    : 'Account settings')}
-            </strong>
-          </div>
+          <a href="#home" className="mobile-brand brand" onClick={() => go('home')}>
+            <span className="brand-symbol" aria-hidden="true">
+              <ShoppingBasket strokeWidth={2} />
+            </span>
+            aisle
+          </a>
           <div className="topbar-right">
             <button
               className="location-button"
@@ -850,15 +821,14 @@ export default function AisleApp() {
               </span>
               <ChevronDown size={14} />
             </button>
-            <span className="top-divider" />
             <button
               className="data-badge"
               aria-label="How Aisle gets its prices"
               onClick={() => setHelp(true)}
             >
               <span className="data-dot" />
-              <span className="data-badge-label">Observed prices</span>
-              <Info size={15} />
+              <span className="data-badge-label">How prices work</span>
+              <Info size={17} />
             </button>
           </div>
         </header>
@@ -884,15 +854,6 @@ export default function AisleApp() {
         )}
         <main className="workspace" id="main-content">
           {view === 'home' && (
-            <DueThisWeek
-              state={state}
-              onAdd={addProduct}
-              onDismiss={id =>
-                commit(s => ({...s, dueSnoozed: {...s.dueSnoozed, [id]: new Date().toISOString()}}))
-              }
-            />
-          )}
-          {view === 'home' && (
             <AgentWorkspace
               state={state}
               agent={agent}
@@ -900,23 +861,32 @@ export default function AisleApp() {
               onAdd={addProduct}
               onList={() => go('list')}
               onPreferences={() => go('account')}
-              onSetup={() => setOnboard(true)}
               onCompare={() => go('compare')}
-            />
+            >
+              <DueThisWeek
+                state={state}
+                onAdd={addProduct}
+                onDismiss={id =>
+                  commit(s => ({
+                    ...s,
+                    dueSnoozed: {...s.dueSnoozed, [id]: new Date().toISOString()},
+                  }))
+                }
+              />
+            </AgentWorkspace>
           )}
           {view === 'home' && suggestions.length > 0 && (
-            <section className="personal-recommendations">
+            <section className="personal-recommendations" aria-labelledby="often-h">
               <div className="section-top">
                 <div>
-                  <h3>Often on your list</h3>
-                  <p>Picked from your preferences and confirmed choices.</p>
+                  <h2 id="often-h">Often on your list</h2>
+                  <p>From things you have bought or added before.</p>
                 </div>
-                <Pill kind="neutral">Made for you</Pill>
               </div>
               <div className="suggestion-grid">
                 {suggestions.map(({product: p, why}) => (
                   <div className="suggestion-card" key={p.id}>
-                    <ProductIcon product={p} />
+                    <ProductArt id={p.id} />
                     <div>
                       <strong>{p.name}</strong>
                       <span>
@@ -942,9 +912,7 @@ export default function AisleApp() {
                             excludedProducts: [...s.prefs.excludedProducts, p.id],
                           },
                         }));
-                        toast(
-                          'Suggestion hidden. You can reset hidden suggestions in preferences.',
-                        );
+                        toast('Hidden. You can bring it back in Account.');
                       }}
                     >
                       <X size={13} />
@@ -992,7 +960,7 @@ export default function AisleApp() {
               agent={agent}
               onShop={beginShop}
               onList={() => go('list')}
-              onSetup={() => setOnboard(true)}
+              onPrefs={prefs}
             />
           )}
           {view === 'spending' && (
@@ -1033,12 +1001,11 @@ export default function AisleApp() {
             <>
               <div className="page-heading">
                 <div>
-                  <span className="eyebrow">ONE ITEM AT A TIME</span>
-                  <h1>{active ? `Your shop at ${active.name}` : 'Ready when you are.'}</h1>
-                  <p>Check off what’s in your basket. Your list saves as you go.</p>
+                  <h1>{active ? `Shopping at ${active.name}` : 'Choose a shop'}</h1>
+                  <p>Tick things off as they go in the basket. Your place is saved.</p>
                 </div>
                 <button className="button secondary" onClick={() => go('compare')}>
-                  <ArrowLeft size={16} /> Change store
+                  <ArrowLeft size={16} /> Change shop
                 </button>
               </div>
               {active ? (
@@ -1058,16 +1025,18 @@ export default function AisleApp() {
                       renderItem={i => <ItemRow key={i.id} item={i} ctx={rowCtx} shopping />}
                     />
                     <div className="list-bottom-note">
-                      <Info size={14} /> Check shelf prices before buying. These are online
-                      catalogue prices, not confirmed branch prices.
-                      {(() => {
-                        const blank = state.items.filter(
-                          i => activeBasket?.lineTotal(i.id) == null,
-                        ).length;
-                        return blank > 0
-                          ? ` ${blank} of ${state.items.length} items show a dash because no catalogue price was collected for them — the running total only covers the rest.`
-                          : '';
-                      })()}
+                      <Info size={14} />
+                      <span>
+                        These are the shop’s online prices. Check the shelf before you buy.
+                        {(() => {
+                          const blank = state.items.filter(
+                            i => activeBasket?.lineTotal(i.id) == null,
+                          ).length;
+                          return blank > 0
+                            ? ` ${blank} of ${state.items.length} items have no online price, so the running total leaves them out.`
+                            : '';
+                        })()}
+                      </span>
                     </div>
                   </section>
                   <aside>
@@ -1077,16 +1046,16 @@ export default function AisleApp() {
                       </div>
                       <h3>
                         {checked === state.items.length
-                          ? 'Everything’s in the basket.'
-                          : 'You’ve got this.'}
+                          ? 'Everything is in the basket'
+                          : `${state.items.length - checked} of ${state.items.length} left`}
                       </h3>
                       <p>
                         {checked === state.items.length
-                          ? 'After checkout, save the receipt and record what you actually spent.'
-                          : 'Take your time. We’ll keep your place on the list.'}
+                          ? 'Add the receipt to record what you paid.'
+                          : 'When you have paid, add the receipt to record what you spent.'}
                       </p>
                       <button className="button primary full" onClick={openReceipt}>
-                        <ReceiptText size={16} /> Finish & add receipt
+                        <ReceiptText size={16} /> Finish and add receipt
                       </button>
                       <button className="text-button" onClick={exportList}>
                         <Download size={15} /> Export checklist
@@ -1096,28 +1065,25 @@ export default function AisleApp() {
                 </div>
               ) : (
                 <Empty
-                  title="Pick your basket first"
+                  title="Choose a shop first"
                   action={
                     <button className="button primary" onClick={() => go('compare')}>
-                      Compare baskets
+                      See prices
                     </button>
                   }
                 >
-                  Your shopping checklist will be ready once you choose a basket to shop from.
+                  Pick a shop on Prices and your checklist will be ready here.
                 </Empty>
               )}
             </>
           )}
           <footer className="workspace-footer">
-            <span>
-              <Leaf size={14} /> Made for a more thoughtful shop.
-            </span>
+            <span>Prices in Canadian dollars, from each shop’s own website.</span>
             <div className="workspace-footer-right">
-              <button onClick={() => setHelp(true)}>
-                Prices in CAD · Check retailer sources <Info size={13} />
-              </button>
+              <button onClick={() => setHelp(true)}>How prices work</button>
               <button onClick={() => goLegal('terms')}>Terms</button>
               <button onClick={() => goLegal('privacy')}>Privacy</button>
+              <button onClick={() => goLegal('accessibility')}>Accessibility</button>
               <button onClick={() => goLegal('sources')}>Data sources</button>
             </div>
           </footer>
@@ -1137,15 +1103,7 @@ export default function AisleApp() {
           </button>
         )}
         <nav className="mobile-nav" aria-label="Main navigation">
-          {(
-            [
-              {id: 'home', label: 'Week', icon: Home},
-              {id: 'list', label: 'List', icon: ClipboardList},
-              {id: 'compare', label: 'Prices', icon: StoreIcon},
-              {id: 'spending', label: 'Spending', icon: BarChart3},
-              {id: 'account', label: 'You', icon: Settings2},
-            ] as const
-          ).map(({id, label, icon: Icon}) => {
+          {nav.map(({id, label, icon: Icon}) => {
             const selected = view === id || (id === 'account' && view === 'legal');
             return (
               <button
@@ -1155,7 +1113,7 @@ export default function AisleApp() {
                 onClick={() => go(id)}
               >
                 <span className="tab-icon">
-                  <Icon size={22} strokeWidth={selected ? 2.2 : 1.8} />
+                  <Icon size={22} strokeWidth={selected ? 2.25 : 1.8} />
                   {id === 'list' && state.items.length > 0 && (
                     <span className="tab-badge" aria-hidden="true">
                       {state.items.length > 99 ? '99+' : state.items.length}
@@ -1192,16 +1150,13 @@ export default function AisleApp() {
         }}
       >
         <DialogContent className="catalog-modal">
-          <DialogTitle>
-            {matchingItem ? 'Choose the right match' : 'What’s on your list?'}
-          </DialogTitle>
+          <DialogTitle>{matchingItem ? 'Choose the right match' : 'Add groceries'}</DialogTitle>
           <DialogDescription>
-            Browse by department and aisle, search across every item, or paste a list you already
-            have.
+            Search, browse by department, or paste a list you already have.
           </DialogDescription>
           <Tabs value={importMode} onValueChange={setImportMode}>
             <TabsList className="segment-tabs">
-              <TabsTrigger value="browse">Find groceries</TabsTrigger>
+              <TabsTrigger value="browse">Browse</TabsTrigger>
               <TabsTrigger value="paste" disabled={!!matchingItem}>
                 Paste a list
               </TabsTrigger>
@@ -1230,12 +1185,14 @@ export default function AisleApp() {
                 review brands and sizes next.
               </p>
               <button className="button primary full" disabled={!paste.trim()} onClick={addText}>
-                <ListPlus size={18} /> Add to my list
+                <ListPlus size={18} /> Add to list
               </button>
             </TabsContent>
           </Tabs>
           <div className="catalog-footer">
-            <span>{state.items.length} products on your list</span>
+            <span>
+              {state.items.length} {state.items.length === 1 ? 'item' : 'items'} on your list
+            </span>
             <button
               className="button secondary"
               onClick={() => {
@@ -1254,10 +1211,10 @@ export default function AisleApp() {
           <div className="modal-icon">
             <Sparkles size={23} />
           </div>
-          <DialogTitle>Better value, same shop.</DialogTitle>
+          <DialogTitle>Cheaper options at the same shop</DialogTitle>
           <DialogDescription>
-            Each suggestion is a second catalogue record from the retailer you are already shopping.
-            You approve every change; locked products stay as they are.
+            Each one comes from the same shop’s website. Nothing changes until you say yes, and
+            locked items are never swapped.
           </DialogDescription>
           {swaps.length ? (
             <>
@@ -1300,12 +1257,12 @@ export default function AisleApp() {
           ) : (
             <Empty icon={CheckCircle2} title="Nothing cheaper to offer">
               {!agent.run
-                ? 'Run a price check and Aisle will look for better value among the offers it collects.'
+                ? 'Check prices and Aisle will look for better value at the same shop.'
                 : !state.prefs.substitutions
-                  ? 'Substitutions are turned off in your account settings, so Aisle leaves your choices alone.'
+                  ? 'Swaps are turned off in Account, so Aisle leaves your choices alone.'
                   : state.prefs.allergens.length || state.prefs.dietary.length
-                    ? 'Aisle does not suggest alternatives while you have a diet or allergy recorded — a swap it cannot verify is not worth the risk.'
-                    : 'Nothing in the collected catalogues gives you the same amount for less than what is already in your basket.'}
+                    ? 'Aisle does not suggest alternatives while you have a diet or allergy recorded, because it cannot check ingredients.'
+                    : 'Nothing at this shop gives you the same amount for less.'}
             </Empty>
           )}
         </DialogContent>
@@ -1313,10 +1270,8 @@ export default function AisleApp() {
 
       <Dialog open={receiptOpen} onOpenChange={setReceiptOpen}>
         <DialogContent className="receipt-modal">
-          <DialogTitle>How did your shop go?</DialogTitle>
-          <DialogDescription>
-            Keep the receipt, record what you spent, and build your history.
-          </DialogDescription>
+          <DialogTitle>Add a receipt</DialogTitle>
+          <DialogDescription>Record what you paid. The photo is optional.</DialogDescription>
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -1349,9 +1304,9 @@ export default function AisleApp() {
                 ? 'Saving your receipt…'
                 : receiptId
                   ? receiptName
-                  : 'Attach a receipt photo'}
+                  : 'Add a photo of the receipt'}
             </strong>
-            <span>JPG, PNG or WebP · up to 5 MB · optional</span>
+            <span>JPEG, PNG or WebP, up to 5 MB</span>
           </button>
           <div className="form-grid">
             <label>
@@ -1390,7 +1345,7 @@ export default function AisleApp() {
           </label>
           <details className="receipt-line-details">
             <summary>
-              Add item prices for a closer review <ChevronDown size={14} />
+              What each item cost (optional) <ChevronDown size={14} />
             </summary>
             <p>Enter each line total, including the quantity. Leave unpurchased items blank.</p>
             <div>
@@ -1425,7 +1380,7 @@ export default function AisleApp() {
             disabled={uploading || !receiptTotal || !ready}
             onClick={saveReceipt}
           >
-            Save shopping trip <Check size={17} />
+            Save receipt <Check size={17} />
           </button>
         </DialogContent>
       </Dialog>
@@ -1440,11 +1395,11 @@ export default function AisleApp() {
           <DialogTitle>
             {stores.find(s => s.id === historyDetail?.storeId)?.name} receipt
           </DialogTitle>
-          <DialogDescription>{historyDetail?.date} · Manually recorded spending</DialogDescription>
+          <DialogDescription>{historyDetail?.date} · Entered by you</DialogDescription>
           {historyDetail && (
             <>
               <div className="history-total">
-                <span>Actual total paid</span>
+                <span>Total paid</span>
                 <strong>{money(historyDetail.total)}</strong>
               </div>
               {historyDetail.receiptId && (
@@ -1563,7 +1518,7 @@ export default function AisleApp() {
       </AlertDialog>
       <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
         <AlertDialogContent>
-          <AlertDialogTitle>Start with a fresh list?</AlertDialogTitle>
+          <AlertDialogTitle>Clear the list?</AlertDialogTitle>
           <AlertDialogDescription>
             This removes all {state.items.length} products from the current list. Your preferences
             and past receipts will stay saved.
@@ -1573,7 +1528,7 @@ export default function AisleApp() {
             <AlertDialogAction
               onClick={() => {
                 commit(s => ({...s, items: [], activeShop: null}));
-                toast.success('Your list is ready for a fresh start.');
+                toast.success('List cleared.');
               }}
             >
               Clear list

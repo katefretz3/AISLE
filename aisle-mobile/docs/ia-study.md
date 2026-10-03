@@ -103,7 +103,7 @@ measured is the labels, not the shopper.
   people actually do, is scored as a miss.
 - **Browse only.** Search is the primary way into a 557-item catalogue and is not
   exercised here at all. These numbers are a floor on findability, not a ceiling.
-- **Irreducible ambiguity.** Some items are honestly two things at once — frozen
+- **Irreducible ambiguity.** Some items are honestly two things at once: frozen
   blueberries are a fruit and a frozen good. Cross-listing (`alsoIn`) resolves many,
   but a residue of disagreement is the correct outcome, not a defect to tune away.
 

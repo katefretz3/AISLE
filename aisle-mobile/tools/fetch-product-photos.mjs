@@ -12,20 +12,21 @@
 // than of a company's packaging.
 //
 // Output, for every item:
-//   public/images/photos/<id>.png       PNG, exactly CANVAS × CANVAS, nothing cropped
+//   public/images/photos/<id>.webp      WebP, exactly CANVAS × CANVAS
 //   public/images/photos/credits.json   attribution for every photo kept
 //   src/lib/photo-manifest.json         ids that have one
 //
 // Three rules the output has to satisfy, because a grid of product pictures
 // falls apart if any of them slips:
 //
-//   Same size.   Every file is exactly CANVAS × CANVAS. Not "about", not
-//                "whatever the source was" — the grid relies on it.
-//   Not cropped. The image is fitted INSIDE the canvas and padded, never
-//                centre-cropped. A cropped strawberry photo can lose the
-//                strawberry, which defeats the entire purpose of showing one.
-//   PNG.         With a transparent surround, so the padding takes the colour
-//                of whatever card it sits on rather than fighting it.
+//   Same size.  Every file is exactly CANVAS × CANVAS, so every tile in the
+//               app is filled edge to edge at the same scale.
+//   Square, around the subject. The photo is cropped to a square with
+//               sharp's attention strategy, which keeps the most salient
+//               region (the food) rather than the geometric centre. A
+//               letterboxed photo inside a tile reads as a thumbnail of a
+//               thumbnail; a filled one reads as the product.
+//   WebP.       A fraction of the bytes of PNG for a photograph.
 //
 // `--verify` re-checks all three against the files actually on disk and exits
 // non-zero on any failure, so "done" is something that can be demonstrated
@@ -40,8 +41,6 @@ const photoDir = join(root, 'public', 'images', 'photos');
 
 /** Every stored photo is exactly this, in both dimensions. */
 export const CANVAS = 512;
-/** Share of the canvas the subject is allowed to fill, leaving a little air. */
-const INSET = 0.92;
 
 const arg = name =>
   process.argv
@@ -163,46 +162,22 @@ async function download(url) {
   return buffer;
 }
 
-/**
- * One source image → one uniform PNG tile.
- *
- * `trim` first, because stock food photography is usually a subject floating on
- * a white sweep: without it a tight crop and a loose one sit side by side in the
- * grid at visibly different scales even though both files are the same size.
- * Then `contain`, which is the whole difference between this and the version
- * that cropped — a 16:9 photo of a baguette keeps both ends.
- */
+/** One source image → one uniform, filled, square WebP tile. */
 export async function normalise(buffer) {
-  const inner = Math.round(CANVAS * INSET);
-  let subject = sharp(buffer).rotate();
-  try {
-    // Trim can fail on an image that is a single flat colour; that is fine.
-    subject = sharp(await subject.trim({threshold: 12}).toBuffer());
-  } catch {
-    subject = sharp(buffer).rotate();
-  }
-  const fitted = await subject
-    .resize(inner, inner, {
-      fit: 'contain',
-      background: {r: 0, g: 0, b: 0, alpha: 0},
-      withoutEnlargement: false,
-    })
-    .toBuffer();
-  return sharp({
-    create: {width: CANVAS, height: CANVAS, channels: 4, background: {r: 0, g: 0, b: 0, alpha: 0}},
-  })
-    .composite([{input: fitted, gravity: 'centre'}])
-    .png({compressionLevel: 9, palette: true})
+  return sharp(buffer)
+    .rotate()
+    .resize(CANVAS, CANVAS, {fit: 'cover', position: sharp.strategy.attention})
+    .webp({quality: 82})
     .toBuffer();
 }
 
 /** What is on disk, and whether it satisfies all three rules. */
 export async function inspect(id) {
-  const file = join(photoDir, `${id}.png`);
+  const file = join(photoDir, `${id}.webp`);
   if (!existsSync(file)) return {id, ok: false, reason: 'missing'};
   try {
     const meta = await sharp(file).metadata();
-    if (meta.format !== 'png') return {id, ok: false, reason: `format ${meta.format}`};
+    if (meta.format !== 'webp') return {id, ok: false, reason: `format ${meta.format}`};
     if (meta.width !== CANVAS || meta.height !== CANVAS)
       return {id, ok: false, reason: `${meta.width}×${meta.height}, expected ${CANVAS}×${CANVAS}`};
     const {info} = await sharp(file).raw().toBuffer({resolveWithObject: true});
@@ -223,7 +198,7 @@ async function verify(all) {
   const bad = results.filter(r => !r.ok);
   const missing = bad.filter(r => r.reason === 'missing');
   console.log(
-    `\n${results.length - bad.length} of ${all.length} items have a conforming ${CANVAS}×${CANVAS} PNG.`,
+    `\n${results.length - bad.length} of ${all.length} items have a conforming ${CANVAS}×${CANVAS} WebP.`,
   );
   if (bad.length) {
     console.log(`\n${bad.length} not ready (${missing.length} never fetched):`);
@@ -236,7 +211,7 @@ async function verify(all) {
 function writeManifest(all) {
   const have = all
     .map(i => i.id)
-    .filter(id => existsSync(join(photoDir, `${id}.png`)))
+    .filter(id => existsSync(join(photoDir, `${id}.webp`)))
     .sort();
   writeFileSync(
     join(root, 'src', 'lib', 'photo-manifest.json'),
@@ -264,7 +239,7 @@ async function main() {
   const creditsPath = join(photoDir, 'credits.json');
   const credits = existsSync(creditsPath) ? JSON.parse(readFileSync(creditsPath, 'utf8')) : {};
   const todo = all
-    .filter(i => flag('force') || !existsSync(join(photoDir, `${i.id}.png`)))
+    .filter(i => flag('force') || !existsSync(join(photoDir, `${i.id}.webp`)))
     .slice(0, limit);
   console.log(
     `${all.length} items, ${todo.length} to fetch. Sources in order: ${chain.join(' → ')}`,
@@ -280,8 +255,8 @@ async function main() {
       try {
         const hit = await SOURCES[name](item.photo);
         if (!hit) continue;
-        const png = await normalise(await download(hit.url));
-        writeFileSync(join(photoDir, `${item.id}.png`), png);
+        const tile = await normalise(await download(hit.url));
+        writeFileSync(join(photoDir, `${item.id}.webp`), tile);
         const checked = await inspect(item.id);
         if (!checked.ok) throw new Error(`rejected after writing: ${checked.reason}`);
         credits[item.id] = {...hit, query: item.photo, fetchedAt: new Date().toISOString()};

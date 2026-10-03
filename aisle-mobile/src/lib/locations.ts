@@ -1,6 +1,6 @@
 export type SearchLocation = {lat: number; lng: number; city: string; custom: boolean};
 // City reference coordinates: GeoNames via Open-Meteo geocoding, retrieved 2026-09-19.
-// https://open-meteo.com/en/docs/geocoding-api — place data © GeoNames, CC BY 4.0.
+// https://open-meteo.com/en/docs/geocoding-api (place data © GeoNames, CC BY 4.0)
 export const ontarioCities = [
   {name: 'Barrie', lat: 44.40011, lng: -79.66634},
   {name: 'Brampton', lat: 43.68341, lng: -79.76633},

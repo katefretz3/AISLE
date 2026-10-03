@@ -1,5 +1,7 @@
-// Layout guards: no sideways scrolling, no text under 12px, and on phones,
-// every control has a 44 × 44 area that a tap actually reaches.
+// Layout guards: no sideways scrolling (also at 320px wide and at double text
+// size), no text under 12px, on phones every control has a 48 × 48 area that a
+// tap actually reaches (Android's minimum, which also clears iOS's 44), and the
+// bundled display typeface really loads in the production build.
 import {expect, test, type Page} from '@playwright/test';
 import {network, onboard, open} from './support';
 
@@ -30,7 +32,7 @@ async function smallText(page: Page) {
   });
 }
 
-/** Controls where the centre or an edge midpoint of a 44 × 44 box misses. */
+/** Controls where the centre or an edge midpoint of a 48 × 48 box misses. */
 async function shortTargets(page: Page) {
   return page.evaluate(() => {
     const out: string[] = [];
@@ -47,10 +49,10 @@ async function shortTargets(page: Page) {
       const [cx, cy] = [r.left + r.width / 2, r.top + r.height / 2];
       const misses = [
         [cx, cy],
-        [cx - 21, cy],
-        [cx + 21, cy],
-        [cx, cy - 21],
-        [cx, cy + 21],
+        [cx - 23, cy],
+        [cx + 23, cy],
+        [cx, cy - 23],
+        [cx, cy + 23],
       ].filter(([x, y]) => {
         const hit = document.elementFromPoint(x, y);
         if (!hit) return true;
@@ -79,7 +81,7 @@ test('no sideways scroll and no text under 12px', async ({page}) => {
   }
 });
 
-test('every control on a phone has a 44 × 44 tap area', async ({page}, info) => {
+test('every control on a phone has a 48 × 48 tap area', async ({page}, info) => {
   test.skip(info.project.name !== 'phone', 'touch targets are a phone concern');
   test.setTimeout(120_000);
   await network(page, {retail: true});
@@ -93,4 +95,48 @@ test('every control on a phone has a 44 × 44 tap area', async ({page}, info) =>
     for (const miss of await shortTargets(page)) found.push(`${view}: ${miss}`);
   }
   expect(found).toEqual([]);
+});
+
+test('content reflows at 320 px wide with nothing lost sideways', async ({page}, info) => {
+  test.skip(info.project.name !== 'phone', 'a narrow-screen check');
+  await page.setViewportSize({width: 320, height: 640});
+  await network(page, {retail: true});
+  await onboard(page, 6);
+  for (const view of VIEWS) {
+    await open(page, view);
+    await page.waitForTimeout(500);
+    const width = await page.evaluate(() => document.documentElement.scrollWidth);
+    expect(width, `${view} scrolls sideways at 320px`).toBeLessThanOrEqual(320);
+  }
+});
+
+test('text at double size still fits the screen', async ({page}, info) => {
+  test.skip(info.project.name !== 'phone', 'a phone text-size check');
+  await network(page, {retail: true});
+  await onboard(page, 6);
+  // What a phone's largest standard text setting does to every rem in the app.
+  await page.addStyleTag({content: 'html { font-size: 200% !important; }'});
+  for (const view of VIEWS) {
+    await open(page, view);
+    await page.waitForTimeout(500);
+    const width = await page.evaluate(() => document.documentElement.scrollWidth);
+    expect(width, `${view} scrolls sideways at 200% text`).toBeLessThanOrEqual(
+      page.viewportSize()!.width,
+    );
+  }
+});
+
+test('the display typeface is bundled and loads', async ({page}) => {
+  await network(page);
+  await onboard(page, 6);
+  await expect(page.getByRole('heading', {level: 1})).toBeVisible();
+  const faces = await page.evaluate(async () => {
+    await document.fonts.ready;
+    return [...document.fonts]
+      .filter(face => face.family.replace(/["']/g, '') === 'Fraunces Variable')
+      .map(face => face.status);
+  });
+  // A face that 404s ends as 'error' and the titles quietly fall back to Georgia.
+  expect(faces).not.toContain('error');
+  expect(faces).toContain('loaded');
 });

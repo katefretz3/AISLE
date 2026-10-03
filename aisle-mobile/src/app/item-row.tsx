@@ -1,11 +1,12 @@
 // One line of the grocery list, in the list view or the in-store checklist.
-import {LockKeyhole, Minus, Plus, Tag, X} from 'lucide-react';
+import {LockKeyhole, LockKeyholeOpen, Minus, Plus, Tag, Trash2} from 'lucide-react';
 import {Checkbox} from '@/components/ui/checkbox';
 import {money, productById, type ListItem} from '@/lib/catalog';
 import type {priceHistory} from '@/lib/shopping-history';
 import {isStale, shelfPriceAgeDays, type resolveLinePrice} from '@/lib/shelf-prices';
 import {tapFeedback} from '@/lib/persistence';
-import {cx, ProductIcon} from './parts';
+import {ProductArt} from '@/components/product-art';
+import {cx} from './parts';
 
 /** What a row needs from the app: prices, history and the actions it can take. */
 export type ItemRowContext = {
@@ -68,7 +69,7 @@ export function ItemRow({
           className="item-check"
         />
       )}
-      <ProductIcon product={p} small={compact} />
+      <ProductArt id={p?.id} small={compact} />
       <div className="item-copy">
         <strong>{item.name}</strong>
         <span>{p ? `${p.brand} · ${p.size}` : 'Not matched to a catalogue item'}</span>
@@ -77,32 +78,44 @@ export function ItemRow({
         <button
           className={cx('icon-button lock-button', item.locked && 'is-locked')}
           aria-label={`${item.locked ? 'Unlock' : 'Lock'} ${item.name}`}
-          title={item.locked ? 'Exact product locked' : 'Keep this exact product'}
+          aria-pressed={item.locked}
+          title={item.locked ? 'Locked to this exact product' : 'Lock to this exact product'}
           onClick={() => ctx.updateItem(item.id, {locked: !item.locked})}
         >
-          <LockKeyhole size={15} />
+          {item.locked ? <LockKeyhole size={18} /> : <LockKeyholeOpen size={18} />}
         </button>
       )}
       {!compact && !shopping && (
         <div className="quantity">
-          <button
-            aria-label={`Decrease ${item.name} quantity`}
-            disabled={item.qty === 1}
-            onClick={() => ctx.updateItem(item.id, {qty: item.qty - 1})}
-          >
-            <Minus size={13} />
-          </button>
+          {/* At one, the minus becomes the way to take the item off the list,
+              so a row needs one control fewer. */}
+          {item.qty === 1 ? (
+            <button
+              className="is-remove"
+              aria-label={`Remove ${item.name}`}
+              onClick={() => ctx.removeItem(item)}
+            >
+              <Trash2 size={17} />
+            </button>
+          ) : (
+            <button
+              aria-label={`Decrease ${item.name} quantity`}
+              onClick={() => ctx.updateItem(item.id, {qty: item.qty - 1})}
+            >
+              <Minus size={17} />
+            </button>
+          )}
           <span>{item.qty}</span>
           <button
             aria-label={`Increase ${item.name} quantity`}
             disabled={item.qty >= 99}
             onClick={() => ctx.updateItem(item.id, {qty: item.qty + 1})}
           >
-            <Plus size={13} />
+            <Plus size={17} />
           </button>
         </div>
       )}
-      {compact || shopping ? <span className="item-quantity">×{item.qty}</span> : null}
+      {compact || shopping ? <span className="item-quantity">× {item.qty}</span> : null}
       {shopping ? (
         <button
           type="button"
@@ -129,22 +142,13 @@ export function ItemRow({
         </button>
       ) : (
         <span className="item-price">
-          {price != null ? money(price) : '—'}
+          {price != null ? money(price) : <span className="item-price-none">No price</span>}
           {secondary}
         </span>
       )}
       {!p && !compact && (
         <button className="text-button" onClick={() => ctx.matchItem(item)}>
           Match
-        </button>
-      )}
-      {!compact && !shopping && (
-        <button
-          className="icon-button remove"
-          aria-label={`Remove ${item.name}`}
-          onClick={() => ctx.removeItem(item)}
-        >
-          <X size={16} />
         </button>
       )}
     </div>

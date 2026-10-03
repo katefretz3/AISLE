@@ -45,7 +45,9 @@ else {
   for (const file of files) {
     const text = readFileSync(file, 'utf8');
     const rel = file.slice(root.length);
-    if (text.includes('PLACEHOLDER —'))
+    // The form every unfinished OPERATOR value takes (tests/pages.test.ts holds
+    // them to it); the bare word also appears in the app's own check.
+    if (text.includes('PLACEHOLDER:'))
       fail(`${rel} ships placeholder legal text`, 'src/lib/legal.ts, then rebuild');
     if (/sk-ant-[A-Za-z0-9_-]{8,}/.test(text))
       fail(

@@ -35,7 +35,7 @@ export function BudgetCard({
   onCompare: () => void;
 }) {
   // The checklist counts prices the household read off a shelf, so this has to
-  // as well — two screens answering "what will this shop cost" with different
+  // as well: two screens answering "what will this shop cost" with different
   // numbers is worse than either answer on its own. The split is stated below.
   const spent = total.cents;
   const known = total.collected + total.observed;
@@ -44,14 +44,23 @@ export function BudgetCard({
   return (
     <section className="card budget-card">
       <div className="section-top">
-        <h3>This shop&rsquo;s budget</h3>
+        <h3>Budget for this shop</h3>
         <button className="icon-button" aria-label="Edit budget" onClick={onEditBudget}>
           <SlidersHorizontal size={17} />
         </button>
       </div>
       <div className="budget-numbers">
-        <strong>{known ? money(spent) : '—'}</strong>
-        <span>of {money(budget)}</span>
+        {known ? (
+          <>
+            <strong>{money(spent)}</strong>
+            <span>of {money(budget)}</span>
+          </>
+        ) : (
+          <>
+            <strong>{money(budget)}</strong>
+            <span>budget, nothing priced yet</span>
+          </>
+        )}
       </div>
       <Progress
         value={pct}
@@ -60,9 +69,9 @@ export function BudgetCard({
       />
       <p>
         {!items ? (
-          'Add groceries to your list and Aisle can tell you what the shop should cost.'
+          'Add groceries and Aisle can tell you what the shop should cost.'
         ) : !known ? (
-          'No prices yet. Run a price check, or add what you saw on the shelf while you shop.'
+          'No prices yet. Check prices, or add what you see on the shelf while you shop.'
         ) : total.unpriced > 0 ? (
           <>
             {money(spent)} for{' '}
@@ -73,11 +82,10 @@ export function BudgetCard({
             {total.observed > 0 && (
               <>
                 {' '}
-                — {total.observed} of {total.observed === 1 ? 'them a price' : 'those prices'} you
-                entered yourself
+                ({total.observed} {total.observed === 1 ? 'price' : 'prices'} you entered yourself)
               </>
             )}
-            . The rest have no price, so this is not your whole shop.
+            . The rest have no price yet, so this is not the whole shop.
           </>
         ) : over > 0 ? (
           <>
@@ -89,7 +97,7 @@ export function BudgetCard({
             ) : (
               '.'
             )}{' '}
-            Compare baskets or trim the list.
+            Compare shops or trim the list.
           </>
         ) : (
           <>
@@ -108,7 +116,7 @@ export function BudgetCard({
       )}
       {basketCount > 1 && (
         <button className="budget-link" onClick={onCompare}>
-          <Sparkles size={16} /> Compare {basketCount} baskets <ArrowRight size={16} />
+          <Sparkles size={16} /> Compare {basketCount} shops <ArrowRight size={16} />
         </button>
       )}
     </section>
@@ -134,10 +142,7 @@ export function AccuracyCard({trips, shopName}: {trips: Trip[]; shopName: (trip:
           <h3>
             <Target size={17} /> How close Aisle got
           </h3>
-          <p>
-            Only shops where Aisle had a price for every item on your list can be scored against the
-            receipt.
-          </p>
+          <p>Only shops where every item had a price can be compared with the receipt.</p>
         </div>
       </div>
       {scored.comparable.length && scored.meanDifference !== null ? (
@@ -178,7 +183,7 @@ export function AccuracyCard({trips, shopName}: {trips: Trip[]; shopName: (trip:
         </>
       ) : (
         <p className="accuracy-empty">
-          No shop has been fully priced yet, so there is nothing honest to score.{' '}
+          No shop has been fully priced yet, so there is nothing to compare.{' '}
           {partial > 0 &&
             `${partial} recorded ${partial === 1 ? 'shop' : 'shops'} had items Aisle could not price.`}
         </p>

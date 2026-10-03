@@ -48,16 +48,16 @@ import './onboarding.css';
 const toggle = (items: string[], item: string) =>
   items.includes(item) ? items.filter(i => i !== item) : [...items, item];
 const titles = [
-  'Let’s make this your Aisle.',
-  'Find your kind of shop.',
-  'Your food, your rules.',
-  'What’s usually in your basket?',
+  'Welcome to Aisle',
+  'Where do you shop?',
+  'Anything to avoid?',
+  'Pick your staples',
 ];
 const descriptions = [
-  'A few details to make your weekly shop feel easier.',
-  'Set your search area, budget, and go-to stores.',
-  'Optional details help us avoid suggestions that don’t fit.',
-  'Pick five or more staples. We’ll build your first comparison from them.',
+  'A few quick questions and your list is ready. You can change all of it later.',
+  'The area to search, your weekly budget and the chains you use.',
+  'Optional. Aisle uses these to keep unsuitable suggestions off your list.',
+  'Choose at least five things you buy most weeks. They become your first list.',
 ];
 
 export default function Onboarding({
@@ -118,9 +118,10 @@ export default function Onboarding({
     setStep(4);
     try {
       await new Promise(resolve =>
+        // Long enough to read that it worked, without pretending to do more work.
         window.setTimeout(
           resolve,
-          window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 150 : 4200,
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 150 : 700,
         ),
       );
       await onFinish(draft, replaceList);
@@ -186,6 +187,12 @@ export default function Onboarding({
       <DialogContent
         className="setup-shell"
         showCloseButton={false}
+        // Focus starts on the step's title, so a screen reader announces it and no
+        // control wears a focus ring before anyone has touched the keyboard.
+        onOpenAutoFocus={event => {
+          event.preventDefault();
+          heading.current?.focus();
+        }}
         onEscapeKeyDown={event => {
           if (saving) event.preventDefault();
         }}
@@ -193,23 +200,14 @@ export default function Onboarding({
       >
         <aside className="setup-aside">
           <div className="setup-brand">
-            <ShoppingBasket size={28} />
-            aisle.
+            <span className="brand-symbol" aria-hidden="true">
+              <ShoppingBasket strokeWidth={2} />
+            </span>
+            aisle
           </div>
           <div className="setup-aside-copy">
-            <span>A LITTLE MORE YOU.</span>
-            <h2>
-              A better shop
-              <br />
-              starts with
-              <br />
-              <em>your basket.</em>
-            </h2>
-            <p>
-              Keep your favourites.
-              <br />
-              Find a little room to save.
-            </p>
+            <h2>Your grocery list, priced by the shops near you.</h2>
+            <p>Every price comes from a shop’s own website. Nothing is estimated.</p>
           </div>
           <ol className="setup-steps">
             {[
@@ -227,23 +225,22 @@ export default function Onboarding({
               </li>
             ))}
           </ol>
-          <img src="/images/grocery-bag.webp" alt="" className="setup-photo" />
           <div className="setup-aside-foot">
             <MapPin size={15} />
-            Made for Ontario shoppers
+            Ontario only, for now
           </div>
         </aside>
         <div className="setup-main">
           <header className="setup-header">
             <div className="setup-topline">
-              <span>{step < 4 ? `STEP ${step + 1} OF 4` : 'YOUR AISLE IS COMING TOGETHER'}</span>
+              <span>{step < 4 ? `Step ${step + 1} of 4` : 'Saving'}</span>
               {step < 4 && (
                 <button
                   onClick={onClose}
                   className="setup-close"
-                  aria-label={revisit ? 'Close setup' : 'Explore first'}
+                  aria-label={revisit ? 'Close setup' : 'Skip setup'}
                 >
-                  {revisit ? 'Close' : 'Explore first'}
+                  {revisit ? 'Close' : 'Skip'}
                   <X size={17} />
                 </button>
               )}
@@ -262,12 +259,10 @@ export default function Onboarding({
               ))}
             </div>
             <DialogTitle ref={heading} tabIndex={-1} className="setup-title">
-              {step < 4 ? titles[step] : 'Making room for your favourites.'}
+              {step < 4 ? titles[step] : 'Saving your setup'}
             </DialogTitle>
             <DialogDescription className="setup-description">
-              {step < 4
-                ? descriptions[step]
-                : 'Preparing your basket and saving the preferences you picked.'}
+              {step < 4 ? descriptions[step] : 'Your list will be ready in a moment.'}
             </DialogDescription>
           </header>
           <div className="setup-scroll" ref={scroll}>
@@ -283,7 +278,7 @@ export default function Onboarding({
                     maxLength={60}
                     value={draft.name}
                     onChange={event => patch({name: event.target.value})}
-                    placeholder="What should we call you?"
+                    placeholder="First name"
                   />
                 </div>
                 {cityPicker('setup-city')}
@@ -409,9 +404,7 @@ export default function Onboarding({
                   <legend>
                     Your go-to stores <span>Select any</span>
                   </legend>
-                  <p className="setup-hint">
-                    Choose every chain you shop at. We’ll remember your favourites.
-                  </p>
+                  <p className="setup-hint">Pick the chains you use. Aisle lists them first.</p>
                   <div className="setup-stores">
                     {stores.map(store => (
                       <button
@@ -431,8 +424,8 @@ export default function Onboarding({
                   </div>
                 </fieldset>
                 <p className="setup-sample-note">
-                  Your location helps find nearby stores. Online catalogue coverage is limited;
-                  branch-specific prices are not connected.
+                  Most big chains do not publish their prices online, so some shops near you will
+                  show without prices.
                 </p>
               </div>
             )}
@@ -463,7 +456,8 @@ export default function Onboarding({
                     Ingredients you need to avoid <span>Optional</span>
                   </legend>
                   <p className="setup-hint">
-                    For allergies or other restrictions. We won’t infer these from what you buy.
+                    For allergies or other restrictions. Aisle never guesses these from what you
+                    buy.
                   </p>
                   <div className="setup-chips">
                     {allergenOptions.map(value => (
@@ -488,8 +482,7 @@ export default function Onboarding({
                       ? 'Automatic food suggestions will pause until ingredients and allergen information can be verified.'
                       : draft.dietary.length
                         ? 'We’ll limit new suggestions to plain produce and pause swaps until product ingredients can be verified.'
-                        : 'Retailer ingredient and allergen details are not verified. Always check the product label.'}{' '}
-                    Your own grocery list stays under your control.
+                        : 'Retailer ingredient and allergen details are not verified. Always check the product label.'}
                   </p>
                 </div>
               </div>
@@ -606,11 +599,7 @@ export default function Onboarding({
                     {currentLocation.custom ? 'chosen location' : draft.city + ' search point'}
                   </span>
                 </div>
-                <p>
-                  {saving
-                    ? 'Saving your preferences and preparing your list…'
-                    : 'Your preferences are ready to save.'}
-                </p>
+                <p>{saving ? 'Saving…' : 'Ready to save.'}</p>
                 {error && (
                   <button className="button primary" onClick={() => void finish()}>
                     Retry saving
@@ -649,19 +638,10 @@ export default function Onboarding({
                     How we handle your data
                   </button>
                   <button className="button primary" onClick={next}>
-                    {step === 3
-                      ? revisit
-                        ? 'Save preferences'
-                        : 'Save and check prices'
-                      : 'Continue'}
+                    {step === 3 ? (revisit ? 'Save preferences' : 'Check prices') : 'Continue'}
                     <ArrowRight size={17} />
                   </button>
                 </div>
-                <p>
-                  {step === 3
-                    ? 'Your selected staples will stay editable.'
-                    : 'You can change these preferences anytime.'}
-                </p>
               </>
             )}
           </footer>

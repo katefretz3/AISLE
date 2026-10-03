@@ -1,4 +1,4 @@
-// Unit pricing — the comparison a shopper actually makes.
+// Unit pricing: the comparison a shopper actually makes.
 //
 // A 675 g loaf at $3.79 and a 570 g loaf at $3.39 cannot be compared by their
 // ticket prices, and doing that arithmetic in a shop is exactly the work this
@@ -66,6 +66,18 @@ export function unitPriceCents(
   return (priceCents / pack.amount) * basis.per;
 }
 
+/**
+ * A pack size as a person would write it: "1.36 kg", not "1360.777 g". Only
+ * the presentation changes; the amount is still the one the retailer stated.
+ */
+export function formatPack(pack: {amount: number; unit: 'g' | 'ml' | 'each'}): string {
+  const tidy = (n: number) => String(Number(n.toFixed(n >= 100 ? 0 : 2)));
+  if (pack.unit === 'g' && pack.amount >= 1000) return `${tidy(pack.amount / 1000)} kg`;
+  if (pack.unit === 'ml' && pack.amount >= 1000) return `${tidy(pack.amount / 1000)} L`;
+  if (pack.unit === 'each') return `${tidy(pack.amount)} each`;
+  return `${tidy(pack.amount)} ${pack.unit}`;
+}
+
 /** "$1.24 / 100 g". Sub-cent values keep a decimal so they do not read as free. */
 export function formatUnitPrice(cents: number | null, basis: UnitBasis | null): string | null {
   if (cents == null || !basis) return null;
@@ -85,7 +97,7 @@ export type UnitPriced<T> = {row: T; unitCents: number | null; text: string | nu
  * Put a set of offers on one basis and mark the best value.
  *
  * "Best" is only meaningful when at least two rows are actually comparable, so
- * a lone offer is never decorated as a winner — there is nothing it beat.
+ * a lone offer is never decorated as a winner; there is nothing it beat.
  */
 export function withUnitPrices<T>(
   rows: T[],

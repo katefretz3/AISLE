@@ -1,874 +1,525 @@
+/* Home: greeting, the evergreen summary card, matches to confirm, and the
+   evidence behind every price. */
 .agent-workspace {
   display: flex;
   flex-direction: column;
-  gap: 26px;
+  gap: var(--sp-6);
+}
+.home-head p {
+  margin-top: var(--sp-2);
+  font-size: var(--t-callout);
+  color: var(--ink-2);
 }
 
-/* hero ---------------------------------------------------------------------*/
-/* The answer first: what the list costs, where, and how much of it that covers.
-   The hero is deep green in both themes, so its colours are fixed rather than
-   following the theme tokens. */
-.agent-hero {
-  --on-brand: #ffffff;
-  --on-brand-soft: #d6ece0;
-  --on-brand-quiet: #bfe3cf;
+/* -- the summary card ----------------------------------------------------------
+   The app's signature surface: deep evergreen in both themes, a soft light in
+   one corner, and the one bright (lime) action. */
+.hero-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 28px;
-  border-radius: var(--radius-xl);
+  overflow: hidden;
+  padding: var(--sp-6);
+  border-radius: var(--r-xl);
   background:
-    radial-gradient(120% 140% at 100% 0%, rgba(255, 255, 255, 0.1) 0%, transparent 55%),
-    linear-gradient(150deg, var(--brand-1) 0%, var(--brand-2) 60%, var(--brand-3) 100%);
-  color: var(--on-brand);
-  box-shadow: var(--shadow-lg);
+    radial-gradient(90% 120% at 100% 0%, rgb(201 236 112 / 0.16) 0%, transparent 60%),
+    radial-gradient(70% 90% at 0% 100%, rgb(255 255 255 / 0.06) 0%, transparent 60%),
+    linear-gradient(160deg, var(--hero-2) 0%, var(--hero) 70%);
+  color: var(--on-hero);
+  box-shadow: var(--e-hero);
 }
-.agent-eyebrow {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--on-brand-quiet);
+.hero-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14);
+  pointer-events: none;
 }
-.agent-hero h1 {
-  margin: 6px 0 8px;
-  font-size: clamp(1.625rem, 3.4vw, 2.25rem);
-  font-weight: 750;
-  line-height: 1.15;
-  letter-spacing: -0.025em;
-  color: var(--on-brand);
+.hero-kicker {
+  font-family: var(--font-sans);
+  font-size: var(--t-footnote);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--lime);
 }
-.agent-hero-figure {
-  font-variant-numeric: tabular-nums;
-}
-.agent-hero p {
-  margin: 0;
-  max-width: 52ch;
-  font-size: 1rem;
-  line-height: 1.5;
-  color: var(--on-brand-soft);
-}
-.agent-hero-actions {
+.hero-figure {
   display: flex;
   flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin-top: var(--sp-2);
+}
+.hero-amount {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-size: var(--t-hero);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.hero-at {
+  font-size: var(--t-headline);
+  font-weight: 600;
+  color: var(--on-hero-2);
+}
+.hero-title {
+  display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 20px;
-}
-.agent-hero .button.primary {
-  background: var(--on-brand);
-  color: #125643;
-}
-.agent-hero .button.primary:hover:not(:disabled) {
-  background: #eef6f1;
-}
-.agent-hero .button.ghost {
-  background: rgba(255, 255, 255, 0.14);
-  color: var(--on-brand);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-}
-.agent-hero .button.ghost:hover {
-  background: rgba(255, 255, 255, 0.22);
-}
-.agent-hero-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  padding: 0 6px;
-  font-size: 0.9375rem;
+  margin-top: var(--sp-2);
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-size: 1.75rem;
   font-weight: 600;
-  color: var(--on-brand-soft);
-  text-decoration: underline;
-  text-decoration-color: rgba(255, 255, 255, 0.4);
-  text-underline-offset: 4px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
 }
-.agent-hero-link:hover {
-  color: var(--on-brand);
+.hero-meter {
+  width: 100%;
+  max-width: 420px;
+  height: 8px;
+  margin-top: var(--sp-4);
+  overflow: hidden;
+  border-radius: var(--r-pill);
+  background: rgb(255 255 255 / 0.16);
 }
-
-/* how we know --------------------------------------------------------------*/
-.agent-summary h2 {
-  margin: 0 0 12px;
-  font-size: 1.1875rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+.hero-meter span {
+  display: block;
+  height: 100%;
+  min-width: 8px;
+  border-radius: inherit;
+  background: var(--lime);
 }
-.agent-facts {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  margin: 0 0 14px;
+.hero-note {
+  max-width: 52ch;
+  margin-top: var(--sp-3);
+  font-size: var(--t-callout);
+  line-height: 1.5;
+  color: var(--on-hero-2);
 }
-.agent-facts div {
-  padding: 12px;
-  border-radius: var(--radius-md);
-  background: var(--muted);
-}
-.agent-facts dt {
-  font-size: 0.8125rem;
-  color: var(--muted-foreground);
-}
-.agent-facts dd {
-  margin: 2px 0 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--foreground);
-}
-@media (max-width: 760px) {
-  .agent-hero {
-    padding: 22px 20px;
-  }
-  .agent-hero-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    width: 100%;
-  }
-  .agent-hero-actions .button {
-    min-height: 48px;
-  }
-  .agent-hero-actions .button:only-of-type {
-    grid-column: 1 / -1;
-  }
-  .agent-hero-link {
-    grid-column: 1 / -1;
-    justify-self: start;
-  }
-  .agent-facts {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-/* progress -----------------------------------------------------------------*/
-.agent-phases {
+.hero-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  gap: var(--sp-2);
+  margin-top: var(--sp-5);
 }
-.agent-phases li {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: var(--muted);
-  color: var(--muted-foreground);
-  font-size: 0.8825rem;
+/* Buttons share a row while their labels fit and fill it; when they do not,
+   the second moves to its own row instead of breaking a label in two. */
+.hero-actions .button {
+  flex: 1 0 auto;
+  max-width: 100%;
 }
-.agent-phases li span {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--border);
-}
-.agent-phases li.is-active {
-  background: var(--accent);
-  color: var(--accent-foreground);
-  font-weight: 600;
-}
-.agent-phases li.is-active span {
-  background: var(--primary);
-  animation: agent-pulse 1.1s ease-in-out infinite;
-}
-@keyframes agent-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.25;
-  }
-}
-
-/* summary ------------------------------------------------------------------*/
-.agent-summary {
-  padding: 20px 22px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  background: var(--card);
-  box-shadow: var(--shadow-sm);
-}
-.agent-mode {
-  display: inline-block;
-  padding: 5px 11px;
-  border-radius: 999px;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
-.agent-mode.assisted {
-  background: var(--accent);
-  color: var(--accent-foreground);
-}
-.agent-mode.deterministic {
-  background: var(--secondary);
-  color: var(--secondary-foreground);
-}
-.agent-summary p {
-  margin: 12px 0 0;
-  font-size: 1.0025rem;
-  line-height: 1.62;
-  color: var(--foreground);
-}
-.agent-summary .agent-checked {
+.hero-when {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.9125rem;
-  color: var(--muted-foreground);
+  margin-top: var(--sp-4);
+  font-size: var(--t-footnote);
+  color: var(--on-hero-2);
 }
-.agent-warning {
-  display: flex;
-  gap: 9px;
-  align-items: flex-start;
-  margin-top: 12px !important;
-  padding: 11px 13px;
-  border-radius: 12px;
-  background: var(--muted);
-  color: var(--muted-foreground);
-  font-size: 0.9125rem !important;
+.hero-card :focus-visible {
+  outline-color: var(--lime);
 }
-.agent-warning svg {
-  flex: 0 0 auto;
-  margin-top: 2px;
-}
+
 .agent-alert {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  padding: 13px 16px;
-  border-radius: 14px;
-  font-size: 0.9625rem;
-  background: color-mix(in srgb, var(--destructive) 10%, var(--card));
-  color: var(--destructive);
+  padding: 12px 16px;
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+  border-radius: var(--r-md);
+  background: var(--danger-tint);
+  color: var(--danger);
+  font-size: var(--t-footnote);
+  font-weight: 500;
 }
 .agent-alert button {
+  min-height: var(--tap);
+  margin-left: auto;
   border: 0;
   background: none;
-  padding: 0;
-  font: inherit;
-  font-weight: 600;
-  text-decoration: underline;
-  cursor: pointer;
   color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
-
-/* blocks -------------------------------------------------------------------*/
-.agent-block {
+.agent-blocked {
   display: flex;
-  flex-direction: column;
-  gap: 14px;
+  gap: var(--sp-3);
+  padding: var(--card-pad);
+  color: var(--ink-2);
 }
-.agent-block-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
+.agent-blocked > svg {
+  color: var(--warn);
 }
-.agent-block-head h2 {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin: 0;
-  font-size: 1.16rem;
-  letter-spacing: -0.015em;
-  color: var(--foreground);
+.agent-blocked strong {
+  color: var(--ink);
 }
-.agent-block-head p {
-  margin: 5px 0 0;
-  max-width: 72ch;
-  font-size: 0.9125rem;
+.agent-blocked p {
+  margin-top: var(--sp-1);
+  font-size: var(--t-footnote);
   line-height: 1.55;
-  color: var(--muted-foreground);
-}
-.agent-empty {
-  margin: 0;
-  padding: 22px;
-  border-radius: var(--radius-lg);
-  background: var(--muted);
-  color: var(--muted-foreground);
-  font-size: 0.9625rem;
 }
 
-/* matched lines ------------------------------------------------------------*/
+/* -- sections ------------------------------------------------------------------- */
+.home-section .section-head {
+  margin-top: var(--sp-2);
+}
+.section-lede {
+  max-width: 62ch;
+  margin: calc(-1 * var(--sp-1)) 0 var(--sp-4);
+  font-size: var(--t-footnote);
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+/* -- matches ---------------------------------------------------------------------- */
 .agent-lines {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--sp-3);
 }
 .agent-line {
-  display: grid;
-  grid-template-columns: 52px minmax(0, 1fr);
-  gap: 14px;
-  padding: 16px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  background: var(--card);
-  box-shadow: var(--shadow-sm);
-}
-.agent-line.is-gap {
-  background: var(--muted);
-  box-shadow: none;
-}
-.agent-line > img {
-  width: 52px;
-  height: 52px;
-  object-fit: contain;
-  grid-row: 1/3;
-}
-.agent-line-copy strong {
-  display: block;
-  font-size: 1.0325rem;
-  color: var(--foreground);
-}
-.agent-line-copy small {
-  display: block;
-  margin-top: 2px;
-  font-size: 0.8525rem;
-  color: var(--muted-foreground);
-}
-.agent-line-offers {
-  grid-column: 2;
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  margin-top: 11px;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--e-1);
+}
+.agent-line-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.agent-line-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.agent-line-copy strong {
+  font-size: var(--t-body);
+}
+.agent-line-copy small {
+  font-size: var(--t-footnote);
+  color: var(--ink-3);
+}
+.agent-line-offers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
 }
 .agent-offer {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 13px;
-  border: 1px solid var(--border);
-  background: var(--background);
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
 }
 .agent-offer.is-confirmed {
-  border-color: var(--primary);
-  background: var(--accent);
+  background: var(--brand-tint);
 }
 .agent-offer-copy {
   display: flex;
+  flex: 1 1 220px;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  font-size: var(--t-footnote);
+  color: var(--ink-2);
 }
 .agent-offer-copy strong {
-  font-size: 1.0825rem;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
-  color: var(--foreground);
-}
-.agent-offer-copy span {
-  font-size: 0.8525rem;
-  color: var(--muted-foreground);
 }
 .agent-offer-copy a {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.8525rem;
-  color: var(--primary);
-  text-decoration: none;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 46ch;
-}
-.agent-offer-copy a:hover {
+  min-height: var(--tap);
+  color: var(--brand-ink);
+  font-weight: 600;
   text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
 }
 .agent-offer-copy em {
-  font-size: 0.8125rem;
   font-style: normal;
-  color: var(--muted-foreground);
+  color: var(--ink-3);
 }
-/* The retailer link is a line of small text; on touch screens it gets a full
-   44px row so it can be tapped without hitting its neighbours. */
-@media (pointer: coarse) {
-  .agent-offer-copy a {
-    min-height: 44px;
-  }
+.agent-unit {
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.agent-unit.is-best {
+  color: var(--brand-ink);
+}
+.agent-unit.is-unknown {
+  font-weight: 400;
+  color: var(--ink-3);
 }
 .agent-offer-decide {
   display: flex;
-  gap: 7px;
   flex-wrap: wrap;
+  gap: var(--sp-2);
 }
 .agent-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 7px 13px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--foreground);
-  font-size: 0.8725rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.agent-chip:hover {
-  border-color: var(--ring);
+  gap: 6px;
+  min-height: var(--tap);
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--brand);
+  color: var(--on-brand);
+  font-size: var(--t-footnote);
+  font-weight: 700;
 }
 .agent-chip.subtle {
-  color: var(--muted-foreground);
-  font-weight: 500;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
 }
 .agent-chip.is-on {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: var(--primary-foreground);
-}
-.agent-gap {
-  display: flex;
-  gap: 9px;
-  align-items: flex-start;
-  margin: 0;
-  font-size: 0.9125rem;
-  line-height: 1.55;
-  color: var(--muted-foreground);
-}
-.agent-gap svg {
-  flex: 0 0 auto;
-  margin-top: 2px;
+  background: var(--brand-tint-2);
+  color: var(--brand-ink);
 }
 
-/* baskets ------------------------------------------------------------------*/
-.agent-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 12px;
-}
-.agent-card {
-  padding: 18px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  background: var(--card);
-  box-shadow: var(--shadow-sm);
-}
-.agent-card.is-best {
-  border-color: var(--primary);
-  box-shadow:
-    0 0 0 1px var(--primary),
-    var(--shadow-md);
-}
-.agent-card h3 {
-  margin: 0;
-  font-size: 0.9925rem;
-  color: var(--muted-foreground);
-  font-weight: 600;
-}
-.agent-card-total {
-  display: block;
-  margin: 7px 0 4px;
-  font-size: 1.72rem;
-  font-weight: 650;
-  letter-spacing: -0.025em;
-  font-variant-numeric: tabular-nums;
-  color: var(--foreground);
-}
-.agent-card p {
-  margin: 0;
-  font-size: 0.8625rem;
-  color: var(--muted-foreground);
-}
-.agent-card-note {
-  margin-top: 6px !important;
-  color: var(--accent-foreground) !important;
-}
-.agent-card-over {
-  margin-top: 6px !important;
-  color: var(--destructive) !important;
-  font-weight: 600;
-}
-.agent-card-under {
-  margin-top: 6px !important;
-  color: var(--primary) !important;
-  font-weight: 600;
-}
-
-/* stores -------------------------------------------------------------------*/
-.agent-stores {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.agent-stores li {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 12px;
-  padding: 13px 16px;
-  border-radius: 13px;
-  border: 1px solid var(--border);
-  background: var(--card);
-}
-.agent-stores svg {
-  color: var(--muted-foreground);
-}
-.agent-stores strong {
-  display: block;
-  font-size: 0.9625rem;
-  color: var(--foreground);
-}
-.agent-stores small {
-  display: block;
-  font-size: 0.8125rem;
-  color: var(--muted-foreground);
-}
-.agent-km {
-  font-size: 0.8825rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--muted-foreground);
-}
-.agent-feed {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.8125rem;
-  font-weight: 650;
-  letter-spacing: 0.03em;
-}
-.agent-feed.connected {
-  background: var(--accent);
-  color: var(--accent-foreground);
-}
-.agent-feed.no-public-feed {
-  background: var(--muted);
-  color: var(--muted-foreground);
-}
-.agent-feed.unprobed {
-  background: var(--secondary);
-  color: var(--secondary-foreground);
-}
-.agent-note {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 16px 18px;
-  border-radius: var(--radius-lg);
-  background: var(--muted);
-  color: var(--muted-foreground);
-}
-.agent-note svg {
-  flex: 0 0 auto;
-  margin-top: 1px;
-  color: var(--primary);
-}
-.agent-note strong {
-  display: block;
-  margin-bottom: 4px;
-  color: var(--foreground);
-  font-size: 0.9625rem;
-}
-.agent-note p {
-  margin: 0;
-  font-size: 0.9025rem;
-  line-height: 1.58;
-}
-
-/* evidence -----------------------------------------------------------------*/
-.agent-evidence {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--card);
-  padding: 4px 18px;
-}
-.agent-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8625rem;
-}
-.agent-table th {
-  text-align: left;
-  padding: 8px 10px 8px 0;
-  font-weight: 650;
-  color: var(--muted-foreground);
-  border-bottom: 1px solid var(--border);
-  font-size: 0.8125rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-.agent-table td {
-  padding: 9px 10px 9px 0;
-  border-bottom: 1px solid var(--border);
-  color: var(--foreground);
-  vertical-align: top;
-}
-.agent-table a {
-  color: var(--primary);
-  text-decoration: none;
-}
-.agent-hash {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: var(--muted-foreground);
-}
-.agent-rejected,
-.agent-foot {
-  margin: 14px 0 0;
-  font-size: 0.8825rem;
-  line-height: 1.55;
-  color: var(--muted-foreground);
-}
-.agent-violations {
-  margin: 12px 0 0;
-  padding-left: 20px;
-  font-size: 0.8825rem;
-  color: var(--destructive);
-}
-.agent-trace {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  counter-reset: trace;
-}
-.agent-trace li {
-  display: grid;
-  grid-template-columns: 96px minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: baseline;
-  padding: 9px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.8925rem;
-  color: var(--muted-foreground);
-}
-.agent-trace-phase {
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: var(--secondary);
-  color: var(--secondary-foreground);
-  font-size: 0.8125rem;
-  font-weight: 650;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  text-align: center;
-}
-.agent-trace strong {
-  color: var(--foreground);
-  font-weight: 600;
-}
-.agent-trace-ms {
-  font-variant-numeric: tabular-nums;
-  font-size: 0.8125rem;
-}
-.agent-demo {
-  align-self: flex-start;
-}
-.spin {
-  animation: agent-spin 1s linear infinite;
-}
-@keyframes agent-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (max-width: 900px) {
-}
-@media (max-width: 640px) {
-  .agent-line {
-    grid-template-columns: 44px minmax(0, 1fr);
-    padding: 13px;
-  }
-  .agent-line > img {
-    width: 44px;
-    height: 44px;
-  }
-  .agent-offer {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .agent-stores li {
-    grid-template-columns: auto minmax(0, 1fr);
-    row-gap: 8px;
-  }
-  .agent-stores .agent-km,
-  .agent-stores .agent-feed {
-    grid-column: 2;
-    justify-self: start;
-  }
-  .agent-trace li {
-    grid-template-columns: 1fr;
-    gap: 4px;
-  }
-  .agent-trace-phase {
-    justify-self: start;
-  }
-}
-
-.agent-acc-label {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  flex: 1;
-  text-align: left;
-  font-weight: 600;
-}
-.agent-evidence [data-slot='accordion-trigger'] {
-  justify-content: flex-start;
-  gap: 10px;
-}
-.agent-evidence [data-slot='accordion-item']:last-child {
-  border-bottom: 0;
-}
-.agent-blocked {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  padding: 20px 22px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  background: var(--muted);
-}
-.agent-blocked svg {
-  flex: 0 0 auto;
-  margin-top: 2px;
-  color: var(--destructive);
-}
-.agent-blocked strong {
-  display: block;
-  font-size: 1.0225rem;
-  color: var(--foreground);
-}
-.agent-blocked p {
-  margin: 6px 0 0;
-  font-size: 0.9325rem;
-  line-height: 1.6;
-  color: var(--muted-foreground);
-  max-width: 72ch;
-}
-.agent-blocked ul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 14px 0 0;
-  padding: 0;
-  list-style: none;
-}
-.agent-blocked li {
-  padding: 5px 11px;
-  border-radius: 999px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  font-size: 0.8125rem;
-  color: var(--muted-foreground);
-}
-
-/* Unpriced items, grouped by why. One block per reason rather than one
-   paragraph per row: the sentence was identical on every line, and eight of
-   them in a column read as an apology instead of an explanation. */
+/* -- what could not be priced ------------------------------------------------- */
 .agent-gap-group {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 20px 22px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  background: var(--muted);
+  padding: var(--sp-4);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-lg);
+  background: transparent;
 }
 .agent-gap-head {
   display: flex;
-  gap: 14px;
-  align-items: flex-start;
+  gap: var(--sp-3);
 }
-.agent-gap-head svg {
-  flex: 0 0 auto;
+.agent-gap-head > svg {
   margin-top: 2px;
-  color: var(--muted-foreground);
-}
-.agent-gap-group.is-discarded .agent-gap-head svg {
-  color: var(--destructive);
+  color: var(--warn);
 }
 .agent-gap-head strong {
-  display: block;
-  font-size: 1.0225rem;
-  color: var(--foreground);
+  font-size: var(--t-callout);
 }
 .agent-gap-head p {
-  margin: 6px 0 0;
-  max-width: 72ch;
-  font-size: 0.9325rem;
-  line-height: 1.6;
-  color: var(--muted-foreground);
+  margin-top: 2px;
+  font-size: var(--t-footnote);
+  line-height: 1.55;
+  color: var(--ink-2);
 }
 .agent-gap-items {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin: 0;
+  margin: var(--sp-3) 0 0;
   padding: 0;
   list-style: none;
 }
 .agent-gap-items li {
-  padding: 5px 11px;
-  border-radius: 999px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  font-size: 0.8125rem;
-  color: var(--muted-foreground);
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  font-size: var(--t-footnote);
+  font-weight: 600;
+  color: var(--ink-2);
 }
 .agent-gap-actions {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 2px 18px;
-}
-/* The buttons carry their own 44px+ height, so wrapped rows need no extra
-   vertical gap on top of it. */
-.agent-gap-actions .text-button {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.8625rem;
+  gap: 0 var(--sp-5);
+  margin-top: var(--sp-1);
 }
 .agent-gap-detail {
-  margin: 0;
-  padding: 14px 0 0;
-  border-top: 1px solid var(--border);
+  margin: var(--sp-2) 0 0;
+  font-size: var(--t-footnote);
 }
 .agent-gap-detail > div {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 2px;
-  padding: 8px 0;
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--line);
 }
 .agent-gap-detail dt {
-  font-size: 0.8825rem;
-  font-weight: 600;
-  color: var(--foreground);
-}
-.agent-gap-detail dd {
-  margin: 0;
-  font-size: 0.8625rem;
-  line-height: 1.55;
-  color: var(--muted-foreground);
-}
-
-/* Unit price. The number a shopper actually compares, so it sits directly under
-   the pack size it was derived from. */
-.agent-unit {
-  font-size: 0.8125rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--muted-foreground);
-}
-.agent-unit.is-best {
-  color: var(--primary);
   font-weight: 650;
 }
-.agent-unit.is-unknown {
-  font-style: italic;
-  opacity: 0.85;
+.agent-gap-detail dd {
+  margin: 2px 0 0;
+  color: var(--ink-2);
+}
+
+/* -- how we know ---------------------------------------------------------------- */
+.agent-mode {
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  font-size: var(--t-footnote);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.agent-mode.assisted {
+  background: var(--info-tint);
+  color: var(--info);
+}
+.how-card {
+  padding: var(--sp-2) var(--card-pad) var(--card-pad);
+}
+.agent-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--sp-6);
+  margin: 0;
+}
+.agent-facts > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.agent-facts dt {
+  font-size: var(--t-footnote);
+  color: var(--ink-2);
+}
+.agent-facts dd {
+  margin: 0;
+  font-size: var(--t-headline);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.agent-narrative {
+  margin-top: var(--sp-4);
+  font-size: var(--t-callout);
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.agent-warning {
+  display: flex;
+  gap: 8px;
+  margin-top: var(--sp-3);
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--warn-tint);
+  color: var(--warn);
+  font-size: var(--t-footnote);
+  line-height: 1.5;
+}
+.agent-warning svg {
+  margin-top: 1px;
+}
+.agent-evidence {
+  margin-top: var(--sp-4);
+  border-top: 1px solid var(--line);
+}
+.agent-evidence [data-slot='accordion-item'] {
+  border-bottom: 1px solid var(--line);
+}
+.agent-evidence [data-slot='accordion-trigger'] {
+  min-height: 52px;
+  font-size: var(--t-callout);
+  font-weight: 650;
+}
+.agent-acc-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.agent-acc-label svg {
+  color: var(--brand-2);
+}
+.agent-table-wrap {
+  overflow-x: auto;
+}
+.agent-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-footnote);
+}
+.agent-table th {
+  padding: 8px 10px 8px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-3);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+.agent-table td {
+  padding: 8px 10px 8px 0;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.agent-table a {
+  color: var(--brand-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.agent-hash {
+  font-family: var(--font-mono);
+  color: var(--ink-3);
+}
+.agent-rejected,
+.agent-foot {
+  margin-top: var(--sp-3);
+  font-size: var(--t-footnote);
+  color: var(--ink-3);
+}
+.agent-violations {
+  margin: var(--sp-2) 0 0;
+  padding-left: 18px;
+  font-size: var(--t-footnote);
+  color: var(--warn);
+}
+.agent-trace {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.agent-trace li {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  gap: var(--sp-3);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--t-footnote);
+  color: var(--ink-2);
+}
+.agent-trace-phase {
+  font-weight: 700;
+  color: var(--brand-2);
+  text-transform: capitalize;
+}
+.agent-trace-ms {
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 760px) {
+  .hero-card {
+    padding: var(--sp-5);
+  }
+  .agent-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .agent-trace li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .agent-trace-phase {
+    grid-column: 1 / -1;
+  }
 }

@@ -3,7 +3,7 @@
 // An adapter turns one retailer origin into verified offers plus the evidence
 // that backs them. Adapters are the only producers of Offer records in the
 // agentic path. They either return records parsed from a response they just
-// read, or they fail loudly — there is no partial-credit mode where a parse
+// read, or they fail loudly. There is no partial-credit mode where a parse
 // failure becomes an approximate price.
 import {blockedByRobots, normalizeProducts, type CatalogueSource} from './collector';
 import type {Offer} from './types';
@@ -155,7 +155,7 @@ export const shopifyAdapter: Adapter = {
 };
 
 const excerptFor = (offer: Offer) =>
-  `${offer.title} — ${(offer.price / 100).toFixed(2)} CAD — ${offer.available ? 'available' : 'unavailable'} — ${offer.url}`;
+  `${offer.title} | ${(offer.price / 100).toFixed(2)} CAD | ${offer.available ? 'available' : 'unavailable'} | ${offer.url}`;
 
 export const ADAPTERS: Adapter[] = [shopifyAdapter];
 export const adapterById = (id: string) => ADAPTERS.find(a => a.id === id) ?? null;

@@ -1,9 +1,9 @@
 'use client';
 // Hierarchical catalogue browser: Department → Aisle → Item.
 //
-// The way someone actually looks for something in a shop — walk to Produce,
-// find the fruit, pick up blueberries — with a search box that cuts straight
-// through all three levels when they already know what they want.
+// The way someone looks for something in a shop (walk to Produce, find the
+// fruit, pick up blueberries), with a search box that cuts through all three
+// levels when they already know what they want.
 import {useMemo, useState} from 'react';
 import {ArrowLeft, Check, ChevronRight, Plus, Search, X} from 'lucide-react';
 import {
@@ -14,7 +14,8 @@ import {
   type CatalogueItem,
   type Department,
 } from '@/lib/taxonomy';
-import {productImagePath} from '@/lib/catalog';
+import {aisleGlyph, departmentGlyph} from '@/lib/product-glyph';
+import {ProductArt} from './product-art';
 import './category-browser.css';
 
 type Props = {
@@ -26,6 +27,46 @@ type Props = {
   /** Optional filter, used by onboarding to offer food only. */
   include?: (item: CatalogueItem) => boolean;
 };
+
+function ItemButton({
+  item,
+  chosen,
+  mode,
+  trail = false,
+  onPick,
+}: {
+  item: CatalogueItem;
+  chosen: boolean;
+  mode: 'add' | 'match';
+  trail?: boolean;
+  onPick: (id: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`browse-item${chosen ? ' is-picked' : ''}`}
+      onClick={() => onPick(item.id)}
+      aria-pressed={chosen}
+      aria-label={`${mode === 'match' ? 'Match' : 'Add'} ${item.name}, ${item.brand}, ${item.size}`}
+    >
+      <ProductArt id={item.id} item={item} />
+      <span className="browse-item-copy">
+        <strong>{item.name}</strong>
+        <small>
+          {item.brand} · {item.size}
+        </small>
+        {trail && (
+          <small className="browse-trail">
+            {item.department} · {item.aisle}
+          </small>
+        )}
+      </span>
+      <span className="browse-item-action" aria-hidden="true">
+        {chosen ? <Check size={18} /> : <Plus size={18} />}
+      </span>
+    </button>
+  );
+}
 
 export default function CategoryBrowser({
   onPick,
@@ -54,50 +95,24 @@ export default function CategoryBrowser({
     [query, allow],
   );
   const counted = (items: CatalogueItem[]) => items.filter(i => picked.has(i.id)).length;
+  const onList = (items: CatalogueItem[]) =>
+    counted(items) ? ` · ${counted(items)} on your list` : '';
 
-  function openDepartment(next: Department) {
-    setDepartment(next);
-    setAisle(null);
-  }
   function back() {
     if (aisle) setAisle(null);
     else setDepartment(null);
   }
 
-  const Tile = ({item}: {item: CatalogueItem}) => {
-    const chosen = picked.has(item.id);
-    return (
-      <button
-        type="button"
-        className={`browse-item${chosen ? ' is-picked' : ''}`}
-        onClick={() => onPick(item.id)}
-        aria-pressed={chosen}
-        aria-label={`${mode === 'match' ? 'Match' : 'Add'} ${item.name}, ${item.brand}, ${item.size}`}
-      >
-        <img src={productImagePath(item.id)} alt="" loading="lazy" decoding="async" />
-        <span className="browse-item-copy">
-          <strong>{item.name}</strong>
-          <small>
-            {item.brand} · {item.size}
-          </small>
-        </span>
-        <span className="browse-item-action">
-          {chosen ? <Check size={16} /> : <Plus size={17} />}
-        </span>
-      </button>
-    );
-  };
-
   return (
     <div className="category-browser">
       <label className="browse-search">
-        <Search size={18} />
+        <Search size={19} aria-hidden="true" />
         <input
           aria-label="Search groceries"
           autoComplete="off"
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder="Search 400+ groceries — blueberries, oat milk, dish soap…"
+          placeholder="Search groceries"
         />
         {query && (
           <button
@@ -111,138 +126,117 @@ export default function CategoryBrowser({
         )}
       </label>
 
-      {query.trim() ? (
-        <div className="browse-panel">
-          <p className="browse-meta">
-            {results.length
-              ? `${results.length} ${results.length === 1 ? 'match' : 'matches'}`
-              : 'No match'}
-          </p>
-          {results.length ? (
-            <div className="browse-grid">
-              {results.map(item => (
-                <div className="browse-result" key={item.id}>
-                  <Tile item={item} />
-                  <span className="browse-trail">
-                    {item.department} <ChevronRight size={11} /> {item.aisle}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="browse-empty">
-              Nothing in the catalogue matches “{query}”. Add it as your own item instead — Aisle
-              will leave it unpriced rather than inventing a match.
+      <div className="browse-panel">
+        {query.trim() ? (
+          <>
+            <p className="browse-meta" role="status">
+              {results.length
+                ? `${results.length} ${results.length === 1 ? 'match' : 'matches'}`
+                : 'No match'}
             </p>
-          )}
-        </div>
-      ) : (
-        <div className="browse-panel">
-          {(department || aisle) && (
-            <nav className="browse-crumbs" aria-label="Catalogue location">
-              <button type="button" onClick={back} className="browse-back">
-                <ArrowLeft size={15} /> Back
-              </button>
-              <span>
-                <button type="button" onClick={() => setDepartment(null)}>
-                  All departments
-                </button>
-                {department && (
-                  <>
-                    {' '}
-                    <ChevronRight size={12} />{' '}
-                    <button type="button" onClick={() => setAisle(null)}>
-                      {department.name}
-                    </button>
-                  </>
-                )}
-                {aisle && (
-                  <>
-                    {' '}
-                    <ChevronRight size={12} /> <strong>{aisle.name}</strong>
-                  </>
-                )}
-              </span>
-            </nav>
-          )}
-
-          {!department && (
-            <div className="browse-tiles">
-              {departments.map(d => {
-                const items = d.aisles.flatMap(a => a.items);
-                return (
-                  <button
-                    type="button"
-                    key={d.id}
-                    className="browse-tile"
-                    onClick={() => openDepartment(d)}
-                  >
-                    <span className="browse-tile-art">
-                      {d.aisles
-                        .slice(0, 3)
-                        .map(a => a.items[0])
-                        .map(i => (
-                          <img
-                            key={i.id}
-                            src={productImagePath(i.id)}
-                            alt=""
-                            loading="lazy"
-                            decoding="async"
-                          />
-                        ))}
-                    </span>
-                    <strong>{d.name}</strong>
-                    <small>
-                      {d.aisles.length} aisles · {items.length} items
-                      {counted(items) ? ` · ${counted(items)} on your list` : ''}
-                    </small>
-                    <ChevronRight size={16} />
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {department && !aisle && (
-            <div className="browse-tiles">
-              {department.aisles.map(a => (
+            {results.length ? (
+              <div className="browse-items">
+                {results.map(item => (
+                  <ItemButton
+                    key={item.id}
+                    item={item}
+                    chosen={picked.has(item.id)}
+                    mode={mode}
+                    trail
+                    onPick={onPick}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="browse-empty">
+                No groceries match “{query}”. To add it anyway, use Paste a list. Aisle leaves your
+                own items unpriced.
+              </p>
+            )}
+          </>
+        ) : !department ? (
+          <div className="dept-grid">
+            {departments.map(d => {
+              const Glyph = departmentGlyph(d.id);
+              const items = d.aisles.flatMap(a => a.items);
+              return (
                 <button
                   type="button"
-                  key={a.id}
-                  className="browse-tile"
-                  onClick={() => setAisle(a)}
+                  key={d.id}
+                  className={`dept-tile dept-${d.id}`}
+                  onClick={() => {
+                    setDepartment(d);
+                    setAisle(null);
+                  }}
                 >
-                  <span className="browse-tile-art">
-                    {a.items.slice(0, 3).map(i => (
-                      <img
-                        key={i.id}
-                        src={productImagePath(i.id)}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ))}
+                  <span className="dept-tile-glyph" aria-hidden="true">
+                    <Glyph />
                   </span>
-                  <strong>{a.name}</strong>
+                  <strong>{d.name}</strong>
                   <small>
-                    {a.items.length} items
-                    {counted(a.items) ? ` · ${counted(a.items)} on your list` : ''}
+                    {items.length} items{onList(items)}
                   </small>
-                  <ChevronRight size={16} />
                 </button>
-              ))}
+              );
+            })}
+          </div>
+        ) : (
+          <>
+            <div className="browse-head">
+              <button
+                type="button"
+                className="browse-back"
+                onClick={back}
+                aria-label={aisle ? `Back to ${department.name}` : 'Back to all departments'}
+              >
+                <ArrowLeft size={19} />
+              </button>
+              <div>
+                <small>{aisle ? department.name : 'All departments'}</small>
+                <strong>{aisle ? aisle.name : department.name}</strong>
+              </div>
             </div>
-          )}
-
-          {aisle && (
-            <div className="browse-grid">
-              {aisle.items.map(item => (
-                <Tile key={item.id} item={item} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+            {aisle ? (
+              <div className="browse-items">
+                {aisle.items.map(item => (
+                  <ItemButton
+                    key={item.id}
+                    item={item}
+                    chosen={picked.has(item.id)}
+                    mode={mode}
+                    onPick={onPick}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="aisle-list">
+                {department.aisles.map(a => {
+                  const Glyph = aisleGlyph(a.id, department.id);
+                  return (
+                    <button
+                      type="button"
+                      key={a.id}
+                      className="aisle-row"
+                      onClick={() => setAisle(a)}
+                    >
+                      <span className={`aisle-glyph dept-${department.id}`} aria-hidden="true">
+                        <Glyph />
+                      </span>
+                      <span className="aisle-row-copy">
+                        <strong>{a.name}</strong>
+                        <small>
+                          {a.items.length} items{onList(a.items)}
+                        </small>
+                      </span>
+                      <ChevronRight size={18} aria-hidden="true" />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,15 +1,16 @@
 'use client';
-// "Start from…" — the fastest way to build next week's list.
+// "Start from…": the fastest way to build next week's list.
 //
 // Grocery lists are the same list most weeks. Retyping it is the single biggest
 // piece of avoidable work in the app, so the three shortcuts here are the last
 // shop (snapshotted automatically when a shop is finished, so it always exists
 // without anyone deciding to save), any list somebody named, and the household's
-// usuals — favourites plus whatever the shopper model says is due again.
+// usuals: favourites plus whatever the shopper model says is due again.
 import {useMemo, useState} from 'react';
 import {Check, Clock, History, Plus, Repeat, Sparkles} from 'lucide-react';
 import {Dialog, DialogContent, DialogTitle, DialogDescription} from '@/components/ui/dialog';
-import {money, productImagePath, type SavedList, type UserState} from '@/lib/catalog';
+import {money, type SavedList, type UserState} from '@/lib/catalog';
+import {ProductArt} from './product-art';
 import {usualsNotOnList} from '@/lib/usuals';
 import './list-starters.css';
 
@@ -61,9 +62,9 @@ export default function ListStarters({open, onOpenChange, state, onUse}: Props) 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="starters-modal">
-        <DialogTitle>Start from something you already have</DialogTitle>
+        <DialogTitle>Start from a past list</DialogTitle>
         <DialogDescription>
-          Most shops are mostly the same. Reuse a previous list instead of typing it again.
+          Reuse a list you have shopped before, or add back the things you buy most.
         </DialogDescription>
 
         <label className="starters-mode">
@@ -107,8 +108,7 @@ export default function ListStarters({open, onOpenChange, state, onUse}: Props) 
               </div>
             ) : (
               <p className="starters-empty">
-                Nothing saved yet. When you finish a shop, Aisle keeps a copy of that list here so
-                your next one starts from it.
+                Nothing saved yet. When you finish a shop, a copy of that list is kept here.
               </p>
             )}
           </section>
@@ -127,12 +127,7 @@ export default function ListStarters({open, onOpenChange, state, onUse}: Props) 
                       className={`starters-usual${picked.has(row.productId) ? ' is-picked' : ''}`}
                       onClick={() => toggle(row.productId)}
                     >
-                      <img
-                        src={productImagePath(row.productId)}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                      />
+                      <ProductArt id={row.productId} small />
                       <span>
                         <strong>{row.name}</strong>
                         <small>{row.why}</small>
@@ -154,8 +149,8 @@ export default function ListStarters({open, onOpenChange, state, onUse}: Props) 
             ) : (
               <p className="starters-empty">
                 {alreadyOnList > 0
-                  ? `Everything you usually buy is already on this list — all ${alreadyOnList} of them.`
-                  : 'Pick some staples during setup, or record a few shops, and your regulars will show up here.'}
+                  ? `Everything you usually buy is already on this list (${alreadyOnList} ${alreadyOnList === 1 ? 'item' : 'items'}).`
+                  : 'Pick some staples in setup, or record a few shops, and your usual items appear here.'}
               </p>
             )}
           </section>

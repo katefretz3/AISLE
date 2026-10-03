@@ -350,7 +350,7 @@ function planDeterministically(ctx: ToolContext) {
         kind: 'no-record',
         detail: product
           ? `Looked for ${product.brand} · ${product.size}, within your brand and pack rules`
-          : 'Your own item — nothing in the collected catalogues to match it to',
+          : 'Your own item, so there is nothing in the catalogues to match it to',
       });
   }
   return filled;
@@ -368,7 +368,7 @@ function describe(ctx: ToolContext, baskets: Basket[]) {
   ];
   if (best && !best.complete)
     parts.push(
-      `No basket is complete yet, so none is being ranked as cheapest — ${best.total - best.priced} ${best.total - best.priced === 1 ? 'item has' : 'items have'} no collected price.`,
+      `No basket is complete yet, so none is ranked as cheapest. ${best.total - best.priced} ${best.total - best.priced === 1 ? 'item has' : 'items have'} no collected price.`,
     );
   if (best && best.unconfirmed)
     parts.push(

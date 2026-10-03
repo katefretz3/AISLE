@@ -11,7 +11,7 @@
 //   - It will not start answering until ALLOWED_ORIGINS is set. There is no
 //     "allow everything" default.
 //   - Requests must come from one of those origins. This is NOT authentication
-//     — any non-browser client can send whatever Origin header it likes — but it
+//     (any non-browser client can send whatever Origin header it likes), but it
 //     stops the key being spent from someone else's web page.
 //   - The real guards are a per-client request rate and a daily token budget
 //     for the whole deployment. When the budget is spent the broker answers 503
@@ -269,7 +269,7 @@ export async function handleAgentRequest(
         : {}),
     });
     await store.increment(spendKey, tokensUsed(reply.usage), 60 * 60 * 26);
-    // Content is returned whole — thinking blocks included — because the app
+    // Content is returned whole, thinking blocks included, because the app
     // must pass them back unchanged on the next turn.
     return json(
       {

@@ -1,5 +1,6 @@
-// WCAG 2.1 A/AA on every main view, with a populated household, in both
-// themes. Runs on the phone and desktop projects.
+// WCAG 2.2 A/AA on every main view, with a populated household, in both
+// themes. Runs on the phone and desktop projects. (Ontario's AODA asks for
+// WCAG 2.0 AA; 2.2 AA includes it.)
 import AxeBuilder from '@axe-core/playwright';
 import {expect, test, type Page} from '@playwright/test';
 import {network, onboard, open} from './support';
@@ -12,10 +13,10 @@ async function violations(page: Page) {
     await open(page, view);
     await page.waitForTimeout(600);
     const {violations} = await new AxeBuilder({page})
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
       .analyze();
     for (const v of violations)
-      found.push(`${view}: ${v.id} (${v.impact}) × ${v.nodes.length} — ${v.nodes[0]?.target}`);
+      found.push(`${view}: ${v.id} (${v.impact}) × ${v.nodes.length}: ${v.nodes[0]?.target}`);
   }
   return found;
 }

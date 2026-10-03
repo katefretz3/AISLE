@@ -54,7 +54,6 @@ export default function ShopChecklist({
   const tally = useMemo(() => tallyBasket(items, lineTotal), [items, lineTotal]);
 
   const remaining = budget - tally.inBasket;
-  const pct = items.length ? Math.round((tally.checked / items.length) * 100) : 0;
 
   return (
     <div className="checklist">
@@ -78,7 +77,7 @@ export default function ShopChecklist({
         />
         <p className="checklist-running-foot">
           <span>
-            {tally.checked} of {items.length} picked up · {pct}%
+            {tally.checked} of {items.length} picked up
           </span>
           {tally.unpriced > 0 && (
             <span className="checklist-unpriced">
@@ -96,7 +95,7 @@ export default function ShopChecklist({
 
       <div className="checklist-toolbar">
         <span className="checklist-where">
-          <Store size={15} /> {shopName}
+          <Store size={16} /> {shopName}
         </span>
         <div className="checklist-order" role="group" aria-label="Checklist order">
           <button
@@ -127,8 +126,9 @@ export default function ShopChecklist({
             {order === 'aisle' && (
               <h3 id={`group-${group.id}`} className="checklist-group-head">
                 <span className="checklist-group-name">
-                  {done && <Check size={14} />}
+                  <i className={`list-section-dot dept-${group.id}`} aria-hidden="true" />
                   {group.name}
+                  {done && <Check size={15} />}
                 </span>
                 <span className="checklist-group-count">
                   {group.checked}/{group.items.length}

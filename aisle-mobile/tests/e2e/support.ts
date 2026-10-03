@@ -58,6 +58,12 @@ export type Network = {
 
 const cors = {'Access-Control-Allow-Origin': '*'};
 
+/** A blank 1×1 map tile, so the map renders without reaching a tile server. */
+const TILE = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
+  'base64',
+);
+
 /**
  * Refuse everything that leaves localhost. With `retail`, answer the store
  * directory and the fixture retailer instead.
@@ -67,6 +73,8 @@ export async function network(page: Page, {retail = false} = {}): Promise<Networ
   await page.route('**/*', async (route: Route) => {
     const url = new URL(route.request().url());
     if (url.hostname === 'localhost') return route.continue();
+    if (url.hostname === 'tile.openstreetmap.org')
+      return route.fulfill({status: 200, contentType: 'image/png', body: TILE});
     if (retail && /overpass/.test(url.hostname)) {
       net.directoryHits++;
       return route.fulfill({status: 200, headers: cors, json: OVERPASS});

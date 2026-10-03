@@ -19,7 +19,7 @@ const DAY = 86400000;
 /** A price this household genuinely paid, per single unit. */
 export type PaidPrice = {
   productId: string;
-  /** Cents for ONE unit — the line total divided by its quantity. */
+  /** Cents for ONE unit: the line total divided by its quantity. */
   unitCents: number;
   quantity: number;
   lineCents: number;
@@ -114,7 +114,7 @@ const plural = (n: number, one: string, many = one + 's') => `${n} ${n === 1 ? o
  * Built from trips, not from the behavioural event log: trips are recorded for
  * everybody (the event log only fills when Learning is switched on), they are
  * kept far longer, and they survive the event ring buffer that would otherwise
- * evict exactly the long-interval items — cooking oil, spices — where knowing
+ * evict exactly the long-interval items (cooking oil, spices) where knowing
  * the interval is worth the most.
  *
  * A single purchase is never an interval. With fewer than three, the household's

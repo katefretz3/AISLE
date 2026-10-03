@@ -3,7 +3,7 @@
 // WHAT THIS IS. Synthetic participants, not real ones. Each is a small model of
 // how somebody might decide where a grocery item "lives", and they disagree with
 // each other on purpose. The output is therefore not a prediction of real
-// success rates — treat the percentages as relative, not absolute.
+// success rates; treat the percentages as relative, not absolute.
 //
 // WHAT IT IS FOR. Finding the items whose placement is contested. When four
 // different mental models all walk to the wrong aisle for "frozen blueberries",
@@ -83,7 +83,7 @@ const stem = w => (w.length > 4 ? w.replace(/(ies|es|s)$/, '') : w);
 
 // ---- how a shopper decides -------------------------------------------------
 // A participant knows what the item IS (its concepts, from the lexicon) and can
-// read the labels in the tree. What they do NOT get is the item's aisle — that
+// read the labels in the tree. What they do NOT get is the item's aisle; that
 // is the thing under test. Where they disagree is where a placement is genuinely
 // contested: "frozen blueberries" is both a fruit and a frozen thing, and the
 // tree offers a home for each reading.
@@ -301,7 +301,7 @@ export function report(departments) {
     lines.push('| Item | Lives in | Most went to | Found |');
     lines.push('|---|---|---|---|');
     for (const f of failures.slice(0, 40)) {
-      const went = [...f.went.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? '—';
+      const went = [...f.went.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'none';
       lines.push(
         `| ${f.item.name} | ${f.item.departmentId} › ${f.item.aisleId} | ${went} | ${pct(f.ok / f.n)} |`,
       );
@@ -337,7 +337,7 @@ export function report(departments) {
   lines.push('  people actually do, is scored as a miss.');
   lines.push('- **Browse only.** Search is the primary way into a 557-item catalogue and is not');
   lines.push('  exercised here at all. These numbers are a floor on findability, not a ceiling.');
-  lines.push('- **Irreducible ambiguity.** Some items are honestly two things at once — frozen');
+  lines.push('- **Irreducible ambiguity.** Some items are honestly two things at once: frozen');
   lines.push(
     '  blueberries are a fruit and a frozen good. Cross-listing (`alsoIn`) resolves many,',
   );

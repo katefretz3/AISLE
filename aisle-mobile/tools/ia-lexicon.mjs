@@ -7,8 +7,8 @@
 // named departments, the study would just be marking its own homework.
 //
 // Two kinds of concept:
-//   substance — what the thing fundamentally is
-//   state     — how it has been processed or is stored
+//   substance: what the thing fundamentally is
+//   state:     how it has been processed or is stored
 export const SUBSTANCE = {
   fruit:
     /\b(fruit|apple|banana|berry|berries|blueberr\w*|strawberr\w*|raspberr\w*|blackberr\w*|cranberr\w*|cherry|cherries|grape|orange|clementine|mandarin|lemon|lime|grapefruit|citrus|pear|peach|nectarine|plum|apricot|mango|pineapple|kiwi|melon|watermelon|cantaloupe|papaya|pomegranate|fig|date|raisin|avocado|plantain|olive)\b/,

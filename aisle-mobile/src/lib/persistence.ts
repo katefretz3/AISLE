@@ -251,8 +251,8 @@ export async function deleteShelfPhoto(photoId: string): Promise<void> {
 /**
  * Delete stored photos nothing points at any more.
  *
- * Run after the state loads. Prices are dropped by several routes — removed by
- * hand, aged out after a year, pushed past the cap — and hooking each one would
+ * Run after the state loads. Prices are dropped by several routes (removed by
+ * hand, aged out after a year, pushed past the cap), and hooking each one would
  * eventually miss a path. Reconciling against what is actually referenced cannot.
  */
 export const sweepShelfPhotos = (keepIds: Iterable<string>, graceMs?: number) =>

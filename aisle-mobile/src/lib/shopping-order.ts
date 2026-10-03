@@ -1,7 +1,7 @@
 // The order you walk a shop in.
 //
 // This is deliberately not the browse order used by the catalogue. Browsing is
-// a lookup problem — you want Produce next to Dairy because that is how people
+// a lookup problem: you want Produce next to Dairy because that is how people
 // name things. Walking is a route problem, and a supermarket is laid out with
 // fresh departments around the perimeter and packaged goods in the middle.
 //
@@ -84,7 +84,7 @@ export type BasketTally = {
   /** Cost of the ticked items that have a price. */
   inBasket: number;
   priced: number;
-  /** Ticked, but nothing priced them — excluded from `inBasket`. */
+  /** Ticked, but nothing priced them, so excluded from `inBasket`. */
   unpriced: number;
   checked: number;
 };
@@ -93,7 +93,7 @@ export type BasketTally = {
  * What is actually in the trolley so far.
  *
  * Only ticked items count, and an item nobody could price is counted
- * separately rather than as zero — otherwise the running total quietly reads
+ * separately rather than as zero; otherwise the running total quietly reads
  * lower than the shop really is, which is the one number a shopper must be able
  * to trust.
  */

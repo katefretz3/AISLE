@@ -1,4 +1,4 @@
-// Shopping history — derived from receipts, which is the only price signal that
+// Shopping history, derived from receipts, which is the only price signal that
 // exists for the 17 Ontario chains Aisle cannot read.
 import test from 'node:test';
 import assert from 'node:assert/strict';

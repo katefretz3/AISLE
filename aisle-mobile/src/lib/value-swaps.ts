@@ -41,7 +41,7 @@ function delivered(offer: SourcedOffer, packs: number): number | null {
  * Cheaper alternatives for the lines of one basket.
  *
  * `current` maps an item id to the offer the basket is using, so the comparison
- * is against what the household would actually pay today — not against some
+ * is against what the household would actually pay today, not against some
  * notional list price.
  */
 export function valueSwaps(

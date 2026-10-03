@@ -1,103 +1,76 @@
+/* Shelf price: the price on the label, its size and shop, an optional photo,
+   and a save button that stays in reach while the sheet scrolls. */
 .shelf-modal {
-  max-width: 470px !important;
-  width: calc(100% - 28px) !important;
-  padding: 28px !important;
+  max-width: 520px !important;
+  padding: var(--sp-8) !important;
 }
 .shelf-modal .field-label {
-  display: block;
-  font-size: 0.8625rem;
-  font-weight: 500;
-  color: var(--foreground);
+  margin-top: var(--sp-3);
 }
 .shelf-modal .field-optional {
-  font-weight: 400;
-  color: var(--muted-foreground);
-}
-.shelf-modal .budget-input input {
-  font-size: 1.875rem !important;
+  font-weight: 500;
+  color: var(--ink-3);
 }
 .shelf-modal .form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  margin-top: var(--sp-4);
 }
 .shelf-modal .form-grid label {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  font-size: 0.8625rem;
-  font-weight: 500;
+  gap: var(--sp-2);
 }
-.shelf-modal input[type='text'] {
-  min-height: 44px;
+.shelf-modal .form-grid label > input {
+  margin-top: 0;
 }
-
 .shelf-error {
-  margin: 0;
-  font-size: 0.8625rem;
-  color: var(--destructive);
+  padding: 10px 14px;
+  border-radius: var(--r-sm);
+  background: var(--danger-tint);
+  color: var(--danger);
+  font-size: var(--t-footnote);
+  font-weight: 600;
 }
 .shelf-honesty {
   display: flex;
-  gap: 9px;
-  align-items: flex-start;
-  padding: 13px;
-  border-radius: 9px;
-  background: var(--muted);
-  color: var(--muted-foreground);
+  gap: 10px;
+  margin-top: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
 }
 .shelf-honesty svg {
-  flex: 0 0 auto;
+  flex-shrink: 0;
   margin-top: 2px;
+  color: var(--brand-2);
 }
 .shelf-honesty p {
-  margin: 0;
-  font-size: 0.8125rem;
-  line-height: 1.7;
+  font-size: var(--t-footnote);
+  line-height: 1.55;
+  color: var(--ink-2);
 }
-
 .shelf-remove {
-  display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 6px;
   width: 100%;
-  font-size: 0.8125rem;
-  color: var(--destructive);
+  color: var(--danger);
 }
 
-@media (max-width: 480px) {
-  .shelf-modal {
-    padding: 24px !important;
-  }
-  .shelf-modal .form-grid {
-    grid-template-columns: 1fr;
-  }
-  /* Keep the save button reachable without scrolling once a photo is attached:
-    somebody doing this is holding a trolley with the other hand. */
-  .shelf-photo img {
-    max-height: 150px;
-  }
-}
-
-/* Photograph of the label. Optional, and never load-bearing: the price is what
-   the app reads back, so a missing image degrades to no image. */
+/* A photo of the label: optional and never load-bearing. */
 .shelf-photo-add {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--sp-3);
   width: 100%;
-  min-height: 60px;
-  padding: 14px;
-  border-radius: 10px;
-  border: 1px dashed var(--border);
-  background: var(--muted);
-  color: var(--muted-foreground);
+  min-height: 64px;
+  margin-top: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1.5px dashed var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--brand-ink);
   text-align: left;
 }
 .shelf-photo-add:hover:not(:disabled) {
-  border-color: var(--primary);
-  color: var(--primary);
+  border-color: var(--brand);
 }
 .shelf-photo-add:disabled {
   opacity: 0.7;
@@ -106,61 +79,59 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 0.9025rem;
-  font-weight: 500;
+  font-size: var(--t-callout);
+  font-weight: 650;
 }
 .shelf-photo-add small {
-  font-size: 0.8125rem;
+  font-size: var(--t-footnote);
   font-weight: 400;
-  opacity: 0.85;
+  color: var(--ink-3);
 }
-
 .shelf-photo {
   position: relative;
-  border-radius: 10px;
+  margin-top: var(--sp-4);
   overflow: hidden;
-  border: 1px solid var(--border);
-  background: var(--muted);
+  border-radius: var(--r-md);
+  background: #000000;
 }
 .shelf-photo img {
   display: block;
   width: 100%;
   max-height: 230px;
   object-fit: contain;
-  background: var(--bg-000000);
 }
 .shelf-photo-remove {
   position: absolute;
   top: 8px;
   right: 8px;
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  background: rgba(12, 24, 18, 0.72);
-  color: var(--fg-ffffff);
-  border: 0;
   display: grid;
   place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(12 24 18 / 0.72);
+  color: #ffffff;
 }
-/* The visible control is 34px; the hit area clears 44px. */
 .shelf-photo-remove::after {
   content: '';
   position: absolute;
-  inset: -6px;
+  inset: -4px;
 }
-
-/* The dialog scrolls once a photo is attached, so the action that finishes the
-   job is pinned rather than left at the bottom of the scroll. Somebody doing
-   this is standing in an aisle holding a trolley. */
+/* The sheet scrolls once a photo is attached, so the action that finishes the
+   job is pinned rather than left at the end of the scroll. */
 .shelf-modal .shelf-save {
   position: sticky;
-  bottom: -28px;
+  bottom: calc(-1 * var(--sp-8));
   z-index: 1;
-  margin-top: 2px;
-  box-shadow: 0 -14px 18px -6px var(--card);
+  margin-top: var(--sp-3);
+  box-shadow: 0 -16px 18px -6px var(--surface);
 }
-@media (max-width: 480px) {
+@media (max-width: 760px) {
   .shelf-modal .shelf-save {
-    bottom: -24px;
+    bottom: calc(-1 * max(24px, env(safe-area-inset-bottom)));
+  }
+  .shelf-photo img {
+    max-height: 150px;
   }
 }

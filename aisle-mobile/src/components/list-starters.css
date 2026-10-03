@@ -1,194 +1,134 @@
+/* Start from a past list: saved lists as rows, usual items as a pick list. */
 .starters-modal {
-  max-width: min(720px, calc(100vw - 32px)) !important;
+  max-width: 560px !important;
+  padding: var(--sp-8) !important;
+}
+.starters-mode {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+.starters-mode input {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--brand);
+}
+.starters-mode strong {
+  display: block;
+  font-size: var(--t-callout);
+}
+.starters-mode small {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--t-footnote);
+  font-weight: 400;
+  color: var(--ink-2);
 }
 .starters-body {
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  overflow-y: auto;
-  max-height: min(56dvh, 520px);
-  overscroll-behavior: contain;
-  padding-right: 2px;
+  gap: var(--sp-6);
+  margin-top: var(--sp-2);
 }
 .starters-body h3 {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 0 10px;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--muted-foreground);
+  margin-bottom: var(--sp-3);
 }
 .starters-body h3 svg {
-  color: var(--primary);
+  color: var(--brand-2);
 }
 .starters-empty {
-  margin: 0;
-  padding: 16px 18px;
-  border-radius: var(--radius-md);
-  background: var(--muted);
-  font-size: 0.9125rem;
+  padding: var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  font-size: var(--t-footnote);
   line-height: 1.55;
-  color: var(--muted-foreground);
+  color: var(--ink-2);
 }
-
-.starters-mode {
-  display: flex;
-  gap: 11px;
-  align-items: flex-start;
-  padding: 13px 15px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--card);
-  cursor: pointer;
-}
-.starters-mode input {
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
-  flex: 0 0 auto;
-  accent-color: var(--primary);
-}
-.starters-mode strong {
-  display: block;
-  font-size: 0.9425rem;
-  color: var(--foreground);
-}
-.starters-mode small {
-  display: block;
-  margin-top: 3px;
-  font-size: 0.8525rem;
-  line-height: 1.5;
-  color: var(--muted-foreground);
-}
-
-.starters-lists {
+.starters-lists,
+.starters-usuals {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
 }
-.starters-list {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+.starters-list,
+.starters-usual {
+  display: flex;
   align-items: center;
-  gap: 13px;
-  padding: 13px 15px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--card);
+  gap: var(--sp-3);
+  min-height: 64px;
+  padding: var(--sp-2) var(--sp-4);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
   text-align: left;
-  cursor: pointer;
-  transition:
-    border-color 0.15s,
-    transform 0.15s;
 }
-.starters-list:hover {
-  border-color: var(--ring);
-  transform: translateY(-1px);
+.starters-list:last-child,
+.starters-usual:last-child {
+  border-bottom: 0;
+}
+.starters-list:hover,
+.starters-usual:hover {
+  background: var(--surface-2);
 }
 .starters-list-icon {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
-  background: var(--accent);
-  color: var(--accent-foreground);
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--brand-tint);
+  color: var(--brand-ink);
 }
-.starters-list-copy strong {
-  display: block;
-  font-size: 0.9825rem;
-  color: var(--foreground);
+.starters-list-copy,
+.starters-usual > span:nth-child(2) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
 }
-.starters-list-copy small {
-  display: block;
-  margin-top: 2px;
-  font-size: 0.8125rem;
-  color: var(--muted-foreground);
-}
-.starters-list > svg {
-  color: var(--muted-foreground);
-}
-
-.starters-usuals {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 8px;
-  margin-bottom: 14px;
-}
-.starters-usual {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 11px;
-  padding: 9px 11px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--card);
-  text-align: left;
-  cursor: pointer;
-  transition:
-    border-color 0.15s,
-    background 0.15s;
-}
-.starters-usual:hover {
-  border-color: var(--ring);
-}
-.starters-usual.is-picked {
-  border-color: var(--primary);
-  background: var(--accent);
-}
-.starters-usual img {
-  width: 38px;
-  height: 38px;
-  object-fit: contain;
-}
+.starters-list-copy strong,
 .starters-usual strong {
-  display: block;
-  font-size: 0.9125rem;
-  color: var(--foreground);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: var(--t-callout);
 }
+.starters-list-copy small,
 .starters-usual small {
-  display: block;
-  font-size: 0.8125rem;
-  color: var(--muted-foreground);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: var(--t-footnote);
+  color: var(--ink-3);
+}
+.starters-list > svg:last-child {
+  color: var(--brand-ink);
 }
 .starters-check {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid var(--field-line);
   border-radius: 50%;
-  background: var(--secondary);
-  color: var(--secondary-foreground);
+  color: var(--ink-2);
+}
+.starters-usual.is-picked {
+  background: var(--brand-tint);
 }
 .starters-usual.is-picked .starters-check {
-  background: var(--primary);
-  color: var(--primary-foreground);
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--on-brand);
 }
-
-@media (max-width: 640px) {
-  .starters-usuals {
-    grid-template-columns: 1fr;
-  }
-  .starters-body {
-    max-height: calc(100dvh - 300px);
-  }
-}
-@media (max-width: 960px) {
-  .starters-list,
-  .starters-usual {
-    min-height: 56px;
-  }
-  .starters-mode {
-    min-height: 56px;
-  }
+.starters-usuals + .button {
+  margin-top: var(--sp-3);
 }

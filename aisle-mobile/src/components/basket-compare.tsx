@@ -1,33 +1,23 @@
 'use client';
-// Compare baskets — the observed-price comparison screen.
-//
-// This is what "Compare stores" used to promise and not deliver: before, it
-// rendered the same agent workspace as the home screen. It now ranks the
-// agent's verified baskets against each other and is the one place a shop
-// actually starts from.
+// Prices: the price-check results, shop by shop, and the area being searched.
 //
 // The ranking rule is the honest one: a complete basket always outranks a
-// partial one, and an incomplete basket is never labelled cheapest — only
-// best-covered. A retailer with a readable catalogue but nothing matched still
+// partial one, and an incomplete basket is never called cheapest, only
+// best covered. A retailer with a readable catalogue but nothing matched still
 // appears, because "we looked and found nothing" is a result.
+//
+// The search area is on the map below the results. Moving the pin or the
+// radius starts a new area, so the old results stop showing until the area is
+// checked (a saved check is only ever reused for the area it was made for).
 import {useMemo, useState} from 'react';
-import {
-  ArrowUpRight,
-  Check,
-  ChevronRight,
-  CircleAlert,
-  Info,
-  MapPin,
-  RefreshCw,
-  ShieldCheck,
-  ShoppingBag,
-  Store,
-  TrendingDown,
-} from 'lucide-react';
-import {money, type UserState} from '@/lib/catalog';
+import {Check, CircleAlert, Info, RefreshCw, ShieldCheck, ShoppingBag, Store} from 'lucide-react';
+import {money, type Preferences, type UserState} from '@/lib/catalog';
 import type {Basket, AgentRun} from '@/lib/agent';
 import {coverageRows, coverageSummary, STATUS_LABEL} from '@/lib/coverage';
+import {cityLocation} from '@/lib/locations';
 import type {AgentSession} from '@/lib/use-agent-run';
+import LocationMap from './location-map';
+import {StoreLogo} from './store-logo';
 import './basket-compare.css';
 
 type Props = {
@@ -35,12 +25,26 @@ type Props = {
   agent: AgentSession;
   onShop: (sourceId: string) => void;
   onList: () => void;
-  onSetup: () => void;
+  onPrefs: (patch: Partial<Preferences>) => void;
 };
 
-export default function BasketCompare({state, agent, onShop, onList, onSetup}: Props) {
+const FEED_LABEL = {
+  connected: 'Prices read',
+  'no-public-feed': 'No price feed',
+  unprobed: 'Not checked',
+} as const;
+
+export default function BasketCompare({state, agent, onShop, onList, onPrefs}: Props) {
   const {run, busy, error, baskets, best, perShopBudget, readable, start} = agent;
   const complete = useMemo(() => baskets.filter(b => b.complete), [baskets]);
+  const prefs = state.prefs;
+  const shops = useMemo(
+    () =>
+      (run?.stores ?? [])
+        .filter(s => Number.isFinite(s.lat) && Number.isFinite(s.lng))
+        .map(s => ({id: s.id, name: s.name, lat: s.lat, lng: s.lng})),
+    [run],
+  );
 
   // Only comparable when two baskets both cover the whole list; comparing a
   // full basket against a partial one would overstate the difference.
@@ -58,52 +62,41 @@ export default function BasketCompare({state, agent, onShop, onList, onSetup}: P
     <div className="compare-screen">
       <div className="page-heading">
         <div>
-          <span className="eyebrow">YOUR LIST, PRICED SIDE BY SIDE</span>
-          <h1>Compare baskets</h1>
+          <h1>Prices</h1>
           <p>
-            Every figure here came from a retailer catalogue Aisle read itself. Where a price is
-            missing the basket stays incomplete rather than being filled in.
+            {run
+              ? `${run.stores.length} ${run.stores.length === 1 ? 'shop' : 'shops'} within ${prefs.radius} km. Each price comes from the shop’s own website.`
+              : 'Prices from the websites of shops near you.'}
           </p>
         </div>
         <button className="button secondary" disabled={busy} onClick={start}>
           <RefreshCw size={16} className={busy ? 'spin' : ''} />
-          {busy ? 'Checking…' : 'Re-check prices'}
+          {busy ? 'Checking' : run ? 'Check again' : 'Check prices'}
         </button>
       </div>
 
       {error && (
-        <p className="agent-alert error" role="alert">
+        <p className="agent-alert" role="alert">
           <CircleAlert size={17} /> {error}
-          <button onClick={start}>Try again</button>
+          <button type="button" onClick={start}>
+            Try again
+          </button>
         </p>
       )}
 
       {spread && (
         <section className="compare-spread">
-          <span className="compare-spread-icon">
-            <TrendingDown size={20} />
-          </span>
-          <div>
-            <strong>
-              {money(spread.difference)} between your cheapest and dearest complete basket
-            </strong>
-            <p>
-              {spread.low.name} totals {money(spread.low.subtotal)}; {spread.high.name} totals{' '}
-              {money(spread.high.subtotal)}
-              for the same {spread.low.total} items.
-            </p>
-          </div>
+          <strong>{money(spread.difference)}</strong>
+          <p>
+            between the cheapest and dearest full basket: {spread.low.name}{' '}
+            {money(spread.low.subtotal)}, {spread.high.name} {money(spread.high.subtotal)}, for the
+            same {spread.low.total} items.
+          </p>
         </section>
       )}
 
       {baskets.length === 0 ? (
-        <EmptyCompare
-          busy={busy}
-          readable={readable}
-          run={!!run}
-          onList={onList}
-          onSetup={onSetup}
-        />
+        <EmptyCompare busy={busy} readable={readable} run={!!run} onList={onList} onCheck={start} />
       ) : (
         <>
           <div className="compare-grid">
@@ -117,56 +110,60 @@ export default function BasketCompare({state, agent, onShop, onList, onSetup}: P
               />
             ))}
           </div>
-
-          <section className="compare-note">
-            <Info size={18} />
-            <p>
-              Subtotals cover products only — delivery, tax, deposits, minimum-order fees and
-              memberships are not included. These are online catalogue prices, so they are not
-              confirmed prices at any particular branch, and Aisle will not send you to a shop
-              because of one.
-            </p>
-          </section>
+          <p className="compare-note">
+            <Info size={16} />
+            <span>
+              Products only: delivery, tax, deposits, fees and memberships are not included. Online
+              prices can differ from what a branch charges at the shelf.
+            </span>
+          </p>
         </>
       )}
 
-      {run && run.stores.length > 0 && (
-        <section className="compare-stores">
-          <div className="compare-section-head">
-            <div>
-              <h2>
-                <Store size={18} /> Shops near you
-              </h2>
-              <p>
-                Within {state.prefs.radius} km of your saved location. Straight-line distance, not a
-                driving route.
-              </p>
-            </div>
-            <button className="text-button" onClick={onSetup}>
-              Change my area <ArrowUpRight size={15} />
+      <section className="compare-area" aria-labelledby="area-h">
+        <div className="section-head">
+          <h2 id="area-h">Shops near you</h2>
+        </div>
+        <LocationMap
+          city={prefs.city}
+          location={prefs.searchLocation ?? cityLocation(prefs.city)}
+          radius={prefs.radius}
+          onLocation={searchLocation => onPrefs({searchLocation})}
+          onRadius={radius => onPrefs({radius})}
+          shops={shops}
+        />
+        {!run && !busy && (
+          <div className="compare-recheck">
+            <span>New area? Check it to see its shops and prices.</span>
+            <button className="button primary" onClick={start}>
+              <RefreshCw size={16} /> Check this area
             </button>
           </div>
-          <ul>
-            {run.stores.slice(0, 8).map(store => (
+        )}
+        {run && run.stores.length > 0 && (
+          <ul className="compare-stores card">
+            {run.stores.slice(0, 10).map(store => (
               <li key={store.id}>
-                <MapPin size={15} />
+                <StoreLogo store={{id: store.chainId ?? store.id, name: store.name}} />
                 <span className="compare-store-copy">
                   <strong>{store.name}</strong>
-                  <small>{store.address || 'Address not mapped'}</small>
+                  <small>
+                    {store.address || 'Address not mapped'} · {store.km.toFixed(1)} km
+                  </small>
                 </span>
-                <span className="compare-km">{store.km.toFixed(1)} km</span>
-                <span className={`agent-feed ${store.feed}`}>
-                  {store.feed === 'connected'
-                    ? 'Prices read'
-                    : store.feed === 'no-public-feed'
-                      ? 'No price feed'
-                      : 'Not checked'}
-                </span>
+                <span className={`agent-feed ${store.feed}`}>{FEED_LABEL[store.feed]}</span>
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        )}
+        {run && run.stores.length === 0 && (
+          <p className="field-help">
+            The map directory has no grocery shops inside this area. That is a gap in the map data,
+            not proof there are none.
+          </p>
+        )}
+        <p className="field-help">Distances are in a straight line, not by road.</p>
+      </section>
 
       <CoverageDirectory run={run} />
     </div>
@@ -187,23 +184,26 @@ function BasketCard({
   const coverage = basket.total ? Math.round((basket.priced / basket.total) * 100) : 0;
   return (
     <article className={`compare-card${isBest ? ' is-best' : ''}`}>
-      {isBest && (
-        <span className="compare-badge">
-          <Check size={13} /> Cheapest complete basket
-        </span>
-      )}
-      <h3>{basket.name}</h3>
-      <strong className="compare-total">{basket.priced ? money(basket.subtotal) : '—'}</strong>
+      <div className="compare-card-head">
+        <StoreLogo store={{id: basket.sourceId, name: basket.name}} />
+        <h3>{basket.name}</h3>
+        {isBest && (
+          <span className="compare-badge">
+            <Check size={13} /> Cheapest
+          </span>
+        )}
+      </div>
+      <strong className="compare-total">
+        {basket.priced ? money(basket.subtotal) : 'No prices'}
+      </strong>
       <p className="compare-sub">
         {basket.complete
           ? `All ${basket.total} items priced`
           : `${basket.priced} of ${basket.total} items priced`}
       </p>
-
       <div className="compare-meter" role="img" aria-label={`${coverage}% of your list priced`}>
         <span style={{width: `${coverage}%`}} />
       </div>
-
       <dl className="compare-facts">
         {basket.complete ? (
           <div>
@@ -216,8 +216,10 @@ function BasketCard({
           </div>
         ) : (
           <div>
-            <dt>Missing</dt>
-            <dd>{basket.total - basket.priced} unpriced</dd>
+            <dt>No price</dt>
+            <dd>
+              {basket.total - basket.priced} {basket.total - basket.priced === 1 ? 'item' : 'items'}
+            </dd>
           </div>
         )}
         <div>
@@ -227,15 +229,15 @@ function BasketCard({
           </dd>
         </div>
       </dl>
-
       {basket.unconfirmed > 0 && (
         <p className="compare-warn">
-          <CircleAlert size={14} /> {basket.unconfirmed}{' '}
-          {basket.unconfirmed === 1 ? 'match is' : 'matches are'} still proposals. Confirm them on
-          My week before relying on this total.
+          <CircleAlert size={15} />
+          <span>
+            {basket.unconfirmed} {basket.unconfirmed === 1 ? 'match needs' : 'matches need'} your
+            yes on Home before this total can be relied on.
+          </span>
         </p>
       )}
-
       <button className="button primary full" disabled={!basket.priced} onClick={onShop}>
         <ShoppingBag size={16} /> Shop at {basket.name}
       </button>
@@ -248,43 +250,48 @@ function EmptyCompare({
   readable,
   run,
   onList,
-  onSetup,
+  onCheck,
 }: {
   busy: boolean;
   readable: number;
   run: boolean;
   onList: () => void;
-  onSetup: () => void;
+  onCheck: () => void;
 }) {
   return (
-    <section className="compare-empty">
-      <span className="compare-empty-icon">
-        <Store size={26} />
+    <section className="compare-empty card">
+      <span className="empty-icon">
+        <Store />
       </span>
       <h2>
         {busy
-          ? 'Reading retailer catalogues…'
+          ? 'Checking prices'
           : !run
-            ? 'No price check has run yet'
+            ? 'No prices checked for this area'
             : readable === 0
               ? 'No shop near you publishes prices Aisle can read'
-              : 'Nothing on your list matched a collected price'}
+              : 'Nothing on your list matched a price'}
       </h2>
       <p>
         {busy
-          ? 'This takes a few seconds. Aisle is finding shops near you and reading the catalogues it is allowed to read.'
-          : readable === 0
-            ? 'Aisle only shows prices it has actually collected, so rather than estimating, it shows nothing. Widening your search area may reach a retailer that publishes one.'
-            : 'The catalogues Aisle could read do not stock your items, or the matches did not meet your brand and pack rules.'}
+          ? 'Finding shops near you and reading the prices they publish. This takes a few seconds.'
+          : !run
+            ? 'Check prices and Aisle will read what the shops in your area publish.'
+            : readable === 0
+              ? 'Aisle only shows prices it has read itself, so it shows none rather than guessing. A wider search area may reach a shop that publishes them.'
+              : 'The shops Aisle could read do not list your items, or the matches broke your brand or size rules.'}
       </p>
       {!busy && (
         <div className="compare-empty-actions">
-          <button className="button secondary" onClick={onList}>
-            Edit my list <ChevronRight size={15} />
-          </button>
-          <button className="button secondary" onClick={onSetup}>
-            Widen my search area <ChevronRight size={15} />
-          </button>
+          {!run ? (
+            <button className="button primary" onClick={onCheck}>
+              <RefreshCw size={16} /> Check prices
+            </button>
+          ) : (
+            <button className="button secondary" onClick={onList}>
+              Edit list
+            </button>
+          )}
         </div>
       )}
     </section>
@@ -294,10 +301,8 @@ function EmptyCompare({
 /**
  * Every Ontario chain Aisle knows, and whether it can read that chain's prices.
  *
- * This replaces a "store directory" that listed six retailers with invented
- * distances and a flag deciding which fake prices to generate. The useful fact
- * is the uncomfortable one: most large banners publish nothing machine-readable,
- * so Aisle cannot price them and says so instead of guessing.
+ * The useful fact is the uncomfortable one: most large banners publish nothing
+ * machine-readable, so Aisle cannot price them and says so instead of guessing.
  */
 function CoverageDirectory({run}: {run: AgentRun | null}) {
   const [open, setOpen] = useState(false);
@@ -305,24 +310,21 @@ function CoverageDirectory({run}: {run: AgentRun | null}) {
   const summary = useMemo(() => coverageSummary(rows), [rows]);
   const shown = open ? rows : rows.slice(0, 6);
   return (
-    <section className="coverage-directory">
-      <div className="compare-section-head">
-        <div>
-          <h2>
-            <ShieldCheck size={18} /> What Aisle can price
-          </h2>
-          <p>
-            {summary.readable} of {summary.total} Ontario chains publish a price feed Aisle is
-            allowed to read.
-            {summary.nearbyUnreadable > 0 &&
-              ` ${summary.nearbyUnreadable} ${summary.nearbyUnreadable === 1 ? 'chain' : 'chains'} near you ` +
-                `${summary.nearbyUnreadable === 1 ? 'does' : 'do'} not.`}
-          </p>
-        </div>
+    <section className="coverage-directory" aria-labelledby="coverage-h">
+      <div className="section-head">
+        <h2 id="coverage-h">Which chains Aisle can price</h2>
       </div>
-      <ul className="coverage-list">
+      <p className="section-lede">
+        <ShieldCheck size={15} /> {summary.readable} of {summary.total} Ontario chains publish
+        prices Aisle is allowed to read.
+        {summary.nearbyUnreadable > 0 &&
+          ` ${summary.nearbyUnreadable} ${summary.nearbyUnreadable === 1 ? 'chain' : 'chains'} near you ` +
+            `${summary.nearbyUnreadable === 1 ? 'does' : 'do'} not.`}
+      </p>
+      <ul className="coverage-list card">
         {shown.map(row => (
           <li key={row.chain.id} className={`coverage-row is-${row.status}`}>
+            <StoreLogo store={{id: row.chain.id, name: row.chain.name}} />
             <span className="coverage-copy">
               <strong>{row.chain.name}</strong>
               <small>{row.explanation}</small>
@@ -343,8 +345,8 @@ function CoverageDirectory({run}: {run: AgentRun | null}) {
         </button>
       )}
       <p className="field-help">
-        A chain with no feed is not missing from your area — Aisle simply has no lawful,
-        machine-readable source for its prices, so it leaves them blank rather than estimating.
+        A chain marked “No price feed” may have shops near you. It does not publish prices Aisle is
+        allowed to read, so they stay blank.
       </p>
     </section>
   );

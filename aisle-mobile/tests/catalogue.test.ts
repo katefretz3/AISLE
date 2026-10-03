@@ -1,8 +1,8 @@
 // Catalogue integrity.
 //
-// The taxonomy, the generated artwork and catalog.ts have to stay in step: an
-// item with no picture, a duplicate id, or a legacy id quietly dropped would
-// all show up as a broken list for someone who already saved one.
+// The taxonomy and catalog.ts have to stay in step: an item with no picture, a
+// duplicate id, or a legacy id quietly dropped would all show up as a broken
+// list for someone who already saved one.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync} from 'node:fs';
@@ -13,16 +13,16 @@ import {
   parseList,
   products,
   productById,
-  productImagePath,
+  productPhotoPath,
   hasPhoto,
   categories,
   initialState,
 } from '@/lib/catalog';
 import photoManifest from '@/lib/photo-manifest.json';
 import {loadTaxonomy, treeTest, cardSort} from '../tools/ia-study.mjs';
-import {TEMPLATES} from '../tools/product-art.mjs';
-
-const ART_DIR = join(process.cwd(), 'public', 'images', 'products');
+import {glyphFor} from '@/lib/product-glyph';
+import {ShoppingBasket} from 'lucide-react';
+import {readFileSync} from 'node:fs';
 
 test('the catalogue covers a realistic shop across every department', () => {
   assert.ok(ALL_ITEMS.length >= 400, `expected a full catalogue, got ${ALL_ITEMS.length}`);
@@ -46,23 +46,26 @@ test('every item id is unique and every item knows its own place', () => {
       }
 });
 
-test('every item has artwork on disk, drawn by a template that exists', () => {
-  const missingArt = ALL_ITEMS.filter(i => !existsSync(join(ART_DIR, `${i.id}.png`)));
+test('every item has a symbol and a department colour to draw it with', () => {
+  // The basket is the fallback for unmatched list lines; a catalogue item
+  // always gets something more specific.
+  const generic = ALL_ITEMS.filter(i => glyphFor(i) === ShoppingBasket);
   assert.deepEqual(
-    missingArt.map(i => i.id),
-    [],
-    'items with no generated image',
-  );
-  const missingTemplate = ALL_ITEMS.filter(i => !(i.art.template in TEMPLATES));
-  assert.deepEqual(
-    missingTemplate.map(i => `${i.id}:${i.art.template}`),
+    generic.map(i => `${i.id}:${i.shape}`),
     [],
   );
-  for (const item of ALL_ITEMS) {
-    assert.match(item.art.colour, /^#[0-9a-f]{6}$/i, `${item.id} colour`);
-    assert.match(item.art.accent, /^#[0-9a-f]{6}$/i, `${item.id} accent`);
+  const tokens = readFileSync(join(process.cwd(), 'src', 'app', 'tokens.css'), 'utf8');
+  const styles = readFileSync(join(process.cwd(), 'src', 'app', 'globals.css'), 'utf8');
+  for (const d of DEPARTMENTS) {
+    assert.match(tokens, new RegExp(`--dept-${d.id}:`), `${d.id} has no tint`);
+    assert.match(tokens, new RegExp(`--dept-${d.id}-ink:`), `${d.id} has no ink`);
+    assert.match(styles, new RegExp(`\\.dept-${d.id} \\{`), `${d.id} has no class`);
   }
-  assert.ok(existsSync(join(ART_DIR, 'custom-item.png')), 'placeholder art is missing');
+});
+
+test('no generated product drawings are shipped', () => {
+  // Product pictures are photographs or nothing; the old illustrations are gone.
+  assert.equal(existsSync(join(process.cwd(), 'public', 'images', 'products')), false);
 });
 
 test('product ids from earlier saved lists still resolve', () => {
@@ -255,14 +258,14 @@ test('the photo manifest only lists items that exist', () => {
   for (const id of photoManifest as string[]) {
     assert.ok(itemById[id], `photo manifest lists unknown item ${id}`);
     assert.ok(
-      existsSync(join(process.cwd(), 'public', 'images', 'photos', `${id}.jpg`)),
+      existsSync(join(process.cwd(), 'public', 'images', 'photos', `${id}.webp`)),
       `manifest lists ${id} but the photo is missing`,
     );
   }
 });
 
-test('items fall back to their illustration when no photo exists', () => {
+test('a photo path is only ever offered for an item that has one', () => {
   const withoutPhoto = ALL_ITEMS.find(i => !hasPhoto(i.id));
   assert.ok(withoutPhoto, 'expected at least one item without a photo');
-  assert.match(productImagePath(withoutPhoto!.id), /^\/images\/products\/.+\.png$/);
+  assert.match(productPhotoPath('apples'), /^\/images\/photos\/apples\.webp$/);
 });

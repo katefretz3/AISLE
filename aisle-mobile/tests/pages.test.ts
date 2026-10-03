@@ -47,7 +47,7 @@ const textOf = (doc: typeof TERMS) =>
     .toLowerCase();
 
 test('every legal document is structurally sound', () => {
-  assert.equal(DOCUMENTS.length, 3);
+  assert.equal(DOCUMENTS.length, 4);
   for (const doc of DOCUMENTS) {
     assert.ok(doc.title.trim(), `${doc.id} has no title`);
     assert.ok(doc.summary.trim(), `${doc.id} has no summary`);
@@ -69,13 +69,17 @@ test('every legal document is structurally sound', () => {
 
 test('unfinished operator details are detected, not shipped quietly', () => {
   // While placeholders remain the screens show a blocking notice. If someone
-  // fills them in, this test still passes — it checks the mechanism, not the
+  // fills them in, this test still passes: it checks the mechanism, not the
   // current state.
   const placeholders = Object.entries(OPERATOR)
     .filter(([, v]) => v.startsWith('PLACEHOLDER'))
     .map(([k]) => k);
   assert.deepEqual(PLACEHOLDER_FIELDS, placeholders);
   assert.equal(hasPlaceholders, placeholders.length > 0);
+  // tools/release-check.mjs finds unfinished values in a built bundle by this
+  // exact form, so a reworded placeholder must not slip past it.
+  for (const field of PLACEHOLDER_FIELDS)
+    assert.match(OPERATOR[field as keyof typeof OPERATOR], /^PLACEHOLDER: \S/, field);
 });
 
 test('the Terms carry the disclaimers this app specifically needs', () => {

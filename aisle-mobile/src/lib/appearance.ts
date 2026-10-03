@@ -13,8 +13,8 @@ export type Appearance = 'system' | 'light' | 'dark';
 export type Theme = 'light' | 'dark';
 
 const KEY = 'aisle.appearance';
-/** The page background in each theme, for the status bar and theme-color. */
-const CHROME: Record<Theme, string> = {light: '#f6f8f4', dark: '#0e1513'};
+/** The page background (`--canvas` in tokens.css), for the status bar and theme-color. */
+const CHROME: Record<Theme, string> = {light: '#f4f1ea', dark: '#0b110f'};
 
 export function readAppearance(): Appearance {
   try {

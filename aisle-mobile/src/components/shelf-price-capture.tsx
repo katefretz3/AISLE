@@ -2,8 +2,8 @@
 // Typing in what the shelf says, while standing in front of it.
 //
 // The moment this exists for is narrow: phone in one hand, trolley in the other,
-// looking at a label. So the form asks for as little as it can get away with —
-// the price — and pre-fills everything else from what it already knows. The pack
+// looking at a label. So the form asks for as little as it can get away with
+// (the price) and pre-fills everything else from what it already knows. The pack
 // size is offered rather than assumed, because noticing that the shelf has a
 // 450 g loaf when your list says 675 g is the single most useful thing a person
 // can tell this app.
@@ -198,7 +198,7 @@ export default function ShelfPriceCapture({
           <input
             type="text"
             maxLength={140}
-            placeholder="On sale until Sunday, last one on the shelf…"
+            placeholder="On sale until Sunday"
             aria-label="Note about this price"
             value={note}
             onChange={e => setNote(e.target.value)}
@@ -258,10 +258,9 @@ export default function ShelfPriceCapture({
         <div className="shelf-honesty">
           <Info size={15} />
           <p>
-            This is your own reading of the label, so Aisle records it as yours. It is kept apart
-            from prices Aisle collected itself, shown as something you saw rather than something it
-            verified, and never used to claim a saving. A photo is stored on this device only, and
-            goes when the price does — so keep other people out of the frame.
+            Aisle records this as your own reading. It is kept apart from prices Aisle read from a
+            shop's website and never used to claim a saving. A photo stays on this device and is
+            deleted with the price, so keep other people out of the frame.
           </p>
         </div>
 

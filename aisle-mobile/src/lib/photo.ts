@@ -2,7 +2,7 @@
 // be tested.
 //
 // A receipt is one photo per shop. A shelf label can be one per price, and a
-// household that captures diligently will have hundreds — so unlike the receipt
+// household that captures diligently will have hundreds, so unlike the receipt
 // path, these are downscaled before they are stored and swept when the price
 // they belonged to goes away. An orphaned image is invisible: nothing in the
 // interface references it, so nobody will ever notice it filling the device.
@@ -45,8 +45,8 @@ export function photoIdFromFile(name: string): string | null {
 /**
  * Stored photos no record points at any more.
  *
- * Every route that drops a price — deleting one, the year-old cutoff, the cap on
- * how many are kept — would otherwise leave its image behind. Rather than trying
+ * Every route that drops a price (deleting one, the year-old cutoff, the cap on
+ * how many are kept) would otherwise leave its image behind. Rather than trying
  * to hook each of them, the set of live ids is reconciled against what is on
  * disk, which also cleans up after a write that succeeded when the save that
  * should have followed it did not.

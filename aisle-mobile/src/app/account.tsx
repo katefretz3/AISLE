@@ -9,7 +9,7 @@
 //
 // The destructive controls sit at the bottom, visually separated and behind a
 // confirmation, because erasing a year of shopping history by mis-tap is not a
-// recoverable mistake — there is no account and no server copy.
+// recoverable mistake: there is no account and no server copy.
 import {useMemo, useState} from 'react';
 import {
   AlertTriangle,
@@ -120,7 +120,7 @@ export default function Account({
 }: Props) {
   const p = state.prefs;
   // The saved state arrives asynchronously, so this field cannot seed a
-  // useState from `p.budget` — that would capture the pre-load default and show
+  // useState from `p.budget`: that would capture the pre-load default and show
   // it forever. Instead it holds a draft only while being edited and mirrors the
   // committed value the rest of the time, which also keeps it correct when the
   // budget changes from elsewhere (an erase, or the setup flow).
@@ -168,12 +168,8 @@ export default function Account({
     <div className="account-screen">
       <div className="page-heading">
         <div>
-          <span className="eyebrow">ACCOUNT SETTINGS</span>
-          <h1>{p.name ? `Your Aisle, ${p.name}.` : 'Your Aisle.'}</h1>
-          <p>
-            Everything the app knows about your household, in one place. Changes save as you make
-            them, and nothing here leaves your device.
-          </p>
+          <h1>Account</h1>
+          <p>Changes save as you make them. Nothing here leaves your device.</p>
         </div>
         <span className="saved-label">
           <CheckCheck size={15} />
@@ -194,7 +190,7 @@ export default function Account({
         id="profile"
         icon={User}
         title="Profile"
-        description="How Aisle addresses you. There is no account and no sign-in — this is a label on this device, not an identity."
+        description="There is no sign-in. Your name is only a label on this device."
       >
         <div className="account-identity">
           <span className="account-avatar" aria-hidden="true">
@@ -214,7 +210,7 @@ export default function Account({
           <input
             value={p.name}
             maxLength={60}
-            placeholder="What should we call you?"
+            placeholder="First name"
             autoComplete="given-name"
             onChange={e => onPrefs({name: e.target.value})}
           />
@@ -465,8 +461,8 @@ export default function Account({
         <p className="account-note">
           <ShieldCheck size={16} />
           <span>
-            Only a coarse search area — roughly a 5 km cell, never your exact pin — is sent when
-            looking up nearby shops. Your list and preferences never leave the device for this.
+            Only a rough search area (about a 5 km square, never your exact pin) is sent when
+            looking up nearby shops. Your list and preferences stay on the device.
           </span>
         </p>
       </Section>
@@ -476,7 +472,7 @@ export default function Account({
         id="dietary"
         icon={ShieldCheck}
         title="Dietary & allergens"
-        description="What Aisle should avoid suggesting. These are settings you control; nothing here is ever inferred from your behaviour."
+        description="What Aisle should avoid suggesting. Only you set these. Nothing here is guessed from what you buy."
       >
         <div className="account-safety">
           <AlertTriangle size={20} />
@@ -484,7 +480,7 @@ export default function Account({
             <strong>Aisle cannot tell you a product is safe to eat.</strong>
             <p>
               Retailer catalogues carry no verified ingredient or allergen data, so these settings
-              change what gets <em>suggested</em> — they are not a safety filter. Always read the
+              change what gets <em>suggested</em>. They are not a safety filter. Always read the
               label.
             </p>
           </div>
@@ -624,7 +620,7 @@ export default function Account({
               <span>
                 {p.learning
                   ? `${plural(learnedCount, 'recorded choice')} in use`
-                  : 'Learning is off — explicit settings only'}
+                  : 'Learning is off, so only your own settings are used'}
               </span>
             </li>
             <li>
@@ -654,9 +650,8 @@ export default function Account({
           <p className="account-memory-note">
             Prices you type off a shelf are kept apart from prices Aisle collected itself. They are
             shown as yours wherever they appear, are never counted towards a verified saving, and
-            are dropped after a year because a shelf does not stay still that long. A photograph of
-            a label is stored on this device only, never uploaded, and is deleted along with the
-            price it belongs to.
+            are dropped after a year. A photo of a label is stored on this device only, never
+            uploaded, and is deleted along with its price.
           </p>
         </div>
 
@@ -695,14 +690,14 @@ export default function Account({
         </div>
 
         <button className="text-button" onClick={onReplaySetup}>
-          Revisit the welcome setup <ArrowRight size={15} />
+          Run setup again <ArrowRight size={15} />
         </button>
       </Section>
 
       <footer className="account-footer">
         <div>
           <p className="account-footer-title">
-            <Scale size={15} /> Legal &amp; privacy
+            <Scale size={15} /> Legal and privacy
           </p>
           <div className="account-footer-links">
             {DOCUMENTS.map(doc => (

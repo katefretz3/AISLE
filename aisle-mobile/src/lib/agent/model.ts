@@ -3,7 +3,7 @@
 // The app never holds an API key. Requests go to a broker that the operator
 // runs (see `server/agent-broker.ts`), which attaches the key server-side and
 // forwards to the Anthropic Messages API. If no broker is configured the whole
-// agent still runs — the orchestrator falls back to its deterministic planner
+// agent still runs: the orchestrator falls back to its deterministic planner
 // and says so in the interface. AI is how the plan is reasoned about, never
 // where the data comes from.
 import type {Tool, ToolContext} from './tools';

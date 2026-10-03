@@ -1,3 +1,8 @@
+// The shared stylesheet loads first, so each component's own stylesheet can
+// refine it without fighting the cascade. The display face is imported here,
+// not from CSS: inlined into globals.css its font files would not resolve.
+import '@fontsource-variable/fraunces/opsz.css';
+import './app/globals.css';
 import React from 'react';
 import {createRoot} from 'react-dom/client';
 import {Capacitor} from '@capacitor/core';
@@ -7,7 +12,6 @@ import {applyTheme, readAppearance, resolveTheme} from './lib/appearance';
 import {installSheetGesture} from './lib/sheet-gesture';
 import AisleApp from './app/aisle-app';
 import ErrorBoundary from './components/error-boundary';
-import './app/globals.css';
 applyTheme(resolveTheme(readAppearance()));
 installSheetGesture();
 if (Capacitor.isNativePlatform()) {

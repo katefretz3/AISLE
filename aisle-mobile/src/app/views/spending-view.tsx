@@ -31,9 +31,12 @@ export default function SpendingView({
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">A LITTLE MORE CLARITY</span>
-          <h1>Your grocery spending</h1>
-          <p>Make sense of your shops, one receipt at a time.</p>
+          <h1>Spending</h1>
+          <p>
+            {trips.length
+              ? `${trips.length} ${trips.length === 1 ? 'shop' : 'shops'} recorded, from your own receipts`
+              : 'What you paid, from your own receipts'}
+          </p>
         </div>
         <button className="button primary" onClick={onAddReceipt}>
           <Plus size={17} /> Add a receipt
@@ -41,13 +44,13 @@ export default function SpendingView({
       </div>
       {trips.length > 0 && (
         <div className="spending-stats">
-          <div className="card metric">
+          <div className="card metric is-lead">
             <span>
               <Wallet size={18} /> Recorded spending
             </span>
             <strong>{money(trips.reduce((sum, t) => sum + t.total, 0))}</strong>
             <p>
-              Across {trips.length} saved {trips.length === 1 ? 'trip' : 'trips'}
+              Across {trips.length} {trips.length === 1 ? 'shop' : 'shops'}
             </p>
           </div>
           <div className="card metric">
@@ -72,7 +75,7 @@ export default function SpendingView({
                   : `${money(Math.abs(diff))} ${diff > 0 ? 'over' : 'under'}`;
               })()}
             </strong>
-            <p>Average shop vs your {money(perShopBudget)} per-shop budget</p>
+            <p>Average shop compared with your {money(perShopBudget)} budget</p>
           </div>
         </div>
       )}
@@ -82,8 +85,10 @@ export default function SpendingView({
       />
       <section className="card history-card">
         <div className="section-top">
-          <h3>Your shopping history</h3>
-          <Pill kind="neutral">{trips.length} receipts</Pill>
+          <h3>History</h3>
+          <Pill kind="neutral">
+            {trips.length} {trips.length === 1 ? 'receipt' : 'receipts'}
+          </Pill>
         </div>
         {trips.length ? (
           <div>
@@ -100,7 +105,7 @@ export default function SpendingView({
                         month: 'long',
                         year: 'numeric',
                       })}{' '}
-                      · {t.receiptId ? 'Receipt attached' : 'Manual entry'}
+                      · {t.receiptId ? 'Receipt photo' : 'Entered by hand'}
                     </span>
                   </div>
                   <strong>{money(t.total)}</strong>
@@ -114,23 +119,22 @@ export default function SpendingView({
             icon={ReceiptText}
             title="No shops recorded yet"
             action={
-              <button className="button secondary" onClick={onAddReceipt}>
-                <Upload size={16} /> Record a shop
+              <button className="button primary" onClick={onAddReceipt}>
+                <Upload size={16} /> Add a receipt
               </button>
             }
           >
-            After a shop, enter what you actually paid. Aisle compares that against your budget. It
-            is the one figure here that comes straight from you.
+            After you shop, add what you paid. Your history and budget tracking start from there.
           </Empty>
         )}
       </section>
       <div className="transparency-note">
-        <ShieldCheck size={21} />
+        <ShieldCheck size={20} />
         <div>
-          <strong>A receipt proves what you paid.</strong>
+          <strong>A receipt shows what you paid</strong>
           <p>
-            It doesn’t prove what another store would have charged. We’ll only call savings verified
-            when both sides have reliable, same-day prices for the same products.
+            It cannot show what another shop would have charged, so Aisle never claims a saving from
+            one.
           </p>
         </div>
       </div>

@@ -6,8 +6,8 @@
 // label. Typing what it says turns the coverage gap into something they own.
 //
 // The discipline that makes this safe is provenance, not accuracy. A shelf price
-// may well be more relevant than an online catalogue price — it is the actual
-// branch, today — but it cannot be verified by anyone else, so it is never
+// may well be more relevant than an online catalogue price (it is the actual
+// branch, today), but it cannot be verified by anyone else, so it is never
 // mixed into a figure that claims to be evidence-backed. It is carried in its
 // own channel, labelled wherever it is shown, and counted separately.
 import {parsePack} from './agent/collector';
@@ -111,8 +111,8 @@ export function latestShelfPrice(
  *
  * The label is for one pack, so the household's quantity has to be applied. When
  * the pack the price was for matches what the list asks for, one pack covers one
- * unit and the arithmetic is simple. When it does not — a 450 g loaf against a
- * 675 g line — the number of packs is worked out the same way the agent does it,
+ * unit and the arithmetic is simple. When it does not (a 450 g loaf against a
+ * 675 g line), the number of packs is worked out the same way the agent does it,
  * and when that cannot be worked out the line total is left null rather than
  * guessed.
  */

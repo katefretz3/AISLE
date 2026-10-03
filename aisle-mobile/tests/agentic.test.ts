@@ -662,7 +662,7 @@ test('a complete basket outranks a cheaper incomplete one', async () => {
 });
 
 test('an unpriced item carries a kind, so the interface can group the reasons', async () => {
-  // The screen used to print a near-identical paragraph per unpriced item —
+  // The screen used to print a near-identical paragraph per unpriced item,
   // eight in a column on a twelve-item list. The kind lets the shared sentence
   // be said once, so the per-item text must hold only what actually varies.
   const run = await runAgent({

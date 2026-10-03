@@ -1,6 +1,6 @@
 // My list: what to buy, grouped the way the shop is walked, with the
-// household's usual items one tap away (the Bring! pattern: pictures you tap
-// to put back on the list).
+// household's usual items one tap away (pictures you tap to put back on the
+// list, the pattern list apps like Bring! made familiar).
 import {useMemo} from 'react';
 import {
   ArrowRight,
@@ -12,16 +12,16 @@ import {
   Info,
   LockKeyhole,
   Plus,
-  ShieldCheck,
   Trash2,
 } from 'lucide-react';
-import {productById, type UserState} from '@/lib/catalog';
+import type {UserState} from '@/lib/catalog';
 import {groupForWalk} from '@/lib/shopping-order';
 import {quickAdds} from '@/lib/usuals';
 import {tapFeedback} from '@/lib/persistence';
 import {BudgetCard, type ListTotal} from '../home-cards';
 import {ItemRow, type ItemRowContext} from '../item-row';
-import {Empty, ProductIcon} from '../parts';
+import {ProductArt} from '@/components/product-art';
+import {Empty} from '../parts';
 import './list-view.css';
 
 export type ListViewProps = {
@@ -57,11 +57,10 @@ export default function ListView(props: ListViewProps) {
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">MAKE IT YOURS</span>
-          <h1>Your grocery list</h1>
+          <h1>Grocery list</h1>
           <p>
             {state.items.length
-              ? `${state.items.length} ${state.items.length === 1 ? 'product' : 'products'} · ${itemCount} ${itemCount === 1 ? 'item' : 'items'}, in the order you walk the shop.`
+              ? `${itemCount} ${itemCount === 1 ? 'item' : 'items'}, in the order you walk the shop`
               : 'Add what you need. Aisle keeps it in the order you walk the shop.'}
           </p>
         </div>
@@ -95,10 +94,10 @@ export default function ListView(props: ListViewProps) {
                     props.onAdd(t.productId);
                   }}
                 >
-                  <ProductIcon product={productById[t.productId]} />
+                  <ProductArt id={t.productId} />
                   <span className="quick-add-name">{t.name}</span>
                   <span className="quick-add-plus" aria-hidden="true">
-                    <Plus size={14} />
+                    <Plus size={15} strokeWidth={2.5} />
                   </span>
                 </button>
               </li>
@@ -145,8 +144,10 @@ export default function ListView(props: ListViewProps) {
           {missing > 0 && (
             <div className="inline-warning">
               <Info size={16} />
-              {missing} {missing === 1 ? 'item needs' : 'items need'} a match before Aisle can price
-              a complete basket.
+              <span>
+                {missing} {missing === 1 ? 'item needs' : 'items need'} a product match before Aisle
+                can price the whole list.
+              </span>
             </div>
           )}
           {state.items.length ? (
@@ -157,6 +158,7 @@ export default function ListView(props: ListViewProps) {
                 aria-labelledby={`list-section-${group.id}`}
               >
                 <h3 className="list-section-head" id={`list-section-${group.id}`}>
+                  <i className={`list-section-dot dept-${group.id}`} aria-hidden="true" />
                   {group.name}
                   <span>{group.items.length}</span>
                 </h3>
@@ -179,14 +181,15 @@ export default function ListView(props: ListViewProps) {
                 </>
               }
             >
-              Browse by aisle, paste a list you already have, or reuse a shop you have done before.
+              Browse by aisle, paste a list you already have, or start from a past shop.
             </Empty>
           )}
           <button className="list-add" onClick={() => props.onOpenCatalog('browse')}>
             <Plus size={17} /> Add another item
           </button>
           <div className="list-bottom-note">
-            <LockKeyhole size={14} /> Lock a product to keep it out of swap suggestions.
+            <LockKeyhole size={14} />
+            <span>Locked items keep their exact product and are never swapped.</span>
           </div>
         </section>
         <aside className="list-aside">
@@ -202,7 +205,7 @@ export default function ListView(props: ListViewProps) {
             onCompare={props.onCompare}
           />
           <section className="card list-summary">
-            <h3>Your list at a glance</h3>
+            <h3>Summary</h3>
             <div>
               <span>List items</span>
               <strong>{state.items.length}</strong>
@@ -228,14 +231,9 @@ export default function ListView(props: ListViewProps) {
               onClick={props.onCompare}
               disabled={!state.items.length}
             >
-              Compare my list <ArrowRight size={17} />
+              See prices <ArrowRight size={17} />
             </button>
-            <p>Review observed prices and confirm retailer products before comparing.</p>
           </section>
-          <div className="quiet-tip">
-            <ShieldCheck size={20} />
-            <p>Your choices stay yours. We ask before changing anything on your list.</p>
-          </div>
         </aside>
       </div>
     </>

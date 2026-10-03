@@ -2,7 +2,7 @@
 // Last line of defence.
 //
 // Without this, one render error anywhere unmounts the whole tree and leaves a
-// blank white screen with no way out — on a phone, indistinguishable from the
+// blank white screen with no way out; on a phone, indistinguishable from the
 // app being broken for good. This keeps the household's data intact (it lives
 // in device storage, not in React state) and offers the two things that
 // actually recover: reload, or go back to the start.

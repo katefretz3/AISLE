@@ -1,11 +1,11 @@
 'use client';
-// The agent, on screen.
+// Home: the week at a glance, and what the last price check found.
 //
-// Shows what the agent actually did: which retailers it could read, which list
-// items it matched to a real catalogue record, what it could not price, and the
-// HTTP response behind every figure. Nothing here is rendered unless it came
-// back from a run — an unpriced item shows as an unpriced item.
-import {useMemo, useState} from 'react';
+// The summary card leads with the answer. Below it, the matches waiting for a
+// yes or no, the items no shop priced (grouped by why), and "How we know":
+// which shops were read, and the HTTP response behind every figure. Nothing is
+// shown unless it came back from a check; an unpriced item stays unpriced.
+import {useMemo, useState, type ReactNode} from 'react';
 import {
   Accordion,
   AccordionContent,
@@ -22,16 +22,14 @@ import {
   FileSearch,
   Info,
   LoaderCircle,
-  MapPin,
   RefreshCw,
-  ShieldCheck,
-  Store,
   X,
 } from 'lucide-react';
 import type {AgentRun, Basket, UnmatchedKind} from '@/lib/agent';
 import type {AgentSession} from '@/lib/use-agent-run';
-import {money, productById, productImagePath, type UserState} from '@/lib/catalog';
-import {withUnitPrices} from '@/lib/unit-price';
+import {money, productById, type UserState} from '@/lib/catalog';
+import {ProductArt} from './product-art';
+import {formatPack, withUnitPrices} from '@/lib/unit-price';
 import './agent-workspace.css';
 
 type Props = {
@@ -41,17 +39,10 @@ type Props = {
   onAdd: (id: string) => void;
   onList: () => void;
   onPreferences: () => void;
-  onSetup: () => void;
   onCompare: () => void;
+  /** Shown between the summary and the matches (what is due this week). */
+  children?: ReactNode;
 };
-
-const PHASES = [
-  {id: 'discover', label: 'Finding stores near you'},
-  {id: 'collect', label: 'Reading retailer catalogues'},
-  {id: 'match', label: 'Matching your list'},
-  {id: 'verify', label: 'Verifying every price'},
-  {id: 'compose', label: 'Totalling your baskets'},
-] as const;
 
 export default function AgentWorkspace({
   state,
@@ -59,18 +50,20 @@ export default function AgentWorkspace({
   commit,
   onList,
   onPreferences,
-  onSetup,
   onCompare,
+  children,
 }: Props) {
   const {run, busy, error, baskets, best, perShopBudget: budget, readable, start} = agent;
-  const phase = busy ? 'discover' : '';
-  const hour = new Date().getHours();
+  const now = new Date();
+  const hour = now.getHours();
   const greeting =
     hour >= 5 && hour < 12
       ? 'Good morning'
       : hour >= 12 && hour < 18
         ? 'Good afternoon'
         : 'Good evening';
+  const today = now.toLocaleDateString('en-CA', {weekday: 'long', month: 'long', day: 'numeric'});
+  const count = state.items.length;
   const unpriced = best ? best.total - best.priced : 0;
   // Items with a collected price, counted once across every basket.
   const matchedCount = useMemo(
@@ -116,37 +109,66 @@ export default function AgentWorkspace({
 
   return (
     <div className="agent-workspace">
-      <header className="agent-hero">
-        <span className="agent-eyebrow">
+      <header className="home-head">
+        <h1>
           {greeting}
           {state.prefs.name ? `, ${state.prefs.name}` : ''}
-        </span>
+        </h1>
+        <p>
+          {today} · {count} {count === 1 ? 'item' : 'items'} on your list
+        </p>
+      </header>
+
+      <section className={`hero-card${busy ? ' is-busy' : ''}`} aria-labelledby="hero-h">
         {busy ? (
           <>
-            <h1>Checking prices near you…</h1>
-            <p>Reading the catalogues Aisle is allowed to read. This takes a few seconds.</p>
+            <h2 className="hero-kicker" id="hero-h">
+              Checking prices
+            </h2>
+            <p className="hero-title">
+              <LoaderCircle size={22} className="spin" /> Reading shop websites near you
+            </p>
+            <p className="hero-note">
+              Finding shops, reading their prices and matching your list. This takes a few seconds.
+            </p>
           </>
         ) : best ? (
           <>
-            <h1>
-              <span className="agent-hero-figure">{money(best.subtotal)}</span> at {best.name}
-            </h1>
-            <p>
+            <h2 className="hero-kicker" id="hero-h">
+              {best.complete ? 'Cheapest full basket' : 'Partly priced'}
+            </h2>
+            <p className="hero-figure">
+              <span className="hero-amount">{money(best.subtotal)}</span>
+              <span className="hero-at">at {best.name}</span>
+            </p>
+            <div
+              className="hero-meter"
+              role="img"
+              aria-label={`${best.priced} of ${best.total} items priced`}
+            >
+              <span
+                style={{width: `${Math.round((best.priced / Math.max(1, best.total)) * 100)}%`}}
+              />
+            </div>
+            <p className="hero-note">
               {best.complete
-                ? `Every item on your list is priced. ${
+                ? `Every item is priced. ${
                     best.subtotal <= budget
-                      ? `That is ${money(budget - best.subtotal)} under your ${money(budget)} budget.`
-                      : `That is ${money(best.subtotal - budget)} over your ${money(budget)} budget.`
+                      ? `${money(budget - best.subtotal)} under your ${money(budget)} budget.`
+                      : `${money(best.subtotal - budget)} over your ${money(budget)} budget.`
                   }`
-                : `For ${best.priced} of ${best.total} items. ${unpriced} ${
+                : `${best.priced} of ${best.total} items priced. ${unpriced} ${
                     unpriced === 1 ? 'has' : 'have'
-                  } no price from this shop yet, so this is not the whole shop.`}
+                  } no price at this shop yet.`}
             </p>
           </>
         ) : run ? (
           <>
-            <h1>No prices for your list yet</h1>
-            <p>
+            <h2 className="hero-kicker" id="hero-h">
+              No prices yet
+            </h2>
+            <p className="hero-title">Nothing on your list could be priced</p>
+            <p className="hero-note">
               {readable === 0
                 ? 'None of the shops near you publish prices Aisle can read right now.'
                 : 'The shops Aisle could read do not carry what is on your list.'}{' '}
@@ -155,176 +177,88 @@ export default function AgentWorkspace({
           </>
         ) : (
           <>
-            <h1>Let’s price your list</h1>
-            <p>
-              Aisle reads the prices shops publish and matches them to your list. Every figure links
-              back to where it came from.
+            <h2 className="hero-kicker" id="hero-h">
+              This week
+            </h2>
+            <p className="hero-title">Price your list</p>
+            <p className="hero-note">
+              Aisle reads the prices shops publish on their websites and matches them to your list.
+              Every figure links to where it came from.
             </p>
           </>
         )}
-        <div className="agent-hero-actions">
+        <div className="hero-actions">
           {best && !busy ? (
-            <button className="button primary" onClick={onCompare}>
-              See prices <ChevronRight size={17} />
-            </button>
+            <>
+              <button className="button lime" onClick={onCompare}>
+                See prices <ChevronRight size={17} />
+              </button>
+              <button className="button on-hero" onClick={start}>
+                <RefreshCw size={16} /> Check again
+              </button>
+            </>
           ) : (
-            <button className="button primary" disabled={busy} onClick={start}>
+            <button className="button lime" disabled={busy} onClick={start}>
               {busy ? (
                 <>
-                  <LoaderCircle size={17} className="spin" /> Checking…
+                  <LoaderCircle size={17} className="spin" /> Checking
                 </>
               ) : (
                 <>
-                  <RefreshCw size={16} /> Run a price check
+                  <RefreshCw size={16} /> {run ? 'Check again' : 'Check prices'}
                 </>
               )}
             </button>
           )}
-          {best && !busy && (
-            <button className="button ghost" onClick={start}>
-              <RefreshCw size={16} /> Check again
-            </button>
-          )}
-          {run && !busy && (
-            <button
-              type="button"
-              className="agent-hero-link"
-              onClick={() =>
-                document
-                  .getElementById('how-we-know')
-                  ?.scrollIntoView({behavior: 'smooth', block: 'start'})
-              }
-            >
-              <ShieldCheck size={16} /> How we know
-            </button>
-          )}
         </div>
-      </header>
-
-      {busy && (
-        <ol className="agent-phases" aria-live="polite">
-          {PHASES.map(p => (
-            <li key={p.id} className={phase === p.id ? 'is-active' : ''}>
-              <span />
-              {p.label}
-            </li>
-          ))}
-        </ol>
-      )}
+        {run && !busy && (
+          <p className="hero-when">
+            <Clock size={14} /> Prices checked {checkedWhen(run.finishedAt)}
+          </p>
+        )}
+      </section>
 
       {error && (
-        <p className="agent-alert error" role="alert">
+        <p className="agent-alert" role="alert">
           <CircleAlert size={17} /> {error}
-          <button onClick={start}>Try again</button>
+          <button type="button" onClick={start}>
+            Try again
+          </button>
         </p>
       )}
 
+      {children}
+
       {run && (
         <>
-          <section className="agent-summary" id="how-we-know" aria-labelledby="how-we-know-h">
-            <h2 id="how-we-know-h">How we know</h2>
-            <dl className="agent-facts">
+          {readable === 0 ? (
+            <section className="agent-blocked card">
+              <CircleAlert size={20} />
               <div>
-                <dt>Shops read</dt>
-                <dd>{readable}</dd>
-              </div>
-              <div>
-                <dt>Prices found</dt>
-                <dd>{run.offers.length}</dd>
-              </div>
-              <div>
-                <dt>On your list</dt>
-                <dd>{state.items.length}</dd>
-              </div>
-              <div>
-                <dt>Budget</dt>
-                <dd>{money(budget)}</dd>
-              </div>
-            </dl>
-            <span className={`agent-mode ${run.mode}`}>
-              {run.mode === 'assisted' ? 'AI-assisted matching' : 'Rule-based matching'}
-            </span>
-            <p className="agent-checked">
-              <Clock size={14} /> Prices checked {checkedWhen(run.finishedAt)}
-            </p>
-            <p>{run.narrative}</p>
-            {run.warnings.map(w => (
-              <p className="agent-warning" key={w}>
-                <Info size={15} /> {w}
-              </p>
-            ))}
-          </section>
-
-          <section className="agent-block">
-            <div className="agent-block-head">
-              <div>
-                <h2>Your list, matched</h2>
+                <strong>No shop prices could be read this time</strong>
                 <p>
-                  {matchedCount > 0 ? (
-                    <>
-                      {matchedCount} of {state.items.length}{' '}
-                      {state.items.length === 1 ? 'item' : 'items'}{' '}
-                      {matchedCount === 1 ? 'has' : 'have'} a collected price
-                      {matchedCount < state.items.length && (
-                        <>; the rest are grouped below with the reason</>
-                      )}
-                      . Aisle proposes, you confirm — a match only counts towards a total once you
-                      accept it.
-                    </>
-                  ) : (
-                    <>
-                      Aisle proposes; you confirm. A match only counts towards a total once you
-                      accept it.
-                    </>
-                  )}
+                  {count
+                    ? `Your ${count} ${count === 1 ? 'item shows' : 'items show'} as unpriced because no shop's website could be read on this check. That says nothing about whether the shop has them.`
+                    : 'No shop website could be read on this check. Add groceries to your list and check again.'}
                 </p>
               </div>
-              <button className="text-button" onClick={onPreferences}>
-                Preferences <ArrowUpRight size={15} />
-              </button>
-            </div>
-            {readable === 0 ? (
-              <div className="agent-blocked">
-                <CircleAlert size={20} />
-                <div>
-                  <strong>
-                    {state.items.length
-                      ? 'No prices were collected, so nothing on your list is priced.'
-                      : 'No prices were collected, and your list is empty.'}
-                  </strong>
-                  <p>
-                    {state.items.length ? (
-                      <>
-                        All {state.items.length} items are showing as unpriced because no retailer
-                        catalogue could be read on this run — not because the items are unavailable.
-                        Aisle leaves them blank rather than filling in a plausible number.
-                      </>
-                    ) : (
-                      <>
-                        No retailer catalogue could be read on this run. Add groceries to your list
-                        and check again — Aisle will price whatever it can actually read, and leave
-                        the rest blank.
-                      </>
-                    )}
-                  </p>
-                  {state.items.length > 0 && (
-                    <ul>
-                      {state.items.slice(0, 12).map(i => (
-                        <li key={i.id}>
-                          {i.qty} × {i.name}
-                        </li>
-                      ))}
-                      {state.items.length > 12 && <li>and {state.items.length - 12} more</li>}
-                    </ul>
-                  )}
-                </div>
+            </section>
+          ) : (
+            <section className="home-section" aria-labelledby="matches-h">
+              <div className="section-head">
+                <h2 id="matches-h">Your matches</h2>
+                <button className="text-button" onClick={onPreferences}>
+                  Brand rules <ArrowUpRight size={15} />
+                </button>
               </div>
-            ) : (
+              <p className="section-lede">
+                {matchedCount} of {count} {count === 1 ? 'item has' : 'items have'} a price. A match
+                only counts toward a total after you confirm it.
+              </p>
               <div className="agent-lines">
                 {/* Priced items first: they are the output. Items with no price follow in
-          one grouped block, so the explanation is stated once instead of once
-          per row — eight near-identical paragraphs read as an apology and train
-          people to stop reading them. */}
+                    one grouped block, so the explanation is said once rather than once
+                    per row. */}
                 {state.items
                   .filter(item =>
                     baskets.some(b => b.lines.some(l => l.itemId === item.id && l.offer)),
@@ -344,67 +278,87 @@ export default function AgentWorkspace({
                       unitRows.find(u => u.row.basket.sourceId === sourceId);
                     const product = item.productId ? productById[item.productId] : undefined;
                     return (
-                      <article
-                        className={`agent-line${candidates.length ? '' : ' is-gap'}`}
-                        key={item.id}
-                      >
-                        <img
-                          src={productImagePath(item.productId)}
-                          alt=""
-                          loading="lazy"
-                          decoding="async"
-                        />
-                        <div className="agent-line-copy">
-                          <strong>
-                            {item.qty} × {item.name}
-                          </strong>
-                          <small>
-                            {product ? `${product.brand} · ${product.size}` : 'Your own item'}
-                            {item.locked ? ' · locked to this exact product' : ''}
-                          </small>
+                      <article className="agent-line" key={item.id}>
+                        <div className="agent-line-head">
+                          <ProductArt id={item.productId} small />
+                          <div className="agent-line-copy">
+                            <strong>
+                              {item.qty} × {item.name}
+                            </strong>
+                            <small>
+                              {product ? `${product.brand} · ${product.size}` : 'Your own item'}
+                              {item.locked ? ' · locked to this product' : ''}
+                            </small>
+                          </div>
                         </div>
                         <div className="agent-line-offers">
-                          {candidates.length
-                            ? candidates.map(({basket, line}) => (
-                                <div
-                                  className={`agent-offer${line.confirmed ? ' is-confirmed' : ''}`}
-                                  key={basket.sourceId}
-                                >
-                                  <div className="agent-offer-copy">
-                                    <strong>{money(line.lineTotal)}</strong>
-                                    <span>
-                                      {basket.name} · {line.packs}×{' '}
-                                      {line.offer!.pack
-                                        ? `${line.offer!.pack.amount} ${line.offer!.pack.unit}`
-                                        : 'pack size not stated'}
+                          {candidates.map(({basket, line}) => {
+                            const unit = unitFor(basket.sourceId);
+                            return (
+                              <div
+                                className={`agent-offer${line.confirmed ? ' is-confirmed' : ''}`}
+                                key={basket.sourceId}
+                              >
+                                <div className="agent-offer-copy">
+                                  <strong>{money(line.lineTotal)}</strong>
+                                  <span>
+                                    {basket.name} · {line.packs}×{' '}
+                                    {line.offer!.pack
+                                      ? formatPack(line.offer!.pack)
+                                      : 'pack size not stated'}
+                                  </span>
+                                  {unit?.text ? (
+                                    <span className={`agent-unit${unit.best ? ' is-best' : ''}`}>
+                                      {unit.text}
+                                      {unit.best && ' · best value'}
                                     </span>
-                                    {(() => {
-                                      const unit = unitFor(basket.sourceId);
-                                      return unit?.text ? (
-                                        <span
-                                          className={`agent-unit${unit.best ? ' is-best' : ''}`}
-                                        >
-                                          {unit.text}
-                                          {unit.best && ' · best value'}
-                                        </span>
-                                      ) : (
-                                        <span className="agent-unit is-unknown">
-                                          No unit price — pack size not stated
-                                        </span>
-                                      );
-                                    })()}
-                                    <a
-                                      href={line.offer!.url}
-                                      target="_blank"
-                                      rel="noreferrer noopener"
-                                    >
-                                      {line.offer!.title} <ArrowUpRight size={12} />
-                                    </a>
-                                    {line.rationale && <em>{line.rationale}</em>}
-                                  </div>
-                                  {line.confirmed ? (
+                                  ) : (
+                                    <span className="agent-unit is-unknown">
+                                      No unit price: the pack size is not stated
+                                    </span>
+                                  )}
+                                  <a
+                                    href={line.offer!.url}
+                                    target="_blank"
+                                    rel="noreferrer noopener"
+                                  >
+                                    {line.offer!.title} <ArrowUpRight size={12} />
+                                  </a>
+                                  {line.rationale && <em>{line.rationale}</em>}
+                                </div>
+                                {line.confirmed ? (
+                                  <button
+                                    className="agent-chip is-on"
+                                    onClick={() =>
+                                      decide(
+                                        item.id,
+                                        basket.sourceId,
+                                        line.offer!.id,
+                                        line.offer!.brand,
+                                        false,
+                                      )
+                                    }
+                                  >
+                                    <Check size={15} /> Confirmed
+                                  </button>
+                                ) : (
+                                  <span className="agent-offer-decide">
                                     <button
-                                      className="agent-chip is-on"
+                                      className="agent-chip"
+                                      onClick={() =>
+                                        decide(
+                                          item.id,
+                                          basket.sourceId,
+                                          line.offer!.id,
+                                          line.offer!.brand,
+                                          true,
+                                        )
+                                      }
+                                    >
+                                      <Check size={15} /> This is right
+                                    </button>
+                                    <button
+                                      className="agent-chip subtle"
                                       onClick={() =>
                                         decide(
                                           item.id,
@@ -415,43 +369,13 @@ export default function AgentWorkspace({
                                         )
                                       }
                                     >
-                                      <Check size={14} /> Confirmed
+                                      <X size={15} /> Not this
                                     </button>
-                                  ) : (
-                                    <span className="agent-offer-decide">
-                                      <button
-                                        className="agent-chip"
-                                        onClick={() =>
-                                          decide(
-                                            item.id,
-                                            basket.sourceId,
-                                            line.offer!.id,
-                                            line.offer!.brand,
-                                            true,
-                                          )
-                                        }
-                                      >
-                                        <Check size={14} /> This is right
-                                      </button>
-                                      <button
-                                        className="agent-chip subtle"
-                                        onClick={() =>
-                                          decide(
-                                            item.id,
-                                            basket.sourceId,
-                                            line.offer!.id,
-                                            line.offer!.brand,
-                                            false,
-                                          )
-                                        }
-                                      >
-                                        <X size={13} /> Not this
-                                      </button>
-                                    </span>
-                                  )}
-                                </div>
-                              ))
-                            : null}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </article>
                     );
@@ -465,197 +389,121 @@ export default function AgentWorkspace({
                   onRecheck={start}
                 />
               </div>
-            )}
-          </section>
+            </section>
+          )}
 
-          <section className="agent-block">
-            <div className="agent-block-head">
-              <div>
-                <h2>Baskets</h2>
-                <p>
-                  Product subtotals in CAD. Delivery, tax, deposits and membership fees are not
-                  included. An incomplete basket is never ranked as cheapest.
-                </p>
-              </div>
-              {baskets.length > 0 && (
-                <button className="text-button" onClick={onCompare}>
-                  Compare all <ArrowUpRight size={15} />
-                </button>
-              )}
+          <section className="home-section" id="how-we-know" aria-labelledby="how-we-know-h">
+            <div className="section-head">
+              <h2 id="how-we-know-h">How we know</h2>
+              <span className={`agent-mode ${run.mode}`}>
+                {run.mode === 'assisted' ? 'AI-assisted matching' : 'Rule-based matching'}
+              </span>
             </div>
-            {baskets.length ? (
-              <div className="agent-cards">
-                {baskets.slice(0, 3).map(b => (
-                  <article
-                    className={`agent-card${b === best && b.complete ? ' is-best' : ''}`}
-                    key={b.sourceId}
-                  >
-                    <h3>{b.name}</h3>
-                    <strong className="agent-card-total">
-                      {b.priced ? money(b.subtotal) : '—'}
-                    </strong>
-                    <p>
-                      {b.complete ? 'Every item priced' : `${b.priced} of ${b.total} items priced`}
-                    </p>
-                    {b.unconfirmed > 0 && (
-                      <p className="agent-card-note">{b.unconfirmed} awaiting your confirmation</p>
-                    )}
-                    {b.complete && b.overBudget > 0 && (
-                      <p className="agent-card-over">{money(b.overBudget)} over your budget</p>
-                    )}
-                    {b.complete && b.overBudget === 0 && (
-                      <p className="agent-card-under">
-                        {money(budget - b.subtotal)} left in budget
+            <div className="card how-card">
+              <dl className="agent-facts">
+                <div>
+                  <dt>Shops read</dt>
+                  <dd>{readable}</dd>
+                </div>
+                <div>
+                  <dt>Prices found</dt>
+                  <dd>{run.offers.length}</dd>
+                </div>
+                <div>
+                  <dt>Items on your list</dt>
+                  <dd>{count}</dd>
+                </div>
+                <div>
+                  <dt>Budget per shop</dt>
+                  <dd>{money(budget)}</dd>
+                </div>
+              </dl>
+              <p className="agent-narrative">{run.narrative}</p>
+              {run.warnings.map(w => (
+                <p className="agent-warning" key={w}>
+                  <Info size={15} /> {w}
+                </p>
+              ))}
+              <Accordion type="multiple" className="agent-evidence">
+                <AccordionItem value="evidence">
+                  <AccordionTrigger>
+                    <span className="agent-acc-label">
+                      <FileSearch size={17} /> The responses behind these prices (
+                      {run.evidence.length})
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="agent-table-wrap">
+                      <table className="agent-table">
+                        <thead>
+                          <tr>
+                            <th>Source</th>
+                            <th>Status</th>
+                            <th>Read at</th>
+                            <th>Size</th>
+                            <th>SHA-256</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {run.evidence.map(e => (
+                            <tr key={e.id}>
+                              <td>
+                                <a href={e.url} target="_blank" rel="noreferrer noopener">
+                                  {e.origin.replace('https://', '')}
+                                </a>
+                              </td>
+                              <td>{e.status}</td>
+                              <td>{new Date(e.fetchedAt).toLocaleString('en-CA')}</td>
+                              <td>{Math.round(e.bytes / 1024)} KB</td>
+                              <td className="agent-hash">{e.bodyHash.slice(0, 16)}…</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {run.rejectedOffers.length > 0 && (
+                      <p className="agent-rejected">
+                        {run.rejectedOffers.length} collected record
+                        {run.rejectedOffers.length === 1 ? ' was' : 's were'} left out before
+                        totalling (unavailable, expired or failing verification).
                       </p>
                     )}
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <p className="agent-empty">
-                No retailer catalogue could be read on this run, so there is nothing to total.
-                Widening your search area in Account settings may reach a shop that publishes one.
-              </p>
-            )}
-          </section>
-
-          <section className="agent-block">
-            <div className="agent-block-head">
-              <div>
-                <h2>
-                  <Store size={18} /> Stores near you
-                </h2>
-                <p>
-                  Within {state.prefs.radius} km of your saved location. Distances are
-                  straight-line, not driving routes.
-                </p>
-              </div>
-              <button className="text-button" onClick={onSetup}>
-                Change my area <ArrowUpRight size={15} />
-              </button>
+                    {run.violations.length > 0 && (
+                      <ul className="agent-violations">
+                        {run.violations.map((v, i) => (
+                          <li key={i}>{v.detail}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="trace">
+                  <AccordionTrigger>
+                    <span className="agent-acc-label">
+                      <Info size={17} /> Each step of this check
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <ol className="agent-trace">
+                      {run.trace.map((t, i) => (
+                        <li key={i}>
+                          <span className="agent-trace-phase">{t.phase}</span>
+                          <span>
+                            <strong>{t.label}</strong>: {t.detail}
+                          </span>
+                          <span className="agent-trace-ms">{t.ms} ms</span>
+                        </li>
+                      ))}
+                    </ol>
+                    <p className="agent-foot">
+                      Check {run.runId} · {run.durationMs} ms · {run.budgetSpent.toolCalls} tool
+                      calls · {Math.round(run.budgetSpent.evidenceBytes / 1024)} KB read
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
-            {run.stores.length ? (
-              <ul className="agent-stores">
-                {run.stores.slice(0, 8).map(s => (
-                  <li key={s.id}>
-                    <MapPin size={15} />
-                    <span>
-                      <strong>{s.name}</strong>
-                      <small>{s.address || 'Address not mapped'}</small>
-                    </span>
-                    <span className="agent-km">{s.km.toFixed(1)} km</span>
-                    <span className={`agent-feed ${s.feed}`}>
-                      {s.feed === 'connected'
-                        ? 'Prices read'
-                        : s.feed === 'no-public-feed'
-                          ? 'No price feed'
-                          : 'Not checked'}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="agent-empty">
-                The map directory returned no shops for your area. That is a gap in the map data,
-                not a sign there are none — your saved location is unchanged, and a price check will
-                still try the retailers Aisle knows.
-              </p>
-            )}
-
-            {run.coverageGaps.length > 0 && (
-              <div className="agent-note">
-                <ShieldCheck size={18} />
-                <div>
-                  <strong>Chains Aisle deliberately does not price</strong>
-                  <p>
-                    {run.coverageGaps.map(g => g.name).join(', ')}{' '}
-                    {run.coverageGaps.length === 1 ? 'publishes' : 'publish'} no public price feed.
-                    Aisle lists them without prices rather than estimating. Real coverage needs a
-                    licensed retailer feed.
-                  </p>
-                </div>
-              </div>
-            )}
           </section>
-
-          <Accordion type="multiple" className="agent-block agent-evidence">
-            <AccordionItem value="evidence">
-              <AccordionTrigger>
-                <span className="agent-acc-label">
-                  <FileSearch size={17} /> Evidence behind these prices ({run.evidence.length}{' '}
-                  responses)
-                </span>
-              </AccordionTrigger>
-              <AccordionContent>
-                <table className="agent-table">
-                  <thead>
-                    <tr>
-                      <th>Source</th>
-                      <th>Status</th>
-                      <th>Read at</th>
-                      <th>Size</th>
-                      <th>SHA-256</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {run.evidence.map(e => (
-                      <tr key={e.id}>
-                        <td>
-                          <a href={e.url} target="_blank" rel="noreferrer noopener">
-                            {e.origin.replace('https://', '')}
-                          </a>
-                        </td>
-                        <td>{e.status}</td>
-                        <td>{new Date(e.fetchedAt).toLocaleString('en-CA')}</td>
-                        <td>{Math.round(e.bytes / 1024)} KB</td>
-                        <td className="agent-hash">{e.bodyHash.slice(0, 16)}…</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {run.rejectedOffers.length > 0 && (
-                  <p className="agent-rejected">
-                    {run.rejectedOffers.length} collected record
-                    {run.rejectedOffers.length === 1 ? ' was' : 's were'} discarded before totalling
-                    (unavailable, expired, or failing verification).
-                  </p>
-                )}
-                {run.violations.length > 0 && (
-                  <ul className="agent-violations">
-                    {run.violations.map((v, i) => (
-                      <li key={i}>{v.detail}</li>
-                    ))}
-                  </ul>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="trace">
-              <AccordionTrigger>
-                <span className="agent-acc-label">
-                  <Info size={17} /> How this run worked
-                </span>
-              </AccordionTrigger>
-              <AccordionContent>
-                <ol className="agent-trace">
-                  {run.trace.map((t, i) => (
-                    <li key={i}>
-                      <span className="agent-trace-phase">{t.phase}</span>
-                      <span>
-                        <strong>{t.label}</strong> — {t.detail}
-                      </span>
-                      <span className="agent-trace-ms">{t.ms} ms</span>
-                    </li>
-                  ))}
-                </ol>
-                <p className="agent-foot">
-                  Run {run.runId} · {run.durationMs} ms · {run.budgetSpent.toolCalls} tool calls ·
-                  {Math.round(run.budgetSpent.evidenceBytes / 1024)} KB read. Prices are online
-                  catalogue prices, not confirmed branch prices, and Aisle will not send you to a
-                  store because of one.
-                </p>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
         </>
       )}
     </div>
@@ -667,28 +515,26 @@ const GAP_COPY: Record<UnmatchedKind, {title: (n: number) => string; body: strin
   'no-record': {
     title: n => `${n} ${n === 1 ? 'item has' : 'items have'} no matching catalogue record`,
     body:
-      'Nothing in the catalogues Aisle could read corresponds to these, so they are left blank. ' +
-      'That is a gap in what retailers publish, not a sign the items are unavailable in the shop.',
+      'None of the shop websites Aisle could read list these, so they are left blank. That is a ' +
+      'gap in what shops publish, not a sign the items are out of stock.',
   },
   discarded: {
     title: n => `${n} ${n === 1 ? 'price was' : 'prices were'} found but could not be trusted`,
     body:
-      'A figure was collected for these and then failed verification — wrong currency, stale, or with no ' +
-      'usable evidence behind it. Aisle discards a price it cannot stand behind rather than showing it.',
+      'A price was found for these but failed a check (wrong currency, out of date, or no record ' +
+      'of where it came from), so Aisle left it out.',
   },
   flagged: {
     title: n => `${n} ${n === 1 ? 'item was' : 'items were'} recorded as unavailable`,
-    body:
-      'Aisle looked and found nothing genuinely equivalent, so it reported that instead of proposing an ' +
-      'approximate substitute.',
+    body: 'Aisle found nothing equivalent, so it says so instead of suggesting something close.',
   },
 };
 
 /**
  * Every unpriced item, grouped by why.
  *
- * The per-item reasoning is kept — it is behind a disclosure rather than
- * deleted — but the sentence that is identical on every row is printed once.
+ * The per-item reasoning is kept behind a disclosure; the sentence that is
+ * identical on every row is printed once.
  */
 function UnpricedGroups({
   state,
@@ -743,10 +589,7 @@ function UnpricedGroups({
                 className="text-button"
                 onClick={() => setOpen(expanded ? null : kind)}
               >
-                {expanded
-                  ? 'Hide the detail'
-                  : `Why these ${rows.length === 1 ? 'one' : rows.length}`}{' '}
-                <ChevronDown size={14} />
+                {expanded ? 'Hide the detail' : 'Why'} <ChevronDown size={14} />
               </button>
               {kind === 'no-record' ? (
                 <>
@@ -754,7 +597,7 @@ function UnpricedGroups({
                     Edit my list <ArrowUpRight size={14} />
                   </button>
                   <button type="button" className="text-button" onClick={onPreferences}>
-                    Loosen brand rules <ArrowUpRight size={14} />
+                    Brand rules <ArrowUpRight size={14} />
                   </button>
                 </>
               ) : kind === 'discarded' ? (

@@ -13,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {productImagePath, type Product} from '@/lib/catalog';
 
 export const cx = (...v: (string | false | null | undefined)[]) => v.filter(Boolean).join(' ');
 
@@ -21,14 +20,6 @@ export function newId() {
   return Array.from(crypto.getRandomValues(new Uint8Array(16)), b =>
     b.toString(16).padStart(2, '0'),
   ).join('');
-}
-
-export function ProductIcon({product, small = false}: {product?: Product | null; small?: boolean}) {
-  return (
-    <span className={cx('product-art', small && 'small', !product && 'unknown')}>
-      <img src={productImagePath(product?.id)} alt="" loading="lazy" decoding="async" />
-    </span>
-  );
 }
 
 export function Pill({children, kind = 'green'}: {children: ReactNode; kind?: string}) {

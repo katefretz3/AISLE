@@ -1,8 +1,8 @@
 // Legal content.
 //
 // ⚠️  THESE ARE DRAFTS, NOT LEGAL ADVICE. They were written to describe what
-// this application actually does — device-local storage, no accounts, coarse
-// location only, unverified ingredient data — so a lawyer has something
+// this application actually does (device-local storage, no accounts, coarse
+// location only, unverified ingredient data) so a lawyer has something
 // accurate to review rather than a generic template. Have them reviewed before
 // you publish, and fill in OPERATOR below first.
 //
@@ -10,16 +10,19 @@
 // blobs so the screens, the contents list and any future export all read from
 // one source, and so a diff shows exactly which clause changed.
 
-/** Fill these in before release. `PLACEHOLDER` marks anything still unset. */
+/**
+ * Fill these in before release. `PLACEHOLDER: ` marks anything still unset;
+ * `npm run release:check` looks for that text in the built bundle.
+ */
 export const OPERATOR = {
-  legalName: 'PLACEHOLDER — your registered business or personal legal name',
+  legalName: 'PLACEHOLDER: your registered business or personal legal name',
   tradingName: 'Aisle',
   jurisdiction: 'Ontario, Canada',
-  contactEmail: 'PLACEHOLDER — support@yourdomain.ca',
-  privacyEmail: 'PLACEHOLDER — privacy@yourdomain.ca',
-  postalAddress: 'PLACEHOLDER — your business mailing address',
-  website: 'PLACEHOLDER — https://yourdomain.ca',
-  effectiveDate: 'PLACEHOLDER — the date you publish',
+  contactEmail: 'PLACEHOLDER: support@yourdomain.ca',
+  privacyEmail: 'PLACEHOLDER: privacy@yourdomain.ca',
+  postalAddress: 'PLACEHOLDER: your business mailing address',
+  website: 'PLACEHOLDER: https://yourdomain.ca',
+  effectiveDate: 'PLACEHOLDER: the date you publish',
   lastUpdated: '20 September 2026',
 } as const;
 
@@ -36,7 +39,7 @@ export type LegalSection = {
   callout?: string;
 };
 export type LegalDocument = {
-  id: 'terms' | 'privacy' | 'sources';
+  id: 'terms' | 'privacy' | 'sources' | 'accessibility';
   title: string;
   summary: string;
   lastUpdated: string;
@@ -139,7 +142,7 @@ export const TERMS: LegalDocument = {
       heading: '9. Intellectual property',
       body: [
         `The app, its interface, its artwork and its underlying software belong to us or to our licensors, and are protected by copyright and other rights. These terms do not transfer any of those rights to you.`,
-        `You keep everything you create in the app — your lists, your notes, your receipts.`,
+        `You keep everything you create in the app: your lists, your notes and your receipts.`,
         `Third-party data used in the app remains the property of its owners and is used under the licences described on the Data sources page.`,
       ],
     },
@@ -247,7 +250,7 @@ export const PRIVACY: LegalDocument = {
         `your dietary preferences, allergen settings, excluded products and protected brands`,
         `receipt photographs you add, and the totals you enter`,
         `prices you read off a shelf and typed in: the amount, the size on the label, the shop and the date, and a photograph of the label if you take one. These are your own readings, kept separate from prices Aisle collected itself, never presented as verified, and deleted automatically after a year. Label photographs stay in the app's private storage on this device, are never uploaded, and are deleted with the price they belong to`,
-        `for each shop you save: which items were in it, their quantities, and any per-item prices you typed. This is how the app can tell you what you usually buy and what you last paid, and it is kept whether or not learning is on — it is a record of a receipt you chose to save, not an inference about you. Deleting the trip deletes it.`,
+        `for each shop you save: which items were in it, their quantities, and any per-item prices you typed. This is how the app can tell you what you usually buy and what you last paid, and it is kept whether or not learning is on, because it is a record of a receipt you chose to save, not an inference about you. Deleting the trip deletes it.`,
         `your shopping history and, if you turn learning on, the choices it records`,
         `your last price check: the retailer prices Aisle collected, the record of the web response each one came from, and the shops found near you. It stops being used 24 hours after the check, or as soon as you change your search area or radius, and is deleted the next time the app runs after that; each price stops being shown the moment it expires`,
       ],
@@ -260,9 +263,9 @@ export const PRIVACY: LegalDocument = {
         `Three kinds of request go out from the app. None of them carries your name, your exact position, your receipts or your photographs. The first two never carry your list or your preferences. The third, which is optional, does, and it is described in full below.`,
       ],
       list: [
-        `**Nearby shops.** To find grocery stores near you, the app sends a coarse search area — rounded to roughly a 5 km cell, never your exact position — to an OpenStreetMap query service. It does not send your pin, your list or your preferences.`,
+        `**Nearby shops.** To find grocery stores near you, the app sends a coarse search area (rounded to roughly a 5 km cell, never your exact position) to an OpenStreetMap query service. It does not send your pin, your list or your preferences.`,
         `**Retailer catalogues.** The app requests publicly published product and price pages from retailer websites. These are ordinary web requests for public pages; the retailer's server sees the request and your IP address, as it would for any visit.`,
-        `**Automated matching (only if enabled).** If the operator has configured a reasoning service, the app sends it what it needs to match your list to real products: the items on your list with their quantities and brand locks; the catalogue results it collected; the shops found near you, with their addresses and straight-line distances; and your household profile. That profile includes your household size, city, search radius, budget, shopping priority, preferred shops and brands, products you favour or exclude, and — because a match must respect them — any allergies and dietary needs you entered. If learning is on, it also includes the brand preferences and repurchase timing Aisle worked out from your own confirmed choices and saved shops. It does not send your name, your exact position, your receipts, receipt photos, shelf-label photos or the prices you typed in. The service is run by the operator and passes the request to Anthropic's Claude API to be answered. If no service is configured, none of this happens and the app matches with built-in rules instead.`,
+        `**Automated matching (only if enabled).** If the operator has configured a reasoning service, the app sends it what it needs to match your list to real products: the items on your list with their quantities and brand locks; the catalogue results it collected; the shops found near you, with their addresses and straight-line distances; and your household profile. That profile includes your household size, city, search radius, budget, shopping priority, preferred shops and brands, products you favour or exclude, and any allergies and dietary needs you entered, because a match must respect them. If learning is on, it also includes the brand preferences and repurchase timing Aisle worked out from your own confirmed choices and saved shops. It does not send your name, your exact position, your receipts, receipt photos, shelf-label photos or the prices you typed in. The service is run by the operator and passes the request to Anthropic's Claude API to be answered. If no service is configured, none of this happens and the app matches with built-in rules instead.`,
       ],
     },
 
@@ -283,7 +286,7 @@ export const PRIVACY: LegalDocument = {
       id: 'learning',
       heading: '6. Learning from your choices',
       body: [
-        `If you turn on "Learn from my shopping choices", the app records events on your device: which retailer product you confirmed for a list item, which suggestions you dismissed, and which purchases you recorded. It uses them to order suggestions — a brand you keep choosing rises, a repeat purchase becomes a reminder.`,
+        `If you turn on "Learn from my shopping choices", the app records events on your device: which retailer product you confirmed for a list item, which suggestions you dismissed, and which purchases you recorded. It uses them to order suggestions: a brand you keep choosing rises, and a repeat purchase becomes a reminder.`,
         `This stays on your device. It is off by default. Turning it off stops both the recording and the use of these events immediately, and the Forget control erases them permanently along with any preferences learned from them.`,
         `Allergies and dietary restrictions are never inferred from behaviour. They are only ever what you set yourself.`,
       ],
@@ -293,7 +296,7 @@ export const PRIVACY: LegalDocument = {
       id: 'receipts',
       heading: '7. Receipts and photographs',
       body: [
-        `Photographs you take of shelf labels are handled the same way as receipt images: stored in the app's private storage on this device, never uploaded, and never read automatically. Please keep other people out of the frame — Aisle cannot tell what else is in a photograph you take.`,
+        `Photographs you take of shelf labels are handled the same way as receipt images: stored in the app's private storage on this device, never uploaded, and never read automatically. Please keep other people out of the frame. Aisle cannot tell what else is in a photograph you take.`,
         `A saved shop records the store, the date, the total you entered, and the items that were on your list for that shop with any per-item prices you typed. The app reads that record back to you as your own price history and to work out how often you buy something. It never leaves your device and is not used to build a profile for anyone else.`,
         `If you add a receipt, the image is stored in the app's private storage on your device. It is not uploaded, and no text is extracted from it automatically. Totals are whatever you type in.`,
         `Camera and photo-library access is requested only when you choose to add a receipt, and you can refuse it without losing any other function.`,
@@ -331,7 +334,7 @@ export const PRIVACY: LegalDocument = {
       heading: '11. Your choices and your rights',
       body: [
         `You can see and change everything the app holds about you from Account settings: your profile, your household, your budget, your location, your dietary settings, and what the app has learned.`,
-        `Because your information is on your device and not with us, you exercise access, correction and deletion directly in the app rather than by making a request to us. Where we do hold personal information about you — for example if you email us — you may ask for access to it, ask us to correct it, or withdraw consent, by writing to ${OPERATOR.privacyEmail}.`,
+        `Because your information is on your device and not with us, you exercise access, correction and deletion directly in the app rather than by making a request to us. Where we do hold personal information about you (for example, if you email us), you may ask for access to it, ask us to correct it, or withdraw consent, by writing to ${OPERATOR.privacyEmail}.`,
         `If you are not satisfied with our response, you can complain to the Office of the Privacy Commissioner of Canada.`,
       ],
     },
@@ -352,10 +355,10 @@ export const PRIVACY: LegalDocument = {
         `The app contacts these third parties. Each has its own privacy practices, which we do not control.`,
       ],
       list: [
-        `**OpenStreetMap / Overpass query service** — receives a coarse search area to return nearby shops.`,
-        `**Retailer websites** — receive requests for their public catalogue pages.`,
-        `**Map tile provider** — if you open the map, it receives the area you are viewing in order to serve tiles.`,
-        `**Reasoning service (optional)** — run by the operator and answered by Anthropic's Claude API. Only if the operator has configured one, it receives your list, the collected catalogue results, nearby shops and your household profile, including any allergies and dietary needs you entered (section 4 lists every field).`,
+        `**OpenStreetMap / Overpass query service**: receives a coarse search area to return nearby shops.`,
+        `**Retailer websites**: receive requests for their public catalogue pages.`,
+        `**Map tile provider**: if you open the map, it receives the area you are viewing in order to serve tiles.`,
+        `**Reasoning service (optional)**: run by the operator and answered by Anthropic's Claude API. Only if the operator has configured one, it receives your list, the collected catalogue results, nearby shops and your household profile, including any allergies and dietary needs you entered (section 4 lists every field).`,
       ],
     },
 
@@ -416,7 +419,15 @@ export const SOURCES: LegalDocument = {
       heading: 'Product photographs',
       body: [
         `Where a product photograph is present it was retrieved from an openly licensed source and is credited in the app's bundled credits file, which records the title, creator, licence and original page for each image.`,
-        `Items without a photograph use an illustration generated inside this project, which is ours.`,
+        `Items without a photograph are shown as a symbol on their department's colour. The symbols are from Lucide (lucide.dev), used under the ISC licence.`,
+      ],
+    },
+
+    {
+      id: 'typeface',
+      heading: 'Typeface',
+      body: [
+        `Titles are set in Fraunces by Undercase Type, used under the SIL Open Font License 1.1. Everything else uses your device's own system font.`,
       ],
     },
 
@@ -438,5 +449,64 @@ export const SOURCES: LegalDocument = {
   ],
 };
 
-export const DOCUMENTS: LegalDocument[] = [TERMS, PRIVACY, SOURCES];
+// ---------------------------------------------------------------------------
+// Ontario's Integrated Accessibility Standards (O. Reg. 191/11, under the
+// AODA) ask for WCAG 2.0 AA web content, accessible formats on request and a
+// way to give feedback. This page states what the app is built to, how that is
+// checked, and what has not been checked yet.
+export const ACCESSIBILITY: LegalDocument = {
+  id: 'accessibility',
+  title: 'Accessibility',
+  summary: `How ${APP} is built to work with assistive technology, how that is checked, and how to ask for help or another format.`,
+  lastUpdated: '3 October 2026',
+  sections: [
+    {
+      id: 'standard',
+      heading: 'The standard we build to',
+      body: [
+        `${APP} is designed to meet the Web Content Accessibility Guidelines (WCAG) 2.2 at level AA. That includes the WCAG 2.0 AA requirement Ontario sets for web content under the Accessibility for Ontarians with Disabilities Act (O. Reg. 191/11).`,
+      ],
+    },
+    {
+      id: 'phones',
+      heading: 'On your phone',
+      body: [
+        `${APP} follows Apple's and Google's accessibility guidance. Every control has a name that VoiceOver and TalkBack read out.`,
+      ],
+      list: [
+        `Text follows the size you choose in your phone's settings.`,
+        `Light and dark appearance follow your phone, or can be set in Account.`,
+        `Reduce Motion and Increase Contrast are respected.`,
+        `Touch targets are at least 48 by 48 pixels.`,
+        `Nothing depends on colour alone: every status also has a word or an icon.`,
+      ],
+    },
+    {
+      id: 'checks',
+      heading: 'How it is checked',
+      body: [
+        `Every change to the app runs automated WCAG 2.2 AA checks (axe) on the main screens, in light and dark appearance. The same tests measure touch targets and check that no screen scrolls sideways on a small phone.`,
+        `Automated checks do not find everything. A full review with VoiceOver and TalkBack on real devices has not been done yet and is planned before release.`,
+      ],
+    },
+    {
+      id: 'limits',
+      heading: 'Known limitations',
+      body: [`These are the parts we know are harder to use, and what to use instead.`],
+      list: [
+        `The map is a visual aid. Everything it does can be done without it: choose your city, set the search radius with the slider, and read nearby shops as a list.`,
+        `Product names and sizes come from each retailer's website and are shown as the retailer wrote them.`,
+      ],
+    },
+    {
+      id: 'formats',
+      heading: 'Other formats and feedback',
+      body: [
+        `If something in the app is hard to use, or you would like this page or any of our documents in another format, contact us at ${OPERATOR.contactEmail}. We will reply and work with you to provide what you need.`,
+      ],
+    },
+  ],
+};
+
+export const DOCUMENTS: LegalDocument[] = [TERMS, PRIVACY, SOURCES, ACCESSIBILITY];
 export const documentById = (id: string) => DOCUMENTS.find(d => d.id === id) ?? null;

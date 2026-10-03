@@ -26,7 +26,7 @@ test('first run asks for at least five staples before finishing', async ({page})
 test('setup is saved: a reload lands in the app with the chosen list', async ({page}) => {
   await onboard(page, 6);
   await page.reload();
-  await expect(page.getByText(/STEP \d OF 4/)).toHaveCount(0);
+  await expect(page.getByText(/^Step \d of 4$/)).toHaveCount(0);
   await open(page, 'list');
   await expect(page.locator('.full-list .item-row')).toHaveCount(6);
 });

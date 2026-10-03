@@ -7,9 +7,11 @@ export type Product = {
   brand: string;
   size: string;
   category: string;
-  icon: string;
+  departmentId: string;
+  aisleId: string;
+  shape: string;
 };
-/** Retailer identity only — branding for logos and receipts. Aisle's prices
+/** Retailer identity only: branding for logos and receipts. Aisle's prices
  *  and distances come from the agent run, never from this table. */
 export type Store = {
   id: string;
@@ -57,7 +59,7 @@ export type Preferences = {
  * The product id is the point: a receipt keyed only on a display name cannot be
  * joined back to the catalogue, so neither price history nor repurchase
  * intervals can be built from it. `actual` is the LINE total for `quantity`
- * units, not a unit price — dividing is the caller's job and getting that wrong
+ * units, not a unit price. Dividing is the caller's job and getting that wrong
  * misreports by a factor of the quantity.
  */
 export type TripLine = {
@@ -76,7 +78,7 @@ export type TripLine = {
  * This is deliberately NOT a SourcedOffer. Everything in src/lib/agent carries
  * an evidence row tying it to an HTTP response, and `faultsOf` discards
  * anything that cannot be traced back to one. A shelf price has no such
- * backing — it is a person's word — so it lives in its own channel, is labelled
+ * backing (it is a person's word), so it lives in its own channel, is labelled
  * as self-reported wherever it appears, and never enters a basket subtotal that
  * claims to be evidence-backed.
  *
@@ -323,89 +325,29 @@ export const stores: Store[] = [
     url: 'https://goodnessme.ca',
   },
 ];
-// Products come from the taxonomy (Department → Aisle → Item), so the catalogue,
-// the category browser and the generated artwork can never drift apart.
-// `category` stays the department name, which keeps existing saved category
-// locks and the engine's category logic working unchanged.
-// Retained so the Product shape stays stable for anything still reading it.
-const ICON_FOR_TEMPLATE: Record<string, string> = {
-  round: 'apple',
-  berry: 'cherry',
-  strawberry: 'cherry',
-  banana: 'banana',
-  citrus: 'citrus',
-  melon: 'cherry',
-  pear: 'apple',
-  pineapple: 'apple',
-  grapes: 'cherry',
-  leafy: 'leaf',
-  floret: 'sprout',
-  root: 'carrot',
-  bulb: 'salad',
-  pepper: 'salad',
-  longveg: 'carrot',
-  mushroom: 'sprout',
-  corn: 'wheat',
-  avocado: 'salad',
-  herb: 'leaf',
-  carton: 'milk',
-  jug: 'milk',
-  bottle: 'package',
-  can: 'package',
-  jar: 'package',
-  tub: 'milk',
-  pouch: 'package',
-  bag: 'package',
-  box: 'wheat',
-  tray: 'beef',
-  tube: 'package',
-  roll: 'package',
-  spray: 'package',
-  bar: 'package',
-  sachet: 'package',
-  coffeebag: 'coffee',
-  teabox: 'leaf',
-  diaper: 'package',
-  soapbar: 'package',
-  toothbrush: 'package',
-  cheese: 'milk',
-  egg: 'egg',
-  loaf: 'wheat',
-  bun: 'wheat',
-  bagel: 'wheat',
-  tortilla: 'wheat',
-  croissant: 'wheat',
-  baguette: 'wheat',
-  pastry: 'wheat',
-  pizza: 'wheat',
-  steak: 'beef',
-  poultry: 'beef',
-  fillet: 'fish',
-  shrimp: 'fish',
-  bacon: 'beef',
-  sausage: 'beef',
-  deli: 'beef',
-};
+// Products come from the taxonomy (Department → Aisle → Item), so the catalogue
+// and the category browser can never drift apart. `category` stays the
+// department name, which keeps saved category locks and the engine's category
+// logic working unchanged.
 export const products: Product[] = ALL_ITEMS.map(item => ({
   id: item.id,
   name: item.name,
   brand: item.brand,
   size: item.size,
   category: item.department,
-  icon: ICON_FOR_TEMPLATE[item.art.template] ?? 'package',
+  departmentId: item.departmentId,
+  aisleId: item.aisleId,
+  shape: item.shape,
 }));
 export const productById: Record<string, Product> = Object.fromEntries(
   products.map(p => [p.id, p]),
 );
-// Photographs win when we have one; the generated illustration is the fallback,
-// so a half-finished `npm run photos` run still leaves every item with a
-// picture and needs no code change to take effect.
+// A photograph is shown once `npm run photos` has fetched one; until then the
+// interface draws the department's colour and a symbol (components/product-art).
+// Nothing else stands in for a product picture.
 const PHOTOS = new Set(photoManifest as string[]);
 export const hasPhoto = (id?: string | null) => !!id && PHOTOS.has(id);
-export const productImagePath = (id?: string | null) =>
-  hasPhoto(id)
-    ? `/images/photos/${id}.png`
-    : `/images/products/${id && productById[id] ? id : 'custom-item'}.png`;
+export const productPhotoPath = (id: string) => `/images/photos/${id}.webp`;
 export const categories = ['All items', ...DEPARTMENT_NAMES];
 export const money = (cents: number) =>
   new Intl.NumberFormat('en-CA', {style: 'currency', currency: 'CAD'}).format(cents / 100);
