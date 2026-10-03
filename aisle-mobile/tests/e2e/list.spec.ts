@@ -52,3 +52,26 @@ test('the add-groceries sheet has a visible close button that works', async ({pa
   await close.click();
   await expect(sheet).toHaveCount(0);
 });
+
+test('a staple taken off the list waits as a tile and goes back on with one tap', async ({
+  page,
+}) => {
+  await network(page);
+  await onboard(page, 6);
+  await open(page, 'list');
+  // Every staple starts on the list, so there is nothing to suggest yet.
+  await expect(page.getByRole('heading', {name: 'Your usuals'})).toHaveCount(0);
+  await page.getByRole('button', {name: 'Remove Bananas'}).click();
+  const tile = page.getByRole('button', {name: /^Add Bananas\./});
+  await expect(tile).toBeVisible();
+  await tile.click();
+  await expect(page.getByRole('button', {name: 'Remove Bananas'})).toBeVisible();
+  await expect(tile).toHaveCount(0);
+});
+
+test('the list is grouped by store section', async ({page}) => {
+  await network(page);
+  await onboard(page, 6);
+  await open(page, 'list');
+  await expect(page.getByRole('heading', {name: /^Produce/, level: 3})).toBeVisible();
+});

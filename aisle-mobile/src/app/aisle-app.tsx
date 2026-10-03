@@ -12,11 +12,9 @@ import {
 } from 'react';
 import {
   ArrowLeft,
-  ArrowRight,
   ArrowUpRight,
   BarChart3,
   Check,
-  CheckCheck,
   ChevronDown,
   ChevronRight,
   ChevronsUpDown,
@@ -28,17 +26,14 @@ import {
   Leaf,
   ListPlus,
   LoaderCircle,
-  LockKeyhole,
   MapPin,
   Plus,
   ReceiptText,
   Settings2,
-  ShieldCheck,
   ShoppingBasket,
   ShoppingBag,
   Sparkles,
   Store as StoreIcon,
-  Trash2,
   X,
   Camera,
   CheckCircle2,
@@ -47,7 +42,7 @@ import {
   FileText,
   HeartHandshake,
 } from 'lucide-react';
-import {Scale, History, Bookmark} from 'lucide-react';
+import {Scale} from 'lucide-react';
 import {
   Sidebar,
   SidebarProvider,
@@ -104,7 +99,6 @@ import {
   starterList,
   productById,
   stores,
-  categories,
   money,
   initialState,
   parseList,
@@ -129,10 +123,11 @@ import {valueSwaps, totalSaving, type ValueSwap} from '@/lib/value-swaps';
 import {version as APP_VERSION} from '../../package.json';
 import {cx, newId, ProductIcon, Pill, Choice, Empty, ViewLoading} from './parts';
 import {ItemRow, type ItemRowContext} from './item-row';
-import {BudgetCard} from './home-cards';
+import {} from './home-cards';
 import {useHousehold} from './use-household';
 import {useAppearance} from '@/lib/appearance';
 import SpendingView from './views/spending-view';
+import ListView from './views/list-view';
 import HelpDialog from './help-dialog';
 
 type View = 'home' | 'list' | 'compare' | 'spending' | 'account' | 'legal' | 'shop';
@@ -189,7 +184,6 @@ export default function AisleApp() {
     [clearOpen, setClearOpen] = useState(false),
     [receiptOpen, setReceiptOpen] = useState(false),
     [historyDetail, setHistoryDetail] = useState<Trip | null>(null);
-  const [listFilter, setListFilter] = useState('All items');
   const [receiptStore, setReceiptStore] = useState('food-basics'),
     [receiptTotal, setReceiptTotal] = useState(''),
     [receiptDate, setReceiptDate] = useState(''),
@@ -295,9 +289,7 @@ export default function AisleApp() {
   }, [state, agent.run, agent.best, agent.baskets, state.activeShop]);
   const potential = totalSaving(swaps);
   const active = activeBasket;
-  const itemCount = state.items.reduce((n, i) => n + i.qty, 0);
   const checked = state.items.filter(i => i.checked).length;
-  const missing = state.items.filter(i => !i.productId).length;
 
   async function load() {
     const loaded = await household.load();
@@ -961,198 +953,36 @@ export default function AisleApp() {
             </section>
           )}
           {view === 'list' && (
-            <>
-              <div className="page-heading">
-                <div>
-                  <span className="eyebrow">MAKE IT YOURS</span>
-                  <h1>Your grocery list</h1>
-                  <p>Keep your favourites. Find room to save.</p>
-                </div>
-                <div className="heading-actions">
-                  {/* The label is hidden on narrow screens, so the name is set here. */}
-                  <button
-                    className="button secondary"
-                    aria-label="Export list"
-                    onClick={exportList}
-                  >
-                    <Download size={16} />
-                    <span>Export list</span>
-                  </button>
-                  <button className="button primary" onClick={() => setCatalogOpen(true)}>
-                    <Plus size={18} /> Add groceries
-                  </button>
-                </div>
-              </div>
-              <div className="list-layout">
-                <section className="card full-list">
-                  <div className="list-title">
-                    <input
-                      aria-label="List name"
-                      value={state.listName}
-                      maxLength={80}
-                      onChange={e => {
-                        if (e.target.value.trim()) commit(s => ({...s, listName: e.target.value}));
-                      }}
-                    />
-                    <span className="saved-label">
-                      <CheckCheck size={14} />
-                      {saveStatus}
-                    </span>
-                  </div>
-                  <div className="list-toolbar">
-                    <span>
-                      {state.items.length} products · {itemCount} items
-                    </span>
-                    <button className="text-button" onClick={() => setStartersOpen(true)}>
-                      <History size={15} /> Start from…
-                    </button>
-                    <button
-                      className="text-button"
-                      onClick={() => {
-                        setImportMode('paste');
-                        setCatalogOpen(true);
-                      }}
-                    >
-                      <ClipboardList size={15} /> Paste a list
-                    </button>
-                    <button
-                      className="text-button"
-                      disabled={!state.items.length}
-                      onClick={() => {
-                        commit(st => ({
-                          ...st,
-                          savedLists: snapshotList(st, st.listName || 'Saved list', false),
-                        }));
-                        toast.success('List saved. Reuse it from Start from…');
-                      }}
-                    >
-                      <Bookmark size={15} /> Save list
-                    </button>
-                    <button
-                      className="icon-button"
-                      aria-label="Clear grocery list"
-                      onClick={() => setClearOpen(true)}
-                      disabled={!state.items.length}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                  <div className="category-pills">
-                    {[
-                      'All items',
-                      ...categories
-                        .slice(1)
-                        .filter(c =>
-                          state.items.some(
-                            i => i.productId && productById[i.productId].category === c,
-                          ),
-                        ),
-                      ...(missing ? ['Unmatched'] : []),
-                    ].map(c => (
-                      <button
-                        key={c}
-                        className={cx('filter-pill', listFilter === c && 'selected')}
-                        onClick={() => setListFilter(c)}
-                      >
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-                  {missing > 0 && (
-                    <div className="inline-warning">
-                      <Info size={16} />
-                      {missing} {missing === 1 ? 'item needs' : 'items need'} a match before we can
-                      recommend a complete basket.
-                    </div>
-                  )}
-                  {state.items.length ? (
-                    state.items
-                      .filter(
-                        i =>
-                          listFilter === 'All items' ||
-                          (listFilter === 'Unmatched'
-                            ? !i.productId
-                            : i.productId && productById[i.productId].category === listFilter),
-                      )
-                      .map(i => <ItemRow key={i.id} item={i} ctx={rowCtx} />)
-                  ) : (
-                    <Empty
-                      title="Your list is empty"
-                      action={
-                        <>
-                          <button className="button primary" onClick={() => setCatalogOpen(true)}>
-                            <Plus size={16} /> Add items
-                          </button>
-                          <button
-                            className="button secondary"
-                            onClick={() => setStartersOpen(true)}
-                          >
-                            <History size={16} /> Start from a previous list
-                          </button>
-                        </>
-                      }
-                    >
-                      Browse by aisle, paste a list you already have, or reuse a shop you have done
-                      before.
-                    </Empty>
-                  )}
-                  <button className="list-add" onClick={() => setCatalogOpen(true)}>
-                    <Plus size={17} /> Add another item
-                  </button>
-                  <div className="list-bottom-note">
-                    <LockKeyhole size={14} /> Lock a product to keep it out of swap suggestions.
-                  </div>
-                </section>
-                <aside className="list-aside">
-                  <BudgetCard
-                    budget={agent.perShopBudget}
-                    items={state.items.length}
-                    total={listTotal}
-                    swapCount={swaps.length}
-                    swapSaving={potential}
-                    basketCount={agent.baskets.length}
-                    onEditBudget={() => go('account')}
-                    onSwaps={() => setSwapsOpen(true)}
-                    onCompare={() => go('compare')}
-                  />
-                  <section className="card list-summary">
-                    <h3>Your list at a glance</h3>
-                    <div>
-                      <span>List items</span>
-                      <strong>{state.items.length}</strong>
-                    </div>
-                    <div>
-                      <span>Priced by Aisle</span>
-                      <strong>
-                        {headlineBasket
-                          ? `${headlineBasket.priced} of ${headlineBasket.total}`
-                          : 'Not checked yet'}
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Baskets compared</span>
-                      <strong>{agent.baskets.length}</strong>
-                    </div>
-                    <div>
-                      <span>Products locked</span>
-                      <strong>{state.items.filter(i => i.locked).length}</strong>
-                    </div>
-                    <button
-                      className="button primary full"
-                      onClick={() => go('compare')}
-                      disabled={!state.items.length}
-                    >
-                      Compare my list <ArrowRight size={17} />
-                    </button>
-                    <p>Review observed prices and confirm retailer products before comparing.</p>
-                  </section>
-                  <div className="quiet-tip">
-                    <ShieldCheck size={20} />
-                    <p>Your choices stay yours. We ask before changing anything on your list.</p>
-                  </div>
-                </aside>
-              </div>
-            </>
+            <ListView
+              state={state}
+              saveStatus={saveStatus}
+              rowCtx={rowCtx}
+              listTotal={listTotal}
+              budget={agent.perShopBudget}
+              basketCount={agent.baskets.length}
+              swapCount={swaps.length}
+              swapSaving={potential}
+              priced={headlineBasket}
+              onRename={name => commit(s => ({...s, listName: name}))}
+              onAdd={addProduct}
+              onOpenCatalog={mode => {
+                setImportMode(mode);
+                setCatalogOpen(true);
+              }}
+              onOpenStarters={() => setStartersOpen(true)}
+              onSaveList={() => {
+                commit(st => ({
+                  ...st,
+                  savedLists: snapshotList(st, st.listName || 'Saved list', false),
+                }));
+                toast.success('List saved. Reuse it from Start from…');
+              }}
+              onClear={() => setClearOpen(true)}
+              onExport={exportList}
+              onEditBudget={() => go('account')}
+              onSwaps={() => setSwapsOpen(true)}
+              onCompare={() => go('compare')}
+            />
           )}
           {view === 'compare' && (
             <BasketCompare
@@ -1741,7 +1571,6 @@ export default function AisleApp() {
             <AlertDialogAction
               onClick={() => {
                 commit(s => ({...s, items: [], activeShop: null}));
-                setListFilter('All items');
                 toast.success('Your list is ready for a fresh start.');
               }}
             >

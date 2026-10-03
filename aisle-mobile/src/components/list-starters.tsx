@@ -9,8 +9,8 @@
 import {useMemo, useState} from 'react';
 import {Check, Clock, History, Plus, Repeat, Sparkles} from 'lucide-react';
 import {Dialog, DialogContent, DialogTitle, DialogDescription} from '@/components/ui/dialog';
-import {buildShopperModel} from '@/lib/agent';
-import {money, productById, productImagePath, type SavedList, type UserState} from '@/lib/catalog';
+import {money, productImagePath, type SavedList, type UserState} from '@/lib/catalog';
+import {usualsNotOnList} from '@/lib/usuals';
 import './list-starters.css';
 
 type Props = {
@@ -29,36 +29,7 @@ export default function ListStarters({open, onOpenChange, state, onUse}: Props) 
   );
 
   // Favourites first, then anything the household's own history says is due.
-  const {usuals, alreadyOnList} = useMemo(() => {
-    const model = buildShopperModel(state);
-    const onList = new Set(state.items.map(i => i.productId).filter(Boolean));
-    const rows: {productId: string; name: string; why: string}[] = [];
-    let covered = 0;
-    for (const id of state.prefs.favouriteProducts) {
-      const product = productById[id];
-      if (!product) continue;
-      if (onList.has(id)) {
-        covered += 1;
-        continue;
-      }
-      rows.push({productId: id, name: product.name, why: 'A staple you picked'});
-    }
-    for (const due of model.replenishment) {
-      if (!due.due || rows.some(r => r.productId === due.productId)) continue;
-      if (onList.has(due.productId)) {
-        covered += 1;
-        continue;
-      }
-      const product = productById[due.productId];
-      if (product)
-        rows.push({
-          productId: due.productId,
-          name: product.name,
-          why: `Usually every ${due.intervalDays} days · ${due.daysSince} since`,
-        });
-    }
-    return {usuals: rows.slice(0, 24), alreadyOnList: covered};
-  }, [state]);
+  const {usuals, alreadyOnList} = useMemo(() => usualsNotOnList(state), [state]);
 
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const toggle = (id: string) =>

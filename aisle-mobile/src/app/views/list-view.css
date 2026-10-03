@@ -1,0 +1,167 @@
+/* My list. Tiles for usual items, a chip row for list actions, and section
+   headers in walking order. */
+
+/* -- your usuals ------------------------------------------------------------ */
+.quick-add {
+  margin-bottom: 20px;
+}
+.quick-add-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.quick-add-head h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.quick-add-head span {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+.quick-add-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.quick-add-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  width: 100%;
+  min-height: 112px;
+  padding: 14px 8px 12px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+.quick-add-tile:hover {
+  box-shadow: var(--shadow-md);
+}
+.quick-add-tile:active {
+  transform: scale(0.96);
+}
+.quick-add-tile .product-art {
+  width: 52px;
+  height: 52px;
+}
+.quick-add-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.quick-add-plus {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* -- list actions ---------------------------------------------------------- */
+.list-chips {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.list-chips::-webkit-scrollbar {
+  display: none;
+}
+.list-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.list-chip:hover:not(:disabled) {
+  background: var(--muted);
+}
+.list-chip:disabled {
+  opacity: 0.5;
+}
+
+/* -- sections, in walking order -------------------------------------------- */
+.list-section + .list-section {
+  margin-top: 6px;
+}
+.list-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 14px 0 4px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.list-section-head span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0;
+  color: var(--muted-foreground);
+}
+
+@media (max-width: 760px) {
+  .quick-add-tiles {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 104px;
+    overflow-x: auto;
+    margin: 0 -16px;
+    padding: 2px 16px 6px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+  .quick-add-tiles::-webkit-scrollbar {
+    display: none;
+  }
+  .quick-add-tiles li {
+    scroll-snap-align: start;
+  }
+  .list-chips {
+    margin: 0 -19px;
+    padding: 4px 19px 14px;
+  }
+}
