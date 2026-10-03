@@ -4,10 +4,12 @@ import {Capacitor} from '@capacitor/core';
 import {App} from '@capacitor/app';
 import {StatusBar} from '@capacitor/status-bar';
 import {applyTheme, readAppearance, resolveTheme} from './lib/appearance';
+import {installSheetGesture} from './lib/sheet-gesture';
 import AisleApp from './app/aisle-app';
 import ErrorBoundary from './components/error-boundary';
 import './app/globals.css';
 applyTheme(resolveTheme(readAppearance()));
+installSheetGesture();
 if (Capacitor.isNativePlatform()) {
   document.body.classList.add('is-native');
   void StatusBar.setOverlaysWebView({overlay: false}).catch(() => {});

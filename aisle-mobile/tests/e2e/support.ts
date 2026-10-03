@@ -185,3 +185,23 @@ export async function storeFile(page: Page, path: string, content: string) {
     {path, content},
   );
 }
+
+/** The text of one file the app has stored, or null. */
+export async function storedText(page: Page, path: string): Promise<string | null> {
+  return page.evaluate(
+    path =>
+      new Promise<string | null>(resolve => {
+        const open = indexedDB.open('Disc');
+        open.onerror = () => resolve(null);
+        open.onsuccess = () => {
+          const db = open.result;
+          if (!db.objectStoreNames.contains('FileStorage')) return resolve(null);
+          const get = db.transaction('FileStorage').objectStore('FileStorage').get(`/DATA/${path}`);
+          get.onsuccess = () =>
+            resolve((get.result as {content?: string} | undefined)?.content ?? null);
+          get.onerror = () => resolve(null);
+        };
+      }),
+    path,
+  );
+}

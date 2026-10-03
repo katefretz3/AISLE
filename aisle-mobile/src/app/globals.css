@@ -4480,15 +4480,24 @@ html {
   label > textarea {
     min-height: 48px;
   }
-  /* Radix dialog/sheet close buttons ship as a small icon; widen the hit area. */
-  [data-slot='dialog-content'] > button[type='button']:not([class*='button']),
-  [data-slot='dialog-close'],
-  [data-slot='sheet-close'] {
-    position: relative;
+  /* Radix dialog/sheet close buttons ship as a small icon; widen the hit area.
+     They must stay absolutely positioned: a `position: relative` here once
+     sent every dialog's close button to the bottom of its content, out of
+     sight, which left iPhone users (no back button) with no visible way out. */
+  [data-slot='dialog-content'] > [data-slot='dialog-close'],
+  [data-slot='sheet-content'] > [data-slot='sheet-close'] {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
     width: 44px;
     height: 44px;
     display: grid;
     place-items: center;
+    border-radius: 999px;
+    opacity: 1;
+    background: var(--muted);
+    color: var(--foreground);
   }
   .agent-chip,
   .filter-pill {
@@ -5045,5 +5054,103 @@ html {
   .shop-pill small {
     font-size: 0.8125rem;
     color: var(--fg-d0dfd5);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Sheets. On a phone, task dialogs rise from the bottom edge the way iOS and
+   Android sheets do: full width, rounded top corners, a grab handle, and the
+   safe area respected. Confirmations (alert dialogs) stay centred, as they do
+   on both platforms. Tailwind centres dialogs with translate; it is zeroed
+   through its variables because the production minifier drops `translate`.
+   --------------------------------------------------------------------------- */
+@media (max-width: 760px) {
+  .catalog-modal,
+  .swaps-modal,
+  .receipt-modal,
+  .help-modal,
+  .starters-modal,
+  .shelf-modal {
+    position: fixed !important;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: calc(100dvh - max(24px, env(safe-area-inset-top))) !important;
+    margin: 0 !important;
+    padding: 28px 20px max(20px, env(safe-area-inset-bottom)) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    border: 0 !important;
+    border-radius: 24px 24px 0 0 !important;
+    background: var(--card) !important;
+    box-shadow: 0 -12px 40px -12px rgba(0, 0, 0, 0.35) !important;
+    transform: none !important;
+    translate: none !important;
+    --tw-translate-x: 0 !important;
+    --tw-translate-y: 0 !important;
+  }
+  .catalog-modal {
+    height: calc(100dvh - max(24px, env(safe-area-inset-top))) !important;
+  }
+  .catalog-modal::before,
+  .swaps-modal::before,
+  .receipt-modal::before,
+  .help-modal::before,
+  .starters-modal::before,
+  .shelf-modal::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 40px;
+    height: 5px;
+    margin-left: -20px;
+    border-radius: 3px;
+    background: var(--border);
+  }
+  .catalog-modal[data-state='open'],
+  .swaps-modal[data-state='open'],
+  .receipt-modal[data-state='open'],
+  .help-modal[data-state='open'],
+  .starters-modal[data-state='open'],
+  .shelf-modal[data-state='open'] {
+    animation: aisle-sheet-in 0.34s cubic-bezier(0.2, 0.85, 0.25, 1) both !important;
+  }
+  .catalog-modal[data-state='closed'],
+  .swaps-modal[data-state='closed'],
+  .receipt-modal[data-state='closed'],
+  .help-modal[data-state='closed'],
+  .starters-modal[data-state='closed'],
+  .shelf-modal[data-state='closed'] {
+    animation: aisle-sheet-out 0.22s ease-in both !important;
+  }
+}
+@keyframes aisle-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes aisle-sheet-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+@media (max-width: 760px) and (prefers-reduced-motion: reduce) {
+  .catalog-modal,
+  .swaps-modal,
+  .receipt-modal,
+  .help-modal,
+  .starters-modal,
+  .shelf-modal {
+    animation: none !important;
   }
 }

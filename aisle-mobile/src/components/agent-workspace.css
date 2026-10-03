@@ -5,89 +5,137 @@
 }
 
 /* hero ---------------------------------------------------------------------*/
+/* The answer first: what the list costs, where, and how much of it that covers.
+   The hero is deep green in both themes, so its colours are fixed rather than
+   following the theme tokens. */
 .agent-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-  gap: 28px;
-  align-items: start;
+  --on-brand: #ffffff;
+  --on-brand-soft: #d6ece0;
+  --on-brand-quiet: #bfe3cf;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   padding: 28px;
   border-radius: var(--radius-xl);
-  background: linear-gradient(140deg, var(--brand-1) 0%, var(--brand-2) 62%, var(--brand-3) 100%);
-  color: var(--fg-ffffff);
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(255, 255, 255, 0.1) 0%, transparent 55%),
+    linear-gradient(150deg, var(--brand-1) 0%, var(--brand-2) 60%, var(--brand-3) 100%);
+  color: var(--on-brand);
   box-shadow: var(--shadow-lg);
 }
 .agent-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--fg-bfe3cf);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--on-brand-quiet);
 }
 .agent-hero h1 {
-  margin: 12px 0 10px;
-  font-size: clamp(1.55rem, 3.2vw, 2.15rem);
+  margin: 6px 0 8px;
+  font-size: clamp(1.625rem, 3.4vw, 2.25rem);
+  font-weight: 750;
   line-height: 1.15;
-  letter-spacing: -0.02em;
-  color: var(--fg-ffffff);
+  letter-spacing: -0.025em;
+  color: var(--on-brand);
+}
+.agent-hero-figure {
+  font-variant-numeric: tabular-nums;
 }
 .agent-hero p {
   margin: 0;
-  max-width: 56ch;
-  font-size: 1.0025rem;
-  line-height: 1.6;
-  color: var(--fg-d6ece0);
+  max-width: 52ch;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--on-brand-soft);
 }
 .agent-hero-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
   margin-top: 20px;
 }
 .agent-hero .button.primary {
-  background: var(--bg-ffffff);
-  color: var(--primary);
+  background: var(--on-brand);
+  color: #125643;
 }
 .agent-hero .button.primary:hover:not(:disabled) {
-  background: var(--bg-eef6f1);
+  background: #eef6f1;
 }
 .agent-hero .button.ghost {
   background: rgba(255, 255, 255, 0.14);
-  color: var(--fg-ffffff);
+  color: var(--on-brand);
   border: 1px solid rgba(255, 255, 255, 0.28);
 }
 .agent-hero .button.ghost:hover {
   background: rgba(255, 255, 255, 0.22);
 }
-.agent-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  margin: 0;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.16);
-}
-.agent-stats div {
-  padding: 16px;
-  background: rgba(9, 48, 36, 0.32);
-}
-.agent-stats dt {
-  margin: 0;
-  font-size: 0.8125rem;
+.agent-hero-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 6px;
+  font-size: 0.9375rem;
   font-weight: 600;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--fg-a9d2bd);
+  color: var(--on-brand-soft);
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.4);
+  text-underline-offset: 4px;
 }
-.agent-stats dd {
-  margin: 5px 0 0;
-  font-size: 1.5rem;
-  font-weight: 650;
-  letter-spacing: -0.02em;
-  color: var(--fg-ffffff);
+.agent-hero-link:hover {
+  color: var(--on-brand);
+}
+
+/* how we know --------------------------------------------------------------*/
+.agent-summary h2 {
+  margin: 0 0 12px;
+  font-size: 1.1875rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.agent-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.agent-facts div {
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--muted);
+}
+.agent-facts dt {
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+}
+.agent-facts dd {
+  margin: 2px 0 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--foreground);
+}
+@media (max-width: 760px) {
+  .agent-hero {
+    padding: 22px 20px;
+  }
+  .agent-hero-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+  .agent-hero-actions .button {
+    min-height: 48px;
+  }
+  .agent-hero-actions .button:only-of-type {
+    grid-column: 1 / -1;
+  }
+  .agent-hero-link {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+  .agent-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* progress -----------------------------------------------------------------*/
@@ -629,13 +677,6 @@
 }
 
 @media (max-width: 900px) {
-  .agent-hero {
-    grid-template-columns: 1fr;
-    padding: 22px;
-  }
-  .agent-stats {
-    grid-template-columns: 1fr 1fr;
-  }
 }
 @media (max-width: 640px) {
   .agent-line {

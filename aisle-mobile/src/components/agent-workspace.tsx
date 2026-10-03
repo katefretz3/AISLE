@@ -25,7 +25,6 @@ import {
   MapPin,
   RefreshCw,
   ShieldCheck,
-  Sparkles,
   Store,
   X,
 } from 'lucide-react';
@@ -65,6 +64,14 @@ export default function AgentWorkspace({
 }: Props) {
   const {run, busy, error, baskets, best, perShopBudget: budget, readable, start} = agent;
   const phase = busy ? 'discover' : '';
+  const hour = new Date().getHours();
+  const greeting =
+    hour >= 5 && hour < 12
+      ? 'Good morning'
+      : hour >= 12 && hour < 18
+        ? 'Good afternoon'
+        : 'Good evening';
+  const unpriced = best ? best.total - best.priced : 0;
   // Items with a collected price, counted once across every basket.
   const matchedCount = useMemo(
     () => new Set(baskets.flatMap(b => b.lines.filter(l => l.offer).map(l => l.itemId))).size,
@@ -110,21 +117,57 @@ export default function AgentWorkspace({
   return (
     <div className="agent-workspace">
       <header className="agent-hero">
-        <div>
-          <span className="agent-eyebrow">
-            <Sparkles size={15} /> Your grocery agent
-          </span>
-          <h1>
-            {state.prefs.name
-              ? `Let’s price your list, ${state.prefs.name}.`
-              : 'Let’s price your list.'}
-          </h1>
-          <p>
-            Aisle looks for stores near you, reads the catalogues it is allowed to read, and matches
-            your list against what they actually publish. Every figure traces back to a response it
-            received.
-          </p>
-          <div className="agent-hero-actions">
+        <span className="agent-eyebrow">
+          {greeting}
+          {state.prefs.name ? `, ${state.prefs.name}` : ''}
+        </span>
+        {busy ? (
+          <>
+            <h1>Checking prices near you…</h1>
+            <p>Reading the catalogues Aisle is allowed to read. This takes a few seconds.</p>
+          </>
+        ) : best ? (
+          <>
+            <h1>
+              <span className="agent-hero-figure">{money(best.subtotal)}</span> at {best.name}
+            </h1>
+            <p>
+              {best.complete
+                ? `Every item on your list is priced. ${
+                    best.subtotal <= budget
+                      ? `That is ${money(budget - best.subtotal)} under your ${money(budget)} budget.`
+                      : `That is ${money(best.subtotal - budget)} over your ${money(budget)} budget.`
+                  }`
+                : `For ${best.priced} of ${best.total} items. ${unpriced} ${
+                    unpriced === 1 ? 'has' : 'have'
+                  } no price from this shop yet, so this is not the whole shop.`}
+            </p>
+          </>
+        ) : run ? (
+          <>
+            <h1>No prices for your list yet</h1>
+            <p>
+              {readable === 0
+                ? 'None of the shops near you publish prices Aisle can read right now.'
+                : 'The shops Aisle could read do not carry what is on your list.'}{' '}
+              You can still shop your list and add the prices you see on the shelf.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1>Let’s price your list</h1>
+            <p>
+              Aisle reads the prices shops publish and matches them to your list. Every figure links
+              back to where it came from.
+            </p>
+          </>
+        )}
+        <div className="agent-hero-actions">
+          {best && !busy ? (
+            <button className="button primary" onClick={onCompare}>
+              See prices <ChevronRight size={17} />
+            </button>
+          ) : (
             <button className="button primary" disabled={busy} onClick={start}>
               {busy ? (
                 <>
@@ -136,34 +179,26 @@ export default function AgentWorkspace({
                 </>
               )}
             </button>
-            <button className="button ghost" onClick={onList}>
-              Edit my list <ChevronRight size={16} />
+          )}
+          {best && !busy && (
+            <button className="button ghost" onClick={start}>
+              <RefreshCw size={16} /> Check again
             </button>
-            {baskets.length > 0 && (
-              <button className="button ghost" onClick={onCompare}>
-                Compare baskets <ChevronRight size={16} />
-              </button>
-            )}
-          </div>
+          )}
+          {run && !busy && (
+            <button
+              type="button"
+              className="agent-hero-link"
+              onClick={() =>
+                document
+                  .getElementById('how-we-know')
+                  ?.scrollIntoView({behavior: 'smooth', block: 'start'})
+              }
+            >
+              <ShieldCheck size={16} /> How we know
+            </button>
+          )}
         </div>
-        <dl className="agent-stats">
-          <div>
-            <dt>Budget this shop</dt>
-            <dd>{money(budget)}</dd>
-          </div>
-          <div>
-            <dt>On your list</dt>
-            <dd>{state.items.length}</dd>
-          </div>
-          <div>
-            <dt>Retailers read</dt>
-            <dd>{readable}</dd>
-          </div>
-          <div>
-            <dt>Prices verified</dt>
-            <dd>{run ? run.offers.length : 0}</dd>
-          </div>
-        </dl>
       </header>
 
       {busy && (
@@ -186,7 +221,26 @@ export default function AgentWorkspace({
 
       {run && (
         <>
-          <section className="agent-summary">
+          <section className="agent-summary" id="how-we-know" aria-labelledby="how-we-know-h">
+            <h2 id="how-we-know-h">How we know</h2>
+            <dl className="agent-facts">
+              <div>
+                <dt>Shops read</dt>
+                <dd>{readable}</dd>
+              </div>
+              <div>
+                <dt>Prices found</dt>
+                <dd>{run.offers.length}</dd>
+              </div>
+              <div>
+                <dt>On your list</dt>
+                <dd>{state.items.length}</dd>
+              </div>
+              <div>
+                <dt>Budget</dt>
+                <dd>{money(budget)}</dd>
+              </div>
+            </dl>
             <span className={`agent-mode ${run.mode}`}>
               {run.mode === 'assisted' ? 'AI-assisted matching' : 'Rule-based matching'}
             </span>
