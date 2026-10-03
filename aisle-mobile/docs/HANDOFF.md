@@ -1,35 +1,77 @@
 # Handoff
 
 State of `claude/grocery-matching-agent-pk59q1` on 3 October 2026: the
-previous checklist (commit `0d8690f`) worked through, then a design pass
-(tokens and dark mode, type scale, phone layout, home, sheets, list; see
-"Design pass" below).
-Everything in "What was run" was measured on this branch; the method is noted
-where it matters. The history of each fix is in the commit named beside it.
+earlier checklist (from commit `0d8690f`) is done, followed by two design passes.
+The second pass replaced the visual system, the product pictures and the map
+(see "Design pass 2"). Everything in "What was run" was measured on this branch,
+and the method is given where it matters. The commit named beside each fix has
+its history.
 
 ## What was run
 
-| Check                                                                    | Result                                                                               |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| `npm run verify` (tsc, ESLint `--max-warnings 0`, Prettier, unit, build) | clean                                                                                |
-| `npm test`                                                               | **152 / 152** (was 105)                                                              |
-| `npm run test:e2e` (production build, phone + desktop)                   | **20 / 20 runs pass** (16 tests), 1 skipped by design (touch targets are phone-only) |
-| axe-core WCAG 2.1 A/AA, 7 views × 2 widths, populated household          | **0 violations** (was 418 failing nodes)                                             |
-| Text under 12 px, 6 mobile views                                         | **0 of 520** text runs (was 32 %)                                                    |
-| 44 × 44 tap area, hit-tested, every control on 7 mobile views            | **all pass** (a toast briefly covers the footer; excluded)                           |
-| Sideways scroll, 7 views × 2 widths                                      | none                                                                                 |
-| `npm audit` (app and `../server`)                                        | 0 vulnerabilities                                                                    |
-| `vite build`                                                             | main chunk 875 KB / 242 KB gzip (was 928 / 258); Leaflet, Account, Legal split       |
-| `npm run release:check`                                                  | **fails, as it should**: the six operator placeholders (see R2)                      |
-| `npx cap sync`                                                           | both platforms sync                                                                  |
+| Check                                                                    | Result                                                                                        |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `npm run verify` (tsc, ESLint `--max-warnings 0`, Prettier, unit, build) | clean                                                                                         |
+| `npm test`                                                               | **156 / 156** (was 152)                                                                       |
+| `npm run test:e2e` (production build, phone + desktop)                   | **29 / 29 runs pass** (24 tests); 3 skipped by design (phone-only checks on desktop)          |
+| axe-core WCAG 2.2 A/AA, 7 views × 2 widths × light and dark, populated   | **0 violations**                                                                              |
+| Text under 12 px, 7 views × 2 widths                                     | none                                                                                          |
+| 48 × 48 tap area, hit-tested, every control on 7 phone views             | **all pass** (a toast briefly covers the footer; excluded)                                    |
+| Sideways scroll: 7 views × 2 widths, at 320 px wide, at 200 % text       | none                                                                                          |
+| Map: zoom buttons, tap to place, drag the pin, arrow keys, pinch         | pass (against a stub tile; see R9)                                                            |
+| Display typeface                                                         | bundled, and loads in the production build                                                    |
+| `npm audit` (app and `../server`)                                        | 0 vulnerabilities                                                                             |
+| `vite build`                                                             | main chunk 873 KB / 247 KB gzip (was 875 / 242); 558 PNGs (4.9 MB) no longer ship             |
+| `npm run release:check`                                                  | **fails, as it should**: the six operator placeholders, and the bundle that carries them (R2) |
+| `npx cap sync`                                                           | both platforms sync                                                                           |
 
 Not verifiable here: native iOS/Android builds (no Xcode, no Android SDK), a
-real device, live retailer or Overpass responses, and product photos. Every
-third-party host is refused by this environment's network policy; see R6.
-All retailer behaviour in the tests runs the real agent against synthetic
-fixtures.
+real device, VoiceOver and TalkBack, live retailer or Overpass responses,
+product photos and real map tiles. This environment's network policy refuses
+every third-party host involved (see R6 and R9). All retailer behaviour in the
+tests runs the real agent against synthetic fixtures.
 
-## What changed since the last handoff
+---
+
+## Design pass 2
+
+The brief: more colour and depth, real product photographs instead of
+generated drawings, consistent spacing, plain words, a real interactive map,
+and accessibility to iOS, Android and Ontario standards, with every screen
+consistent. `docs/DESIGN.md` describes the resulting system and its rules.
+
+| Change                                                                                                                                                                                                                                               | Where                                                        |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| One semantic token set: colours named for their job (canvas, surface, ink, brand, the evergreen hero, one lime accent, status, 14 department tints), each redefined by hand for dark mode; four elevation levels; one spacing, radius and type scale | `src/app/tokens.css`                                         |
+| The 438 generated per-shade colours from pass 1 are now 286 aliases onto those tokens                                                                                                                                                                | `src/app/palette.css`                                        |
+| Fraunces (variable, SIL OFL) for titles and key figures; the system font for everything else                                                                                                                                                         | `tokens.css`, `src/main.tsx`                                 |
+| The shared stylesheet consolidated from 5,172 to 2,475 lines and loaded first, so each component's stylesheet refines it rather than fighting it                                                                                                     | `src/app/globals.css`                                        |
+| Generated product drawings deleted (558 PNGs and their generator). A product shows its photograph when one exists, otherwise its department's tint and aisle symbol                                                                                  | `src/components/product-art.tsx`, `src/lib/product-glyph.ts` |
+| The photo pipeline now writes 512 × 512 WebP, cropped around the subject to fill the tile                                                                                                                                                            | `tools/fetch-product-photos.mjs`                             |
+| A real map: pinch or buttons to zoom, drag the pin or tap to move it, arrow keys on the pin, reset to the city centre, nearby shops marked, radius slider                                                                                            | `src/components/location-map.tsx`                            |
+| Every screen rebuilt from the same parts: Home, List, Prices, Spending, Shop, Account, Legal and setup                                                                                                                                               | each screen's `.tsx` and `.css`                              |
+| Copy: no em dashes, no slogans, sentence case, the same names on every screen. A test enforces the em dash and capitals rules                                                                                                                        | `tests/copy.test.ts`                                         |
+| Accessibility: WCAG 2.2 AA (which covers the WCAG 2.0 AA that AODA requires), 48 px targets, reflow at 320 px and 200 % text, Reduce Motion, Reduce Transparency, Increase Contrast; an Accessibility statement in Legal                             | `globals.css`, `src/lib/legal.ts`, `tests/e2e`               |
+
+Bugs found during the pass, all fixed:
+
+- **The display typeface never loaded.** Its `@import` was inlined into
+  `globals.css`, so the font file URLs pointed nowhere and every title fell back
+  to Georgia. It is now imported from `main.tsx`; an e2e test checks that it
+  loads in the production build.
+- **The release check could miss placeholder text in the bundle.** It looked
+  for "PLACEHOLDER —"; the placeholders now read "PLACEHOLDER:". The source
+  check still failed the release, but the bundle check had gone quiet. Fixed,
+  and a unit test holds the placeholders to the form the check looks for.
+- **The status bar, browser theme colour and native background still used the
+  old palette**, which would leave a band of a different colour above the top
+  bar. They now match `--canvas` in both themes, and a test keeps them in step.
+- The browser tab title was "Aisle — Your grocery companion"; it is "Aisle".
+- Account scrolled sideways on a phone (a grid of chain names), pack sizes read
+  "1360.777 g", the search field drew a second border inside itself, and Skip
+  took focus (and a focus ring) as soon as setup opened.
+
+## Earlier checklist
 
 | Item                                                   | Outcome                                                                                                                                                                                                                                                                                                                                                                                                         | Commit               |
 | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
@@ -41,39 +83,18 @@ fixtures.
 | F2 two store lists                                     | Five chains added to `catalog.stores`; a test holds both lists to the same ids and names; the directory matches shops through `chainFor`.                                                                                                                                                                                                                                                                       | `5eb0b5c`            |
 | F3 one Overpass mirror                                 | Three mirrors, tried in order.                                                                                                                                                                                                                                                                                                                                                                                  | `5eb0b5c`            |
 | F4 identity strings                                    | One `USER_AGENT`; a contact URL only if `VITE_AISLE_CONTACT_URL` is set. ~260 lines of unused sample-market code removed with it.                                                                                                                                                                                                                                                                               | `5eb0b5c`            |
-| F6 "Find my best shop"                                 | Now "Save and check prices".                                                                                                                                                                                                                                                                                                                                                                                    | `9a3971b`            |
-| F7 dark mode                                           | Not built (see F7 below). Dark-mode phones no longer get a half-dark UI.                                                                                                                                                                                                                                                                                                                                        | `9a3971b`            |
-| A1–A4                                                  | See the table above.                                                                                                                                                                                                                                                                                                                                                                                            | `b059f21`            |
-| —                                                      | **Found by the new browser tests:** on a phone, in a production build, the setup dialog and the Add groceries sheet rendered half off-screen. The CSS minifier merged away the override Tailwind v4's centring needed. Fixed; the e2e suite runs against the production build for this reason.                                                                                                                  | `214a873`            |
+| F6 "Find my best shop"                                 | Now "Check prices".                                                                                                                                                                                                                                                                                                                                                                                             | `9a3971b`            |
+| F7 dark mode                                           | Built in design pass 1 and redrawn by hand in pass 2 (see F7 below).                                                                                                                                                                                                                                                                                                                                            | `9a3971b`            |
+| A1–A4                                                  | Contrast, text size, accessible names and touch targets; now held by the e2e suite.                                                                                                                                                                                                                                                                                                                             | `b059f21`            |
+| Production-only dialog bug                             | **Found by the new browser tests:** on a phone, in a production build, the setup dialog and the Add groceries sheet rendered half off-screen. The CSS minifier merged away the override Tailwind v4's centring needed. Fixed; the e2e suite runs against the production build for this reason.                                                                                                                  | `214a873`            |
 | H1 monolith                                            | Nested components hoisted out (they re-mounted on every render, so keyboard focus was lost after one key press; a test now covers it). Save/load in `use-household.ts`; spending view and help dialog in their own files. 2,307 → 1,714 lines. **Found:** onboarding's save-conflict recovery could never run; fixed. Stale copy corrected (help dialog claimed a sample demo, accounts, and no model service). | `d696731`, `f8c6176` |
 | H2 lint, format, CI                                    | ESLint 9, Prettier, editorconfig, `.nvmrc`, `engines`, CI with two jobs.                                                                                                                                                                                                                                                                                                                                        | `2afac4b`…`711331a`  |
 | H3 browser tests outside the repo                      | `tests/e2e` (Playwright) and `tests/persistence.test.ts` (in-memory Filesystem).                                                                                                                                                                                                                                                                                                                                | `91cb2ec`            |
-| H4 documentation drift                                 | README rewritten, `AGENT_SYSTEM.md` deleted, `AGENTIC_SYSTEM.md` and `server/README.md` current.                                                                                                                                                                                                                                                                                                                | this commit          |
+| H4 documentation drift                                 | README rewritten, `AGENT_SYSTEM.md` deleted, `AGENTIC_SYSTEM.md` and `server/README.md` current.                                                                                                                                                                                                                                                                                                                | `2391fd0`            |
 | H5 dead code / H7 updates                              | Done.                                                                                                                                                                                                                                                                                                                                                                                                           | `5a8be56`            |
-| H6 bundle and assets                                   | Account and Legal lazy; the 2.2 MB onboarding PNG is a 55 KB WebP.                                                                                                                                                                                                                                                                                                                                              | `9a3971b`            |
+| H6 bundle and assets                                   | Account and Legal lazy; the 2.2 MB onboarding PNG became a 55 KB WebP (since removed with the rest of the generated art).                                                                                                                                                                                                                                                                                       | `9a3971b`            |
 
 ---
-
-## Design pass
-
-Applied on top of the checklist, modelled on platform guidance (Apple HIG,
-Material 3) and on reference apps for each flow, borrowing patterns, not
-anyone's look.
-
-| Change                                                                                                                                         | Where                                              |
-| ---------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| Every colour is a token (438 of them, by role: `--fg-*`, `--bg-*`, `--bd-*`), with a dark value for each; the core palette is set by hand      | `src/app/palette.css`, end of `globals.css`        |
-| Dark mode, and Account › Profile › Appearance: System, Light, Dark. Applied before first paint; drives the native status bar                   | `src/lib/appearance.ts`, `index.html`              |
-| Platform typeface (San Francisco / Roboto); every size in rem, one step larger at the small end; follows the phone's text size                 | `globals.css`                                      |
-| Phone layer: compact sticky top bar, stacked headings, Material 3-style tab bar (Week, List, Prices, Spending, You), "Continue your shop" pill | end of `globals.css`, `aisle-app.tsx`              |
-| Home leads with the answer ("$4.49 at Fixture Grocer, for 1 of 6 items"); facts and evidence under "How we know"                               | `components/agent-workspace.tsx`                   |
-| Task dialogs are bottom sheets on phones, with swipe-down to close                                                                             | end of `globals.css`, `src/lib/sheet-gesture.ts`   |
-| List: "Your usuals" tiles (only items with a household reason), sections in walking order, action chips                                        | `src/app/views/list-view.tsx`, `src/lib/usuals.ts` |
-
-Bugs found during the pass and fixed: every dialog's close button had been
-pushed out of sight (iPhone users had no visible way out of Add groceries);
-checkbox outlines were under 3:1; a `.dark` button class would have clashed
-with a dark-mode class, so the theme is a `data-theme` attribute.
 
 ## Still open: release blockers
 
@@ -81,8 +102,9 @@ with a dark-mode class, so the theme is a `data-theme` attribute.
 
 Fill in the six `OPERATOR` fields in `src/lib/legal.ts` (legal name, contact
 email, privacy email, postal address, website, effective date), then have the
-Terms and Privacy Policy reviewed by someone qualified. The release check will
-pass once they are real. Nothing was invented for them.
+Terms, the Privacy Policy and the Accessibility statement reviewed by someone
+qualified. The release check will pass once they are real. Nothing was invented
+for them.
 
 ### R5. Native builds and a device pass
 
@@ -94,19 +116,23 @@ SDK (Java and Gradle are present). On a Mac and with Android Studio:
   photo picker; haptics on ticking an item; the Android back button; saved
   state, the saved price check and photos surviving an app restart and an OS
   kill; a price check over native HTTP (no CORS there) with the new User-Agent.
-- VoiceOver and TalkBack over setup, the list and the checklist. axe cannot
-  judge reading order or announcements.
-- Dynamic Type / font scaling: sizes are in px and rem and have not been tried
-  at large accessibility sizes.
+- The map by touch: pinch, dragging the pin, and whether the page still
+  scrolls comfortably when one-finger drags on the map move the map.
+- VoiceOver and TalkBack over setup, the list, the map and the checklist. axe
+  cannot judge reading order or announcements.
+- The largest text sizes (iOS accessibility sizes go past the 200 % tested
+  here).
 
 ### R6. Network access for the photo pipeline
 
-`api.openverse.org`, `commons.wikimedia.org`, `upload.wikimedia.org` and
-`world.openfoodfacts.org` are refused (HTTP 403) by this environment's network
-policy, rechecked today. Allow them in the environment's network settings, or
-run `npm run photos` on a machine that can reach them (Pexels and Unsplash need
+`api.openverse.org`, `commons.wikimedia.org`, `upload.wikimedia.org`,
+`world.openfoodfacts.org`, `api.pexels.com` and `api.unsplash.com` are refused
+(HTTP 403) by this environment's network policy, rechecked on 3 October 2026.
+Allow them under Network access in the environment's settings, or run
+`npm run photos` on a machine that can reach them (Pexels and Unsplash need
 keys). Read a sample of the results: the pipeline rejects branded titles but
-cannot tell whether a photo shows the right food. Credits go to
+cannot tell whether a photo shows the right food. Until then every product shows
+its department symbol, and nothing else depends on the photos. Credits go to
 `public/images/photos/credits.json` and must be shown on the Data sources screen
 before photos ship; that screen does not list them yet.
 
@@ -135,28 +161,37 @@ Decide it and update the manifest and the Play data-safety form to match.
 - The origin check is not authentication. If abuse appears, add app attestation
   (App Attest / Play Integrity) in front of it.
 
+### R9. A tile provider for the map
+
+The map loads OpenStreetMap's own tiles by default. Their usage policy is not
+meant for an app's traffic, so choose a provider (or host tiles) before release
+and set `VITE_MAP_TILE_URL` and `VITE_MAP_TILE_ATTRIBUTION` (README, "Map
+tiles"). `tile.openstreetmap.org` is refused here as well, so the map has only
+been seen with stand-in tiles: check the toned light tiles and the inverted dark
+ones with real tiles before shipping.
+
 ---
 
 ## Still open: product and design
 
-### F7. Dark mode: done, then tune by eye
+### F7. Dark mode: check by eye
 
-Built in the design pass. The derived dark values in `src/app/palette.css`
-pass axe everywhere but were generated, not designed; a designer should walk
-the screens in dark mode and adjust tokens there (never the stylesheets).
+The dark palette is now set by hand in `tokens.css` and passes axe on every
+view. It has been reviewed in screenshots only; look at it on a real phone
+(OLED and LCD) and adjust the tokens there, never the stylesheets.
 
-### F8. Body text size: done, with one thing to check on a device
+### F8. Large text
 
-Body text is now 16px on the web and 17px on iPhone, and everything scales
-with the phone's text-size setting. Nobody has yet looked at the largest
-accessibility sizes on a real iPhone; expect some headings to need wrapping
-rules there.
+Body text is 16px on the web and follows Dynamic Type on iPhone; every size is
+in rem. At 200 % text no view scrolls sideways. Nobody has looked at the largest
+accessibility sizes on a real device; expect some headings and the tab bar to
+need wrapping rules there.
 
 ### F9. The five-staple gate
 
-Setup still requires five usual items. "Explore first" skips setup entirely, so
-nobody is locked out, but someone who wants to set a budget without choosing
-staples cannot. A product decision.
+Setup still requires five usual items. "Skip" leaves setup entirely, so nobody
+is locked out, but someone who wants to set a budget without choosing staples
+cannot. A product decision.
 
 ### F10. Coverage
 
@@ -176,19 +211,19 @@ built, and the app says so.
 
 ### H1. The rest of the split
 
-`src/app/aisle-app.tsx` is 1,591 lines. What is left inside it, in order of
+`src/app/aisle-app.tsx` is 1,546 lines. What is left inside it, in order of
 size: the receipt dialog (~170 lines), the shop view (~115), the catalogue
-dialog (~60) and the swaps dialog (~60). The list view moved out in the
-design pass. The pattern is
-set: `views/spending-view.tsx` for a view, `ItemRowContext` in `item-row.tsx`
-for passing actions, `use-household.ts` for state. Extract with
-`npm run test:e2e` running; the suite caught two real bugs during this pass.
+dialog (~60) and the swaps dialog (~60). The pattern is set:
+`views/spending-view.tsx` for a view, `ItemRowContext` in `item-row.tsx` for
+passing actions, `use-household.ts` for state. Extract with `npm run test:e2e`
+running; the suite has caught real bugs in every pass so far.
 
 ### H6. The remaining bundle
 
-875 KB is mostly React DOM and the 557-item taxonomy, which setup needs. A
+873 KB is mostly React DOM and the 557-item taxonomy, which setup needs. A
 vendor chunk would help caching, not first load. Lazy-loading the catalogue
-browser is the next candidate.
+browser is the next candidate. The display face is 67 KB for Latin text; its
+other two subsets load only for characters outside that range.
 
 ### H8. Test gaps
 
@@ -199,6 +234,11 @@ been made from this code; do one against a staging key before launch.
 
 ### H9. Things the next editor should know
 
+- Colours, spacing, radii, type and shadows come from `src/app/tokens.css`.
+  Never hard-code a value in a stylesheet; `docs/DESIGN.md` has the rules.
+- `globals.css` is imported first in `main.tsx`, so a component's stylesheet
+  wins at equal specificity. Fonts are imported in `main.tsx` too: an `@import`
+  inside the Tailwind-processed CSS does not resolve the font files.
 - `@playwright/test` is pinned to 1.56.1 and `playwright-core` is overridden to
   match, so `@axe-core/playwright` does not pull in a second copy. CI installs
   the matching Chromium with `npx playwright install`.
@@ -219,8 +259,8 @@ been made from this code; do one against a staging key before launch.
 ## Suggested order
 
 1. R2: fill in the operator details and get the review started (it takes the longest).
-2. R5: native builds and the device pass.
-3. R8: deploy the broker with a shared store, if the assisted mode is wanted at launch.
-4. R6 and R7: photos and store labels.
-5. H1 remainder and H8, with the e2e suite running.
-6. A designer's review of dark mode and large text sizes on real devices (F7, F8).
+2. R5: native builds and the device pass, including VoiceOver and TalkBack.
+3. R6 and R9: product photos and a map tile provider, then a look at both on a phone.
+4. R8: deploy the broker with a shared store, if the assisted mode is wanted at launch.
+5. R7: store labels.
+6. H1 remainder and H8, with the e2e suite running.

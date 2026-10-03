@@ -15,9 +15,9 @@ so and the item stays visibly unpriced. An honest gap is a correct answer; a
 plausible number is not.
 
 This matters most because the system uses a language model. Models are good at
-the judgement call in the middle of this problem — is _"Dempster's 100% Whole
+the judgement call in the middle of this problem (is _"Dempster's 100% Whole
 Wheat, 675 g"_ in a catalogue the same thing as _"whole wheat bread"_ on
-someone's list? — and they are also perfectly capable of producing a confident
+someone's list?), and they are also perfectly capable of producing a confident
 price that nobody charges. The architecture below gives the model the first job
 and structurally denies it the second.
 
@@ -43,7 +43,7 @@ among records the collect phase already fetched.
 
 1. **Discover.** Query the OpenStreetMap directory for a coarse cell around the
    household's saved pin, keep the results inside Ontario, and filter to their
-   exact radius. Mapped `website` tags become feed candidates — Aisle does not
+   exact radius. Mapped `website` tags become feed candidates; Aisle does not
    guess retailer domains from chain names.
 2. **Collect.** Probe candidates: robots.txt must permit the path, the
    storefront must declare an active CAD currency, and the catalogue must parse.
@@ -73,7 +73,7 @@ every response behind the numbers.
 Two details matter for the honesty rule. Matches are _proposals_ until the
 household confirms them, and an unconfirmed line is labelled as such and counted
 separately in the basket. And confirming a match re-totals from the run snapshot
-with `basketsFrom()`, a pure function — no re-collection, so a displayed figure
+with `basketsFrom()`, a pure function with no re-collection, so a displayed figure
 can never drift from the evidence it came from.
 
 ## Tools
@@ -90,7 +90,7 @@ can read and correct.
 | `discover_price_feeds` | Per-retailer verdict on whether a catalogue is readable             |
 | `collect_prices`       | Fresh price records with evidence ids                               |
 | `search_offers`        | Collected records only                                              |
-| `propose_match`        | Records a proposal — refused if it breaks a household rule          |
+| `propose_match`        | Records a proposal; refused if it breaks a household rule           |
 | `flag_unavailable`     | Records an honest gap                                               |
 | `compute_basket`       | Integer-cent totals against the per-shop budget                     |
 
@@ -101,8 +101,8 @@ Three things the tools structurally prevent:
 - **No overriding the household.** Excluded products, locked items, protected
   brands and category locks are enforced in the handler. A model that argues a
   cheaper substitute is better gets a refusal, not a match.
-- **No self-confirmation.** The agent produces proposals. `offerSelections` —
-  the household's own confirmations — is what makes a line count toward a
+- **No self-confirmation.** The agent produces proposals. `offerSelections`
+  (the household's own confirmations) is what makes a line count toward a
   total. Proposals are reported as `awaitingConfirmation`.
 
 ## Personalization

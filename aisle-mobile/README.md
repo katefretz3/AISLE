@@ -1,4 +1,4 @@
-# Aisle — iOS and Android
+# Aisle for iOS and Android
 
 A grocery planning app for Ontario households. React 19, TypeScript, Vite 8 and
 Capacitor 8; the iOS and Android projects are in `ios/` and `android/`.
@@ -9,13 +9,17 @@ received, or the household typed it and it is labelled as theirs. Anything else
 is shown as missing.
 
 Start with [`docs/HANDOFF.md`](docs/HANDOFF.md) for the current state and what
-is left to do.
+is left to do, and [`docs/DESIGN.md`](docs/DESIGN.md) for the design system.
 
 ## What it does
 
 - **Setup** in four steps: city and search area on a map, household, cadence,
   budget, priorities, dietary and allergen settings, protected brands, and at
-  least five usual items. "Explore first" skips it.
+  least five usual items. "Skip" leaves it for later.
+- **A real, interactive map** wherever the search area is set (setup, Account
+  and Prices): pinch or use the buttons to zoom, drag the pin or tap the map to
+  move it, arrow keys nudge it, and one button resets it to the city centre. On
+  Prices it also marks the shops found nearby.
 - **A 557-item catalogue** shaped like a shop (14 departments, 76 aisles), with
   everyday synonyms in search and dual-home items cross-listed.
 - **Price checks.** A tool-using agent finds mapped grocery stores near the
@@ -28,8 +32,8 @@ is left to do.
   launch, for the same search area only. Each price stops being shown when it
   expires (24 hours after it was read), and the summary says when prices were
   checked.
-- **Compare baskets**: a complete basket always outranks a partial one, and a
-  basket with gaps is never called the cheapest.
+- **Prices**: a complete basket always outranks a partial one, and a basket
+  with gaps is never called the cheapest.
 - **In the shop**: a checklist in walking order with a live running total that
   counts only what is ticked, and **shelf prices** the household reads off a
   label (optionally with a photo). Those are stored as the household's own
@@ -39,9 +43,14 @@ is left to do.
   repurchase timing. Estimates are only scored against the till when the whole
   list was priced.
 - **Light and dark**, following the phone or set in Account, and text that
-  follows the phone's text-size setting.
-- **Account and legal**: one settings screen; Terms, Privacy and Data sources
-  written to describe what the app does. Erase everything resets the saved
+  follows the phone's text-size setting. One token system for colour, type,
+  space and depth ([`docs/DESIGN.md`](docs/DESIGN.md)).
+- **Accessibility**: built to WCAG 2.2 AA (which covers the WCAG 2.0 AA that
+  Ontario's AODA requires), 48px touch targets, and checked automatically on
+  every change. Legal › Accessibility states the standard, the checks and the
+  known gaps.
+- **Account and legal**: one settings screen; Terms, Privacy, Data sources and
+  Accessibility written to describe what the app does. Erase everything resets the saved
   household and deletes receipt and label photos, the saved check and the
   directory cache.
 
@@ -67,11 +76,10 @@ npm run dev                 # local preview
 | `npm run check`         | TypeScript across `src`, `tests`, `tools` and `../server`               |
 | `npm run lint`          | ESLint (CI runs it with `--max-warnings 0`)                             |
 | `npm run format:check`  | Prettier                                                                |
-| `npm test`              | 152 unit tests on Node's runner (`tests/*.test.ts`)                     |
-| `npm run test:e2e`      | 16 Playwright tests (`tests/e2e`), 20 runs across phone and desktop     |
+| `npm test`              | 156 unit tests on Node's runner (`tests/*.test.ts`)                     |
+| `npm run test:e2e`      | 24 Playwright tests (`tests/e2e`), 32 runs across phone and desktop     |
 | `npm run release:check` | Refuses a release with placeholder legal details or mismatched versions |
 | `npm run release`       | verify, release check, then `cap sync`                                  |
-| `npm run art`           | Redraw the fallback product illustrations                               |
 | `npm run photos`        | Fetch generic product photos (needs network; see below)                 |
 | `npm run ia`            | Simulated card sort and tree test over the catalogue                    |
 
@@ -79,7 +87,9 @@ The unit tests are written mostly as attempts to get a fabricated price through:
 absent or forged evidence, stale and non-CAD prices, invented figures in
 generated text, offer ids never collected, a saved check edited on disk,
 matches that break a household lock. Each has to fail closed. The browser tests
-answer every outside request with a synthetic fixture or refuse it.
+answer every outside request with a synthetic fixture or refuse it, and check
+WCAG 2.2 AA (axe) in both themes, 48px touch targets, reflow at 320px, text at
+double size, and the map's zoom, pinch, drag, keyboard and reset.
 
 CI (`.github/workflows/ci.yml`) runs verify, a dependency audit and the browser
 tests on every push; the release check runs on `v*` tags.
@@ -116,7 +126,7 @@ and a test fails if that list changes without the policy changing.
 - **Store directory** (Overpass, three public mirrors in turn): a coarse search
   area, rounded to about 5 km.
 - **Retailer sites**: ordinary requests for public catalogue pages.
-- **Map tiles** (OpenStreetMap): the area being viewed.
+- **Map tiles** (OpenStreetMap by default; see below): the area being viewed.
 - **Reasoning broker, only if configured**: the list, collected offers, nearby
   shops and the household profile, including allergies and dietary needs.
   Section 4 of the privacy policy has the full list.
@@ -127,13 +137,17 @@ add a contact page to it. In a browser, CORS limits which retailers can be read.
 
 ## Product photographs
 
+The app shows a product photograph only when one has been fetched; otherwise
+an item is drawn as its department's colour and a symbol for its aisle
+(`src/lib/product-glyph.ts`). There are no generated product drawings.
+
 `npm run photos` fetches one generic, unbranded photograph per catalogue item
-and writes `public/images/photos/<id>.png` (exactly 512 × 512, fitted without
-cropping on a transparent surround), a credits file, and a manifest the app
-reads. `--verify` re-checks every file. Each item's `photo` field in the taxonomy is a
-brand-free search phrase — "hazelnut spread" rather than "Nutella", "sandwich
-cookies" rather than "Oreo" — and results whose title or creator looks like
-branding or packaging are rejected.
+and writes `public/images/photos/<id>.webp` (exactly 512 × 512, cropped to a
+square around the subject with sharp's attention strategy), a credits file, and
+a manifest the app reads. `--verify` re-checks every file. Each item's `photo`
+field in the taxonomy is a brand-free search phrase ("hazelnut spread" rather
+than "Nutella"), and results whose title or creator looks like branding or
+packaging are rejected.
 
 ```sh
 npm run photos                                    # Openverse, no key required
@@ -142,24 +156,37 @@ UNSPLASH_ACCESS_KEY=… npm run photos -- --source=unsplash
 npm run photos -- --only=blueberries,milk --force # redo specific items
 ```
 
-Any item without a photo keeps its generated illustration, so a partial or
-interrupted run is always safe and no screen ever shows a gap.
+A partial or interrupted run is safe: items without a photo keep their symbol.
 
 **This has not been run against the live APIs.** The environment this was built
-in blocks outbound requests to image hosts at the egress proxy (HTTP 403 for
-Openverse, Wikimedia and Open Food Facts alike; rechecked 28 September 2026), so the pipeline is verified up
-to the network boundary and no further: argument handling, brand rejection,
-cropping, attribution, manifest writing and the app's photo-first fallback all
-work, but no photograph has actually been downloaded. Run it on a networked
-machine and check a sample of the results before trusting the whole set.
+in refuses outbound requests to the image hosts at its egress proxy (HTTP 403
+for api.openverse.org, Wikimedia and Open Food Facts; rechecked 3 October 2026),
+so the pipeline is verified against a local mirror only: argument handling,
+brand rejection, cropping, WebP output, attribution and the manifest all work,
+but no real photograph has been downloaded. Run it on a networked machine and
+check a sample of the results before trusting the whole set.
+
+## Map tiles
+
+The map uses OpenStreetMap's standard tiles unless the build says otherwise.
+OpenStreetMap's tile servers are for light use, so a published app should use a
+tile provider it has an agreement with:
+
+```sh
+VITE_MAP_TILE_URL='https://tiles.example.com/{z}/{x}/{y}.png?key=…'
+VITE_MAP_TILE_ATTRIBUTION='© Example, © OpenStreetMap contributors'
+```
+
+The tiles are toned down slightly in light mode and inverted into a dark map in
+dark mode, so any raster style works with both appearances.
 
 ## Information architecture
 
 The catalogue's shape is tested, not assumed. `npm run ia` runs a simulated card
 sort and tree test across every item and writes `docs/ia-study.md`.
 
-Five synthetic participants each weight a different categorisation cue —
-ingredient, storage, meal occasion, processing, store layout — and navigate
+Five synthetic participants each weight a different categorisation cue
+(ingredient, storage, meal occasion, processing, store layout) and navigate
 using only the labels in the tree. A lexicon (`tools/ia-lexicon.mjs`) maps words
 to _concepts_ and never to departments, which is what keeps the study from
 marking its own homework: the participant is granted knowledge of what the item
@@ -187,21 +214,21 @@ than sitting beside it, so there is one settings screen rather than two
 competing ones. `#preferences` still resolves there.
 
 Each section is a card with the same header shape, so the page scans as a list
-of decisions. Derived figures — days per shop, budget per shop, per person —
+of decisions. Derived figures (days per shop, budget per shop, per person)
 are shown next to the inputs that produce them. The destructive controls sit at
 the bottom, visually separated, behind a confirmation that names exactly what
 will be lost: there is no account and no server copy, so an accidental erase is
 not recoverable.
 
-`src/app/legal.tsx` renders three documents from `src/lib/legal.ts`: Terms of
-Use, Privacy Policy, and Data sources & attribution. Keeping them as structured
+`src/app/legal.tsx` renders four documents from `src/lib/legal.ts`: Terms of
+Use, Privacy Policy, Data sources & attribution, and Accessibility. Keeping them as structured
 data rather than prose blobs means the contents list cannot drift from the body
 and a diff shows exactly which clause changed.
 
 **The documents are drafts, and they are not legal advice.** They were written
-to describe what this application actually does — device-local storage, no
+to describe what this application actually does (device-local storage, no
 accounts, coarse location only, unverified ingredient data, Ontario-only
-coverage — so that a lawyer has something accurate to review instead of a
+coverage) so that a lawyer has something accurate to review instead of a
 generic template. Operator details (legal name, contact addresses, effective
 date) are `PLACEHOLDER` values in `src/lib/legal.ts`, and while any remain the
 legal screens show a blocking notice naming the unfilled fields. Fill them in
@@ -209,7 +236,7 @@ and get the wording reviewed before release.
 
 The Privacy Policy is reachable from five places, because the question comes up
 in more than one moment: during onboarding next to "No account needed", from the
-"How Aisle works" dialog, from Account settings, from the sidebar, and from the
+"How prices work" dialog, from Account settings, from the sidebar, and from the
 workspace footer.
 
 The Data sources page is not optional decoration: OpenStreetMap's ODbL requires
@@ -225,12 +252,12 @@ the shopping checklist could never be started because nothing could set an
 active basket, and the budget card showed a dash. Those were three symptoms of
 one cause.
 
-Now the home screen, Compare baskets, the checklist and the budget card all read
+Now the home screen, Prices, the checklist and the budget card all read
 the same run. Confirming a match re-totals every one of them at once through
 `basketsFrom()`, with no re-collection, so a figure cannot drift between screens.
 
 Two rules hold throughout. A complete basket always outranks a partial one, and
-an incomplete basket is never labelled cheapest — only best-covered, with a
+an incomplete basket is never labelled cheapest, only best covered, with a
 coverage meter so a cheap-looking half-priced basket cannot mislead. And every
 line total is the cost of that whole list line, packs included: the screens
 render it directly rather than multiplying by quantity again, which a test
@@ -250,7 +277,7 @@ to list order and the choice is remembered.
 
 **The total is live, pinned, and honest.** It counts only what has actually been
 ticked. An item that was picked up but that nothing could price is reported
-separately rather than counted as zero — counting it as zero would make the
+separately rather than counted as zero, because counting it as zero would make the
 running total read lower than the shop really is, and that is the one number a
 shopper has to be able to trust. A test guards it.
 
